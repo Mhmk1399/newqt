@@ -12,6 +12,7 @@ import {
   serviceOptions,
 } from "../../data/contactForm";
 import Link from "next/link";
+import { contactRequestApi } from "@/lib/api/contactRequest";
 
 // Register GSAP plugins
 gsap.registerPlugin(ScrollTrigger);
@@ -260,12 +261,24 @@ const ContactForm = () => {
     setIsSubmitting(true);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Map form data to API format
+      const apiData = {
+        name: formData.name,
+        phoneNumber: formData.phone,
+        title: formData.subject,
+        message: formData.message,
+        type: mapServiceToType(formData.service)
+      };
+
+      const response = await contactRequestApi.create(apiData);
+      
+      if (!response.success) {
+        throw new Error(response.message || "خطا در ارسال درخواست");
+      }
 
       // Success
       setIsSubmitted(true);
-      toast.success("پیام شما با موفقیت ارسال شد");
+      toast.success(response.message || "پیام شما با موفقیت ارسال شد");
 
       // Reset form after delay
       setTimeout(() => {
@@ -280,12 +293,24 @@ const ContactForm = () => {
         setIsSubmitted(false);
       }, 3000);
     } catch (error) {
-      console.log(error);
-
-      toast.error("خطا در ارسال پیام. لطفاً دوباره تلاش کنید");
+      console.error('Error submitting form:', error);
+      toast.error(error instanceof Error ? error.message : "خطا در ارسال پیام. لطفاً دوباره تلاش کنید");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Map service options to API types
+  const mapServiceToType = (service: string): string => {
+    const serviceMap: { [key: string]: string } = {
+      'content-creation': 'content',
+      'video-production': 'video',
+      'social-media': 'social',
+      'seo': 'content',
+      'analytics': 'content',
+      'other': 'content'
+    };
+    return serviceMap[service] || 'content';
   };
 
   return (
@@ -404,7 +429,7 @@ const ContactForm = () => {
             </div>
 
             {/* Luxury Social Media Section */}
-            <div className="contact-info-card relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-3xl p-10 border border-white/20 shadow-2xl">
+            {/* <div className="contact-info-card relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-3xl p-10 border border-white/20 shadow-2xl">
               <h3 className="text-2xl font-bold text-white mb-6">
                 ما را در شبکه‌های اجتماعی دنبال کنید
               </h3>
@@ -437,7 +462,7 @@ const ContactForm = () => {
                   ساعات پاسخگویی: شنبه تا چهارشنبه از ساعت ۹ صبح تا ۵ بعدازظهر
                 </p>
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* Luxury Contact Form */}

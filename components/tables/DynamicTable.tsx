@@ -5,40 +5,88 @@ import {
   HiOutlineEye,
   HiOutlinePencilAlt,
   HiOutlineTrash,
+  HiOutlineCheckCircle,
+  HiOutlineXCircle,
+  HiOutlineSearch,
+  HiOutlineFilter,
 } from "react-icons/hi";
 import { TableColumn, DynamicTableProps } from "@/types/tables";
 
+interface FilterState {
+  [key: string]: string;
+}
+
+interface PaginationState {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+}
+
 const DynamicTable = React.forwardRef(({ config }: DynamicTableProps, ref) => {
   type RowType = {
-    [key: string]: unknown; // Allow any type for flexibility
+    [key: string]: unknown;
     _id?: string | number;
     id?: string | number;
   };
+  
   const [data, setData] = useState<RowType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filters, setFilters] = useState<FilterState>({});
+  const [search, setSearch] = useState("");
+  const [pagination, setPagination] = useState<PaginationState>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0,
+  });
+  const [showFilters, setShowFilters] = useState(false);
+  
   type SortConfig = { key: string; direction: "asc" | "desc" | string } | null;
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
 
   useEffect(() => {
     fetchData();
-  }, [config.endpoint]);
+  }, [config.endpoint, filters, search, pagination.page, pagination.limit]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
+      
+      // Build query parameters
+      const searchParams = new URLSearchParams();
+      
+      // Add filters
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) searchParams.append(key, value);
+      });
+      
+      // Add search
+      if (search) searchParams.append('search', search);
+      
+      // Add pagination
+      searchParams.append('page', pagination.page.toString());
+      searchParams.append('limit', pagination.limit.toString());
+      
+      const url = `${config.endpoint}?${searchParams.toString()}`;
+      
       const options: RequestInit = {
         method: "GET",
         headers: config.headers ? { ...config.headers } : {},
       };
-      const response = await fetch(config.endpoint, options);
+      
+      const response = await fetch(url, options);
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Failed to fetch data");
+        throw new Error(result.message || result.error || "Failed to fetch data");
       }
 
       setData(result.data || []);
+      if (result.pagination) {
+        setPagination(result.pagination);
+      }
       setError(null);
     } catch (err) {
       const errorMessage =
@@ -116,6 +164,18 @@ const DynamicTable = React.forwardRef(({ config }: DynamicTableProps, ref) => {
             {value === "active" ? "فعال" : "غیرفعال"}
           </span>
         );
+      case "boolean":
+        return (
+          <span
+            className={`px-2 py-1 rounded-full text-xs ${
+              value
+                ? "bg-green-100 text-green-800"
+                : "bg-red-100 text-red-800"
+            }`}
+          >
+            {value ? "فعال" : "غیرفعال"}
+          </span>
+        );
       default:
         return value !== undefined && value !== null ? String(value) : "-";
     }
@@ -123,6 +183,48 @@ const DynamicTable = React.forwardRef(({ config }: DynamicTableProps, ref) => {
 
   const refreshData = () => {
     fetchData();
+  };
+
+  const handleActivateToggle = async (row: RowType) => {
+    try {
+      const response = await fetch(config.endpoint, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(config.headers || {})
+        },
+        body: JSON.stringify({
+          id: row._id || row.id,
+          isActive: !row.isActive
+        })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        fetchData(); // Refresh data
+        config.onActivate?.(row, !row.isActive);
+      }
+    } catch (error) {
+      console.error('Error toggling activation:', error);
+    }
+  };
+
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+    setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page
+  };
+
+  const handlePageChange = (page: number) => {
+    setPagination(prev => ({ ...prev, page }));
+  };
+
+  const handleLimitChange = (limit: number) => {
+    setPagination(prev => ({ ...prev, limit, page: 1 }));
   };
 
   useImperativeHandle(ref, () => ({
@@ -140,7 +242,7 @@ const DynamicTable = React.forwardRef(({ config }: DynamicTableProps, ref) => {
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-md p-4">
-        <p className="text-red-700">خطا در بارگذاری داده‌ها: {error}</p>
+        <p className="text-red-700">خطا در بارگذاری دادهها: {error}</p>
         <button
           onClick={fetchData}
           className="mt-2 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
@@ -155,10 +257,61 @@ const DynamicTable = React.forwardRef(({ config }: DynamicTableProps, ref) => {
     <div className={`bg-white rounded-lg shadow-md ${config.className || ""}`}>
       {/* Header */}
       <div className="p-6 border-b border-gray-200">
-        <h2 className="text-2xl font-bold text-gray-900">{config.title}</h2>
-        {config.description && (
-          <p className="text-gray-600 mt-1">{config.description}</p>
-        )}
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">{config.title}</h2>
+            {config.description && (
+              <p className="text-gray-600 mt-1">{config.description}</p>
+            )}
+          </div>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <HiOutlineFilter className="w-4 h-4" />
+            فیلترها
+          </button>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="space-y-4">
+          {/* Search */}
+          <div className="relative">
+            <HiOutlineSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="جستجو..."
+              value={search}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Filters */}
+          {showFilters && config.filters && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+              {config.filters.map((filter) => (
+                <div key={filter.key}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {filter.label}
+                  </label>
+                  <select
+                    value={filters[filter.key] || ""}
+                    onChange={(e) => handleFilterChange(filter.key, e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">همه</option>
+                    {filter.options?.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Table */}
@@ -191,7 +344,8 @@ const DynamicTable = React.forwardRef(({ config }: DynamicTableProps, ref) => {
               ))}
               {(config.actions?.view ||
                 config.actions?.edit ||
-                config.actions?.delete) && (
+                config.actions?.delete ||
+                config.actions?.activate) && (
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   عملیات
                 </th>
@@ -205,7 +359,7 @@ const DynamicTable = React.forwardRef(({ config }: DynamicTableProps, ref) => {
                   colSpan={config.columns.length + 1}
                   className="px-6 py-4 text-center text-gray-500"
                 >
-                  هیچ داده‌ای یافت نشد
+                  هیچ دادهای یافت نشد
                 </td>
               </tr>
             ) : (
@@ -224,7 +378,8 @@ const DynamicTable = React.forwardRef(({ config }: DynamicTableProps, ref) => {
                   ))}
                   {(config.actions?.view ||
                     config.actions?.edit ||
-                    config.actions?.delete) && (
+                    config.actions?.delete ||
+                    config.actions?.activate) && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex gap-1">
                         {config.actions?.view && (
@@ -253,6 +408,27 @@ const DynamicTable = React.forwardRef(({ config }: DynamicTableProps, ref) => {
                             </span>
                           </div>
                         )}
+                        {config.actions?.activate && (
+                          <div className="relative group">
+                            <button
+                              onClick={() => handleActivateToggle(row)}
+                              className={`border px-3 py-2 rounded-lg transition-all duration-200 flex items-center justify-center ${
+                                row.isActive
+                                  ? "text-red-600 hover:text-red-900 hover:bg-red-50"
+                                  : "text-green-600 hover:text-green-900 hover:bg-green-50"
+                              }`}
+                            >
+                              {row.isActive ? (
+                                <HiOutlineXCircle className="w-4 h-4" />
+                              ) : (
+                                <HiOutlineCheckCircle className="w-4 h-4" />
+                              )}
+                            </button>
+                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                              {row.isActive ? "غیرفعال کردن" : "فعال کردن"}
+                            </span>
+                          </div>
+                        )}
                         {config.actions?.delete && (
                           <div className="relative group">
                             <button
@@ -266,31 +442,6 @@ const DynamicTable = React.forwardRef(({ config }: DynamicTableProps, ref) => {
                             </span>
                           </div>
                         )}
-                        {config.actions?.custom?.map((action, index) => (
-                          <div key={index} className="relative group">
-                            <button
-                              onClick={() => action.onClick(row)}
-                              className={`px-3 py-2 rounded-lg transition-all duration-200 flex items-center justify-center ${
-                                action.className ||
-                                "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                              }`}
-                              style={{
-                                display: action.condition
-                                  ? action.condition(row)
-                                    ? "flex"
-                                    : "none"
-                                  : "flex",
-                              }}
-                            >
-                              <span className="w-4 h-4 text-sm flex items-center justify-center">
-                                {action.icon}
-                              </span>
-                            </button>
-                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
-                              {action.label}
-                            </span>
-                          </div>
-                        ))}
                       </div>
                     </td>
                   )}
@@ -301,20 +452,48 @@ const DynamicTable = React.forwardRef(({ config }: DynamicTableProps, ref) => {
         </table>
       </div>
 
-      {/* Footer */}
-      <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-700">
-            نمایش {sortedData.length} آیتم
+      {/* Pagination */}
+      {pagination.pages > 1 && (
+        <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-gray-700">
+                نمایش {((pagination.page - 1) * pagination.limit) + 1} تا{' '}
+                {Math.min(pagination.page * pagination.limit, pagination.total)} از{' '}
+                {pagination.total} مورد
+              </div>
+              <select
+                value={pagination.limit}
+                onChange={(e) => handleLimitChange(parseInt(e.target.value))}
+                className="text-sm border border-gray-300 rounded px-2 py-1"
+              >
+                <option value={10}>10 مورد</option>
+                <option value={25}>25 مورد</option>
+                <option value={50}>50 مورد</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handlePageChange(pagination.page - 1)}
+                disabled={pagination.page === 1}
+                className="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md disabled:opacity-50 hover:bg-gray-50"
+              >
+                قبلی
+              </button>
+              <span className="px-3 py-1 text-sm">
+                صفحه {pagination.page} از {pagination.pages}
+              </span>
+              <button
+                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={pagination.page === pagination.pages}
+                className="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md disabled:opacity-50 hover:bg-gray-50"
+              >
+                بعدی
+              </button>
+            </div>
           </div>
-          <button
-            onClick={fetchData}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
-          >
-            بروزرسانی
-          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 });

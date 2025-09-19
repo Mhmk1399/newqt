@@ -1,6 +1,6 @@
 "use client";
 
-import   { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaUser, FaChevronLeft, FaHome } from "react-icons/fa";
 import {
@@ -53,7 +53,7 @@ interface FormOption {
 }
 
 const CustomerSideBar: React.FC = () => {
-  const [activeForm, setActiveForm] = useState<FormType>("contracts-list");
+  const [activeForm, setActiveForm] = useState<FormType>("personal-info");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [, setMessage] = useState<{
     type: "success" | "error";
@@ -88,6 +88,14 @@ const CustomerSideBar: React.FC = () => {
   }, [activeForm]);
 
   const formOptions: FormOption[] = [
+    {
+      id: "personal-info",
+      label: "اطلاعات شخصی",
+      icon: <HiOutlineUser className="w-5 h-5" />,
+      category: "مالی و حسابداری",
+      description: "مدیریت اطلاعات حساب کاربری",
+      color: "bg-blue-500",
+    },
     // مالی و حسابداری
     {
       id: "contracts-list",
@@ -113,14 +121,7 @@ const CustomerSideBar: React.FC = () => {
       description: " پرداخت‌ها و تراکنش‌های مالی",
       color: "bg-blue-500",
     },
-    {
-      id: "personal-info",
-      label: "اطلاعات شخصی",
-      icon: <HiOutlineUser className="w-5 h-5" />,
-      category: "مالی و حسابداری",
-      description: "مدیریت اطلاعات حساب کاربری",
-      color: "bg-blue-500",
-    },
+
     {
       id: "service-request",
       label: "درخواست سرویس",
@@ -499,7 +500,7 @@ const CustomerSideBar: React.FC = () => {
       </AnimatePresence>
 
       {/* Main Content */}
-    <motion.div
+      <motion.div
         className="flex-1 bg-white overflow-y-auto"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

@@ -7,9 +7,11 @@ import {
   FaComment,
   FaPhone,
 } from "react-icons/fa";
+import { ContactRequestFormData, ContactRequestStatus, ApiResponse } from "@/types/contactRequest";
+import { contactRequestApi } from "@/lib/api/contactRequest";
 
 export default function ContactForm() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ContactRequestFormData>({
     name: "",
     phoneNumber: "",
     title: "",
@@ -17,7 +19,7 @@ export default function ContactForm() {
     type: "content",
   });
 
-  const [status, setStatus] = useState({
+  const [status, setStatus] = useState<ContactRequestStatus>({
     submitting: false,
     submitted: false,
     error: false,
@@ -55,29 +57,33 @@ export default function ContactForm() {
     },
   ];
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Client-side validation
+    if (!formData.name.trim() || !formData.phoneNumber.trim() || 
+        !formData.title.trim() || !formData.message.trim()) {
+      setStatus({
+        submitting: false,
+        submitted: false,
+        error: true,
+        message: "لطفاً تمام فیلدهای الزامی را پر کنید",
+      });
+      return;
+    }
     
     try {
       setStatus({ ...status, submitting: true, error: false, message: "" });
       
-      const response = await fetch('/api/request', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          token: localStorage.getItem('token') || '',
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          phoneNumber: formData.phoneNumber,
-          title: formData.title,
-          message: formData.message,
-          type: formData.type,
-        }),
+      const data = await contactRequestApi.create({
+        name: formData.name.trim(),
+        phoneNumber: formData.phoneNumber.trim(),
+        title: formData.title.trim(),
+        message: formData.message.trim(),
+        type: formData.type,
       });
-
-      const data = await response.json();
       
-      if (!response.ok) {
+      if (!data.success) {
         throw new Error(data.message || 'خطا در ارسال درخواست');
       }
       
@@ -94,7 +100,7 @@ export default function ContactForm() {
         submitting: false,
         submitted: true,
         error: false,
-        message: "درخواست شما با موفقیت ثبت شد",
+        message: data.message || "درخواست شما با موفقیت ثبت شد",
       });
       
     } catch (error) {
@@ -227,11 +233,9 @@ export default function ContactForm() {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => {setStatus({...status, submitted: true})
-            handleSubmit()}}
               type="submit"
               disabled={status.submitting}
-              className="w-full bg-gradient-to-r focus:outline-none from-[#2563eb] to-[#60a5fa] text-white py-4 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-70"
+              className="w-full bg-gradient-to-r focus:outline-none from-[#2563eb] to-[#60a5fa] text-white py-4 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {status.submitting ? "در حال ارسال..." : "ارسال درخواست"}
             </motion.button>

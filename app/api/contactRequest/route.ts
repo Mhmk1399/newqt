@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import Customer from "@/models/customersData/customers";
+import contactRequest from "@/models/contactRequest";
 import connect from "@/lib/data";
-import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 
-// GET - Retrieve customers with filters and pagination
+// GET - Retrieve contact requests
 export async function GET(request: NextRequest) {
   try {
     await connect();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
-    const isActive = searchParams.get("isActive");
-    const businessScale = searchParams.get("businessScale");
-    const isVip = searchParams.get("isVip");
-    const search = searchParams.get("search");
+    const status = searchParams.get("status");
+    const type = searchParams.get("type");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
 
@@ -25,47 +22,34 @@ export async function GET(request: NextRequest) {
         );
       }
       
-      const customer = await Customer.findById(id);
-      if (!customer) {
+      const contact = await contactRequest.findById(id);
+      if (!contact) {
         return NextResponse.json(
-          { success: false, message: "Customer not found" },
+          { success: false, message: "Contact request not found" },
           { status: 404 }
         );
       }
       
-      return NextResponse.json({ success: true, data: customer });
+      return NextResponse.json({ success: true, data: contact });
     }
 
     // Build query filters
     const query: any = {};
-    if (isActive !== null && isActive !== undefined) {
-      query.isActive = isActive === 'true';
-    }
-    if (businessScale) query.businessScale = businessScale;
-    if (isVip !== null && isVip !== undefined) {
-      query.isVip = isVip === 'true';
-    }
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { businessName: { $regex: search, $options: 'i' } },
-        { phoneNumber: { $regex: search, $options: 'i' } }
-      ];
-    }
+    if (status) query.status = status;
+    if (type) query.type = type;
 
     const skip = (page - 1) * limit;
-    const customers = await Customer
+    const contacts = await contactRequest
       .find(query)
-      .select('-password')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
     
-    const total = await Customer.countDocuments(query);
+    const total = await contactRequest.countDocuments(query);
     
     return NextResponse.json({
       success: true,
-      data: customers,
+      data: contacts,
       pagination: {
         page,
         limit,
@@ -82,37 +66,33 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Create new customer
+// POST - Create new contact request
 export async function POST(request: NextRequest) {
   try {
     await connect();
     const body = await request.json();
-    const { name, phoneNumber, password } = body;
+    const { name, phoneNumber, title, message, type } = body;
 
     // Validation
-    if (!name || !phoneNumber || !password) {
+    if (!name || !phoneNumber || !title || !message) {
       return NextResponse.json(
-        { success: false, message: "Name, phone number, and password are required" },
+        { success: false, message: "All required fields must be provided" },
         { status: 400 }
       );
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-    
-    const customer = new Customer({
-      ...body,
-      password: hashedPassword
+    const newContact = new contactRequest({
+      name,
+      phoneNumber,
+      title,
+      message,
+      type: type || 'content'
     });
+
+    const savedContact = await newContact.save();
     
-    await customer.save();
-
-    // Remove password from response
-    const customerResponse = customer.toObject();
-    delete customerResponse.password;
-
     return NextResponse.json(
-      { success: true, message: "Customer created successfully", data: customerResponse },
+      { success: true, message: "Contact request created successfully", data: savedContact },
       { status: 201 }
     );
   } catch (error) {
@@ -130,12 +110,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PUT - Update customer
+// PUT - Update contact request
 export async function PUT(request: NextRequest) {
   try {
     await connect();
     const body = await request.json();
-    const { id, password, ...updateData } = body;
+    const { id, ...updateData } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -151,28 +131,23 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Hash password if provided
-    if (password) {
-      updateData.password = await bcrypt.hash(password, 10);
-    }
-
-    const updatedCustomer = await Customer.findByIdAndUpdate(
+    const updatedContact = await contactRequest.findByIdAndUpdate(
       id,
       { ...updateData, updatedAt: new Date() },
-      { new: true, runValidators: true, select: '-password' }
+      { new: true, runValidators: true }
     );
 
-    if (!updatedCustomer) {
+    if (!updatedContact) {
       return NextResponse.json(
-        { success: false, message: "Customer not found" },
+        { success: false, message: "Contact request not found" },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: "Customer updated successfully",
-      data: updatedCustomer
+      message: "Contact request updated successfully",
+      data: updatedContact
     });
   } catch (error) {
     console.error("PUT Error:", error);
@@ -189,7 +164,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// DELETE - Delete customer
+// DELETE - Delete contact request
 export async function DELETE(request: NextRequest) {
   try {
     await connect();
@@ -210,19 +185,19 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const deletedCustomer = await Customer.findByIdAndDelete(id);
+    const deletedContact = await contactRequest.findByIdAndDelete(id);
 
-    if (!deletedCustomer) {
+    if (!deletedContact) {
       return NextResponse.json(
-        { success: false, message: "Customer not found" },
+        { success: false, message: "Contact request not found" },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: "Customer deleted successfully",
-      data: deletedCustomer
+      message: "Contact request deleted successfully",
+      data: deletedContact
     });
   } catch (error) {
     console.error("DELETE Error:", error);

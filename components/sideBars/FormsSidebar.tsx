@@ -118,14 +118,6 @@ const FormsSidebar: React.FC = () => {
 
   const formOptions: FormOption[] = [
     // Customer Management
-    {
-      id: "customer",
-      label: "ثبت مشتری جدید",
-      icon: <FaUserPlus className="w-5 h-5" />,
-      category: "مدیریت مشتریان",
-      description: "ثبت نام مشتری جدید در سیستم",
-      color: "bg-blue-500",
-    },
 
     {
       id: "customers-list",
@@ -323,8 +315,6 @@ const FormsSidebar: React.FC = () => {
 
   const renderForm = () => {
     switch (activeForm) {
-      case "customer":
-        return <CustomerForm onSuccess={handleSuccess} onError={handleError} />;
       case "customers-list":
         return <CustomersTable />;
       case "categories-list":
