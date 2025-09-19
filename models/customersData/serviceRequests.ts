@@ -8,11 +8,7 @@ const serviceRequestSchema = new mongoose.Schema<IServiceRequest>({
     required: true,
     trim: true
   },
-  projectId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Project',
-    required: true
-  },
+
   serviceId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Service',

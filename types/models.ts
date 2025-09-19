@@ -134,7 +134,6 @@ export interface IUser {
 // Union Types for Status Fields
 export type CustomerVerificationStatus = 'pending' | 'verified' | 'rejected';
 export type VerificationRequestStatus = 'pending' | 'approved' | 'rejected' | 'in-review';
-export type ContractStatus = 'draft' | 'active' | 'completed' | 'terminated' | 'expired';
 export type ContractType = 'standard' | 'premium' | 'enterprise' | 'custom';
 export type BusinessScale = 'startup' | 'small' | 'medium' | 'large' | 'enterprise';
 export type ProjectStatus = 'planning' | 'active' | 'paused' | 'completed' | 'cancelled';
