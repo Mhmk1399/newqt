@@ -18,20 +18,18 @@ export interface ICustomer {
   verifiedAt?: Date;
 }
 
-
-
 // Contract Types
 export interface IContract {
   _id: mongoose.Types.ObjectId;
   customerId: mongoose.Types.ObjectId;
   contractNumber: string;
-  status: 'draft' | 'active' | 'completed' | 'terminated' | 'expired';
+  status: "draft" | "active" | "completed" | "terminated" | "expired";
   signedDate?: Date;
   expiryDate?: Date;
   totalValue: number;
   terms: string;
   verifier: mongoose.Types.ObjectId;
-  contractType: 'standard' | 'premium' | 'enterprise' | 'custom';
+  contractType: "standard" | "premium" | "enterprise" | "custom";
 }
 
 // Service Types
@@ -53,11 +51,11 @@ export interface IProject {
   customerId: mongoose.Types.ObjectId;
   contractId: mongoose.Types.ObjectId;
   projectManagerId: mongoose.Types.ObjectId;
-  status: 'planning' | 'active' | 'paused' | 'completed' | 'cancelled';
+  status: "planning" | "active" | "paused" | "completed" | "cancelled";
   startDate?: Date;
   expectedEndDate?: Date;
   actualEndDate?: Date;
-  paymentStatus: 'pending' | 'partial' | 'paid' | 'overdue';
+  paymentStatus: "pending" | "partial" | "paid" | "overdue";
   paidAmount: number;
   services: mongoose.Types.ObjectId[];
   totalPrice: number;
@@ -72,13 +70,14 @@ export interface IProject {
 // Service Request Types
 export interface IServiceRequest {
   title: string;
+  asiginedto: mongoose.Types.ObjectId;
   _id: mongoose.Types.ObjectId;
   projectId: mongoose.Types.ObjectId;
   serviceId: mongoose.Types.ObjectId;
   quantity: number;
   agreedPrice: number;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  status: 'pending' | 'approved' | 'in-progress' | 'completed' | 'cancelled';
+  priority: "low" | "medium" | "high" | "urgent";
+  status: "pending" | "approved" | "in-progress" | "completed" | "cancelled";
   requestedDate: Date;
   scheduledDate?: Date;
   requirements: string;
@@ -98,8 +97,8 @@ export interface ITask {
   assignedUserId?: mongoose.Types.ObjectId;
   title: string;
   description: string;
-  status: 'todo' | 'in-progress' | 'review' | 'completed' | 'cancelled';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: "todo" | "in-progress" | "review" | "completed" | "cancelled";
+  priority: "low" | "medium" | "high" | "urgent";
   startDate?: Date;
   dueDate?: Date;
   completedDate?: Date;
@@ -132,15 +131,39 @@ export interface IUser {
 }
 
 // Union Types for Status Fields
-export type CustomerVerificationStatus = 'pending' | 'verified' | 'rejected';
-export type VerificationRequestStatus = 'pending' | 'approved' | 'rejected' | 'in-review';
-export type ContractType = 'standard' | 'premium' | 'enterprise' | 'custom';
-export type BusinessScale = 'startup' | 'small' | 'medium' | 'large' | 'enterprise';
-export type ProjectStatus = 'planning' | 'active' | 'paused' | 'completed' | 'cancelled';
-export type PaymentStatus = 'pending' | 'partial' | 'paid' | 'overdue';
-export type Priority = 'low' | 'medium' | 'high' | 'urgent';
-export type ServiceRequestStatus = 'pending' | 'approved' | 'in-progress' | 'completed' | 'cancelled';
-export type TaskStatus = 'todo' | 'in-progress' | 'review' | 'completed' | 'cancelled';
+export type CustomerVerificationStatus = "pending" | "verified" | "rejected";
+export type VerificationRequestStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "in-review";
+export type ContractType = "standard" | "premium" | "enterprise" | "custom";
+export type BusinessScale =
+  | "startup"
+  | "small"
+  | "medium"
+  | "large"
+  | "enterprise";
+export type ProjectStatus =
+  | "planning"
+  | "active"
+  | "paused"
+  | "completed"
+  | "cancelled";
+export type PaymentStatus = "pending" | "partial" | "paid" | "overdue";
+export type Priority = "low" | "medium" | "high" | "urgent";
+export type ServiceRequestStatus =
+  | "pending"
+  | "approved"
+  | "in-progress"
+  | "completed"
+  | "cancelled";
+export type TaskStatus =
+  | "todo"
+  | "in-progress"
+  | "review"
+  | "completed"
+  | "cancelled";
 
 // Generic Types for API Responses
 export interface ApiResponse<T> {
@@ -160,29 +183,31 @@ export interface PaginatedResponse<T> {
 }
 
 // Create and Update Types (without _id and timestamps)
-export type CreateCustomer = Omit<ICustomer, '_id' | 'createdAt' | 'updatedAt'>;
+export type CreateCustomer = Omit<ICustomer, "_id" | "createdAt" | "updatedAt">;
 export type UpdateCustomer = Partial<CreateCustomer>;
 
-
-export type CreateContract = Omit<IContract, '_id' | 'createdAt' | 'updatedAt'>;
+export type CreateContract = Omit<IContract, "_id" | "createdAt" | "updatedAt">;
 export type UpdateContract = Partial<CreateContract>;
 
-export type CreateService = Omit<IService, '_id' | 'createdAt' | 'updatedAt'>;
+export type CreateService = Omit<IService, "_id" | "createdAt" | "updatedAt">;
 export type UpdateService = Partial<CreateService>;
 
-export type CreateProject = Omit<IProject, '_id' | 'createdAt' | 'updatedAt'>;
+export type CreateProject = Omit<IProject, "_id" | "createdAt" | "updatedAt">;
 export type UpdateProject = Partial<CreateProject>;
 
-export type CreateServiceRequest = Omit<IServiceRequest, '_id' | 'createdAt' | 'updatedAt'>;
+export type CreateServiceRequest = Omit<
+  IServiceRequest,
+  "_id" | "createdAt" | "updatedAt"
+>;
 export type UpdateServiceRequest = Partial<CreateServiceRequest>;
 
-export type CreateTask = Omit<ITask, '_id' | 'createdAt' | 'updatedAt'>;
+export type CreateTask = Omit<ITask, "_id" | "createdAt" | "updatedAt">;
 export type UpdateTask = Partial<CreateTask>;
 
-export type CreateTeam = Omit<ITeam, '_id' | 'createdAt' | 'updatedAt'>;
+export type CreateTeam = Omit<ITeam, "_id" | "createdAt" | "updatedAt">;
 export type UpdateTeam = Partial<CreateTeam>;
 
-export type CreateUser = Omit<IUser, '_id' | 'createdAt' | 'updatedAt'>;
+export type CreateUser = Omit<IUser, "_id" | "createdAt" | "updatedAt">;
 export type UpdateUser = Partial<CreateUser>;
 
 // Category Types
@@ -196,7 +221,7 @@ export interface ICategory {
   updatedAt: Date;
 }
 
-export type CreateCategory = Omit<ICategory, '_id' | 'createdAt' | 'updatedAt'>;
+export type CreateCategory = Omit<ICategory, "_id" | "createdAt" | "updatedAt">;
 export type UpdateCategory = Partial<CreateCategory>;
 
 // Video Types
@@ -211,5 +236,5 @@ export interface IVideo {
   updatedAt: Date;
 }
 
-export type CreateVideo = Omit<IVideo, '_id' | 'createdAt' | 'updatedAt'>;
+export type CreateVideo = Omit<IVideo, "_id" | "createdAt" | "updatedAt">;
 export type UpdateVideo = Partial<CreateVideo>;

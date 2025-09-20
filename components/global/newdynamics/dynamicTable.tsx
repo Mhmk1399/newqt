@@ -26,6 +26,7 @@ import { translateField } from "@/utilities/fieldTranslations";
 
 interface DynamicTablePropsExtended extends DynamicTableProps {
   onToggleApproval?: (id: string, currentStatus: string) => Promise<void>;
+  customActions?: (row: TableData) => React.ReactNode;
 }
 
 const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
@@ -47,6 +48,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
   onPageChange,
   filterFields = [],
   onFilterChange,
+  customActions,
 }) => {
   const [sortConfig, setSortConfig] = useState<null | {
     key: string;
@@ -265,31 +267,31 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
           <div className="relative">
             <input
               type="text"
-              value={String(value || "")}
+              value={value ? String(value) : ""}
               onChange={(e) => {
                 const inputValue = e.target.value;
                 updateFilter(field.key, inputValue === "" ? null : inputValue);
               }}
               placeholder={field.placeholder}
-              className="w-full p-3 pl-10 pr-4 border border-gray-300 rounded-lg text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
+              className="w-full p-4 pl-12 pr-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
             />
-            <BiSearch className="absolute top-1/2 left-3 transform -translate-y-1/2 text-gray-400 text-lg" />
+            <BiSearch className="absolute top-1/2 left-4 transform -translate-y-1/2 text-white/50 text-lg" />
           </div>
         );
 
       case "select":
         return (
           <select
-            value={String(value || "")}
+            value={value ? String(value) : ""}
             onChange={(e) => {
               const selectValue = e.target.value;
               updateFilter(field.key, selectValue === "" ? null : selectValue);
             }}
-            className="w-full p-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
+            className="w-full p-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
           >
-            <option value="">{field.placeholder || "انتخاب کنید"}</option>
+            <option value="" className="bg-gray-800 text-white">{field.placeholder || "انتخاب کنید"}</option>
             {field.options?.map((option) => (
-              <option key={option.value} value={option.value}>
+              <option key={option.value} value={option.value} className="bg-gray-800 text-white">
                 {option.label}
               </option>
             ))}
@@ -300,44 +302,53 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
         return (
           <input
             type="number"
-            value={String(value || "")}
-            onChange={(e) => updateFilter(field.key, Number(e.target.value))}
+            value={value ? String(value) : ""}
+            onChange={(e) => {
+              const numValue = e.target.value;
+              updateFilter(field.key, numValue === "" ? null : Number(numValue));
+            }}
             placeholder={field.placeholder}
             min={field.min || 0}
-            className="w-full p-3 border border-gray-300 rounded-lg text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
+            className="w-full p-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
           />
         );
 
       case "numberRange":
         const numRange = Array.isArray(value)
           ? (value as [number, number])
-          : ([0, 0] as [number, number]);
+          : ([null, null] as [number | null, number | null]);
         return (
           <div className="flex gap-2">
             <input
               type="number"
-              value={String(numRange[0] || "")}
-              onChange={(e) =>
-                updateFilter(field.key, [
-                  Number(e.target.value) || 0,
-                  Number(numRange[1]) || 0,
-                ])
-              }
+              value={numRange[0] ? String(numRange[0]) : ""}
+              onChange={(e) => {
+                const minValue = e.target.value === "" ? null : Number(e.target.value);
+                const maxValue = numRange[1];
+                if (minValue !== null || maxValue !== null) {
+                  updateFilter(field.key, [minValue || 0, maxValue || 0]);
+                } else {
+                  updateFilter(field.key, null);
+                }
+              }}
               placeholder="حداقل"
-              className="w-full p-3 border border-gray-300 rounded-lg text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
+              className="w-full p-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
             />
-            <span className="flex items-center text-gray-400">-</span>
+            <span className="flex items-center text-white/50">-</span>
             <input
               type="number"
-              value={String(numRange[1] || "")}
-              onChange={(e) =>
-                updateFilter(field.key, [
-                  Number(numRange[0]) || 0,
-                  Number(e.target.value) || 0,
-                ])
-              }
+              value={numRange[1] ? String(numRange[1]) : ""}
+              onChange={(e) => {
+                const maxValue = e.target.value === "" ? null : Number(e.target.value);
+                const minValue = numRange[0];
+                if (minValue !== null || maxValue !== null) {
+                  updateFilter(field.key, [minValue || 0, maxValue || 0]);
+                } else {
+                  updateFilter(field.key, null);
+                }
+              }}
               placeholder="حداکثر"
-              className="w-full p-3 border border-gray-300 rounded-lg text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
+              className="w-full p-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
             />
           </div>
         );
@@ -346,9 +357,12 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
         return (
           <input
             type="date"
-            value={String(value || "")}
-            onChange={(e) => updateFilter(field.key, e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
+            value={value ? String(value) : ""}
+            onChange={(e) => {
+              const dateValue = e.target.value;
+              updateFilter(field.key, dateValue === "" ? null : dateValue);
+            }}
+            className="w-full p-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
           />
         );
 
@@ -455,14 +469,17 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
   return (
     <div className="w-full">
       <motion.div
-        className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6"
+        className="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 p-8 mb-8"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
+        style={{
+          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
+        }}
       >
-        <div className="flex items-center gap-2 mb-4">
-          <BiFilterAlt className="text-blue-600 text-xl" />
-          <h3 className="text-lg font-semibold text-gray-800">فیلترها</h3>
+        <div className="flex items-center gap-3 mb-6">
+          <BiFilterAlt className="text-purple-400 text-2xl" />
+          <h3 className="text-xl font-bold text-white/90">فیلترها</h3>
         </div>
         <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-end">
           {filterFields &&
@@ -472,7 +489,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                 className="relative flex-1 min-w-0"
                 transition={{ duration: 0.2 }}
               >
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-white/90 mb-3">
                   {field.label}
                 </label>
                 {renderFilterField(field)}
@@ -495,7 +512,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                   whileTap={{ scale: 0.95 }}
                   transition={{ duration: 0.2 }}
                   onClick={clearAllFilters}
-                  className="px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium text-sm flex items-center gap-2"
+                  className="px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white/90 rounded-xl hover:bg-white/20 transition-all duration-300 font-medium text-sm flex items-center gap-2"
                 >
                   <IoClose className="text-lg" />
                   <span className="hidden sm:inline">پاک کردن</span>
@@ -504,7 +521,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
             </AnimatePresence>
 
             <motion.div
-              className="flex items-center px-3 py-3.5 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium"
+              className="flex items-center px-4 py-5 bg-purple-500/20 text-purple-200 rounded-xl text-sm font-medium border border-purple-400/30"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3, delay: 0.2 }}
@@ -518,14 +535,14 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
         </div>
       </motion.div>
 
-      <div className="overflow-x-auto shadow rounded-lg md:overflow-x-scroll">
-        <table className="min-w-full bg-white">
-          <thead className="bg-gray-100">
+      <div className="overflow-x-auto shadow-2xl rounded-2xl md:overflow-x-scroll bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20">
+        <table className="min-w-full">
+          <thead className="bg-gradient-to-r from-purple-500/20 to-violet-500/20 backdrop-blur-sm">
             <tr>
               {columns.map((col, idx) => (
                 <th
                   key={idx}
-                  className="px-6 py-3 text-left text-sm font-medium text-gray-600"
+                  className="px-6 py-4 text-left text-sm font-semibold text-white/90"
                 >
                   <div
                     className={`flex items-center gap-1 ${
@@ -541,7 +558,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                 </th>
               ))}
               {showActions && (
-                <th className="px-6 py-3 text-right text-sm font-medium text-gray-600">
+                <th className="px-6 py-4 text-right text-sm font-semibold text-white/90">
                   عملیات
                 </th>
               )}
@@ -552,7 +569,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
               <tr>
                 <td
                   colSpan={columns.length + (showActions ? 1 : 0)}
-                  className="text-center text-gray-700 py-6"
+                  className="text-center text-white/70 py-8"
                 >
                   در حال بارگذاری...
                 </td>
@@ -571,12 +588,12 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                 <tr
                   key={idx}
                   data-row-id={row._id}
-                  className={`border-b hover:bg-gray-50 cursor-pointer`}
+                  className="border-b border-white/10 hover:bg-white/5 cursor-pointer transition-all duration-200"
                 >
                   {columns.map((col, index) => (
                     <td
                       key={index}
-                      className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap"
+                      className="px-6 py-4 text-sm text-white/90 whitespace-nowrap"
                     >
                       {col.render
                         ? col.render(
@@ -640,6 +657,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                             )}
                           </>
                         )}
+                        {customActions && customActions(row)}
                       </div>
                     </td>
                   )}
@@ -652,72 +670,72 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
 
       {pagination && (
         <motion.div
-          className="flex flex-col sm:flex-row items-center justify-between mt-6 px-3 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-white to-gray-50 border border-gray-200 rounded-xl shadow-sm gap-3 sm:gap-0"
+          className="flex flex-col sm:flex-row items-center justify-between mt-8 px-6 py-4 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl gap-4 sm:gap-0"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <div className="flex items-center text-xs sm:text-sm font-medium text-gray-600">
-            <span className="bg-gray-100 px-2 sm:px-3 py-1 rounded-full text-center">
+          <div className="flex items-center text-xs sm:text-sm font-medium text-white/80">
+            <span className="bg-white/10 backdrop-blur-sm px-3 sm:px-4 py-2 rounded-full text-center border border-white/20">
               <span className="hidden sm:inline">
                 نمایش{" "}
                 <span className="font-bold text-blue-600">
-                  {(pagination.currentPage - 1) * pagination.itemsPerPage + 1}
+                  {((pagination?.currentPage || 1) - 1) * (pagination?.itemsPerPage || 10) + 1}
                 </span>{" "}
                 تا{" "}
                 <span className="font-bold text-blue-600">
                   {Math.min(
-                    pagination.currentPage * pagination.itemsPerPage,
-                    pagination.totalItems
+                    (pagination?.currentPage || 1) * (pagination?.itemsPerPage || 10),
+                    pagination?.totalItems || 0
                   )}
                 </span>{" "}
                 از{" "}
                 <span className="font-bold text-green-600">
-                  {pagination.totalItems}
+                  {pagination?.totalItems || 0}
                 </span>{" "}
                 نتیجه
               </span>
               <span className="sm:hidden">
                 <span className="font-bold text-blue-600">
-                  {(pagination.currentPage - 1) * pagination.itemsPerPage + 1}-
+                  {((pagination?.currentPage || 1) - 1) * (pagination?.itemsPerPage || 10) + 1}-
                   {Math.min(
-                    pagination.currentPage * pagination.itemsPerPage,
-                    pagination.totalItems
+                    (pagination?.currentPage || 1) * (pagination?.itemsPerPage || 10),
+                    pagination?.totalItems || 0
                   )}
                 </span>{" "}
                 از{" "}
                 <span className="font-bold text-green-600">
-                  {pagination.totalItems}
+                  {pagination?.totalItems || 0}
                 </span>
               </span>
             </span>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <motion.button
-              onClick={() => onPageChange?.(pagination.currentPage - 1)}
-              disabled={!pagination.hasPrevPage}
-              whileHover={pagination.hasPrevPage ? { scale: 1.05 } : {}}
-              whileTap={pagination.hasPrevPage ? { scale: 0.95 } : {}}
-              className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 ${
-                pagination.hasPrevPage
-                  ? "bg-blue-500 text-white hover:bg-blue-600 shadow-md hover:shadow-lg"
-                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+              onClick={() => onPageChange?.((pagination?.currentPage || 1) - 1)}
+              disabled={!pagination?.hasPrevPage}
+              whileHover={pagination?.hasPrevPage ? { scale: 1.05 } : {}}
+              whileTap={pagination?.hasPrevPage ? { scale: 0.95 } : {}}
+              className={`px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium rounded-xl transition-all duration-300 ${
+                pagination?.hasPrevPage
+                  ? "bg-gradient-to-r from-purple-500 to-violet-500 text-white hover:from-purple-600 hover:to-violet-600 shadow-lg hover:shadow-purple-500/25"
+                  : "bg-white/10 text-white/40 cursor-not-allowed border border-white/20"
               }`}
             >
               قبلی
             </motion.button>
-            <div className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-bold bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-md">
-              {pagination.currentPage} / {pagination.totalPages}
+            <div className="px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-bold bg-gradient-to-r from-purple-600 to-violet-600 text-white rounded-xl shadow-lg border border-purple-400/30">
+              {pagination?.currentPage || 1} / {pagination?.totalPages || 1}
             </div>
             <motion.button
-              onClick={() => onPageChange?.(pagination.currentPage + 1)}
-              disabled={!pagination.hasNextPage}
-              whileHover={pagination.hasNextPage ? { scale: 1.05 } : {}}
-              whileTap={pagination.hasNextPage ? { scale: 0.95 } : {}}
-              className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 ${
-                pagination.hasNextPage
-                  ? "bg-blue-500 text-white hover:bg-blue-600 shadow-md hover:shadow-lg"
-                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+              onClick={() => onPageChange?.((pagination?.currentPage || 1) + 1)}
+              disabled={!pagination?.hasNextPage}
+              whileHover={pagination?.hasNextPage ? { scale: 1.05 } : {}}
+              whileTap={pagination?.hasNextPage ? { scale: 0.95 } : {}}
+              className={`px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium rounded-xl transition-all duration-300 ${
+                pagination?.hasNextPage
+                  ? "bg-gradient-to-r from-purple-500 to-violet-500 text-white hover:from-purple-600 hover:to-violet-600 shadow-lg hover:shadow-purple-500/25"
+                  : "bg-white/10 text-white/40 cursor-not-allowed border border-white/20"
               }`}
             >
               بعدی
@@ -729,32 +747,46 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
       <AnimatePresence>
         {isModalOpen && selectedRow && (
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gradient-to-br from-[#030014] via-[#0A0A2E] to-[#030014]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={closeModal}
           >
+            {/* Luxury Background Elements */}
+            <div className="absolute inset-0 z-0">
+              <div className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-r from-purple-500/20 to-violet-500/20 rounded-full filter blur-3xl"></div>
+              <div className="absolute bottom-32 right-32 w-80 h-80 bg-gradient-to-r from-pink-500/20 to-rose-500/20 rounded-full filter blur-3xl"></div>
+            </div>
+            
             <motion.div
-              className="bg-white rounded-lg shadow-xl w-11/12 md:max-w-xl p-6"
+              className="relative z-10 bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 w-11/12 md:max-w-2xl p-8"
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
               transition={{ duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
+              style={{
+                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
+              }}
             >
-              <div className="flex justify-between items-center border-b pb-3 mb-4">
-                <h3 className="text-xl font-semibold text-gray-800">
-                  جزئیات رکورد
-                </h3>
-                <button onClick={closeModal}>
-                  <IoClose
-                    size={24}
-                    className="text-gray-600 hover:text-gray-800"
-                  />
-                </button>
-              </div>
-              <div className="space-y-3 max-h-80 overflow-y-auto px-4">
+              {/* Decorative corner elements */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-purple-500/20 to-transparent rounded-tr-3xl"></div>
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-pink-500/20 to-transparent rounded-bl-3xl"></div>
+              
+              <div className="relative z-10">
+                <div className="flex justify-between items-center border-b border-white/20 pb-4 mb-6">
+                  <h3 className="text-2xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text">
+                    جزئیات رکورد
+                  </h3>
+                  <button onClick={closeModal}>
+                    <IoClose
+                      size={24}
+                      className="text-white/70 hover:text-white transition-colors"
+                    />
+                  </button>
+                </div>
+                <div className="space-y-4 max-h-96 overflow-y-auto px-2">
                 {Object.entries(selectedRow).map(([key, val]) => {
                   if (
                     [
@@ -847,17 +879,18 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                   return (
                     <div
                       key={key}
-                      className="flex justify-between border-b pb-2"
+                      className="flex justify-between border-b border-white/10 pb-3 mb-3"
                     >
-                      <span className="font-medium text-gray-700">
+                      <span className="font-medium text-white/90">
                         {translateField(key)}
                       </span>
-                      <span className="text-gray-900 break-all">
+                      <span className="text-white/80 break-all">
                         {getDisplayValue()}
                       </span>
                     </div>
                   );
                 })}
+                </div>
               </div>
             </motion.div>
           </motion.div>
@@ -870,21 +903,35 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
           formFields.length > 0 &&
           endpoint && (
             <motion.div
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm overflow-y-auto"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto bg-gradient-to-br from-[#030014] via-[#0A0A2E] to-[#030014]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={closeEditModal}
             >
+              {/* Luxury Background Elements */}
+              <div className="absolute inset-0 z-0">
+                <div className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-r from-purple-500/20 to-violet-500/20 rounded-full filter blur-3xl"></div>
+                <div className="absolute bottom-32 right-32 w-80 h-80 bg-gradient-to-r from-pink-500/20 to-rose-500/20 rounded-full filter blur-3xl"></div>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-500/15 to-cyan-500/15 rounded-full filter blur-3xl"></div>
+              </div>
+              
               <motion.div
-                className="rounded-lg w-full max-w-6xl"
+                className="relative z-10 bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl w-full max-w-4xl shadow-2xl border border-white/20"
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
                 transition={{ duration: 0.2 }}
                 onClick={(e) => e.stopPropagation()}
+                style={{
+                  boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
+                }}
               >
-                <div className="p-6 overflow-auto rounded-lg ">
+                {/* Decorative corner elements */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-purple-500/20 to-transparent rounded-tr-3xl"></div>
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-pink-500/20 to-transparent rounded-bl-3xl"></div>
+                
+                <div className="p-8 overflow-auto max-h-[90vh] relative z-10">
                   {isEditModalOpen && selectedRow && (
                     <DynamicUpdateForm
                       title={formTitle}

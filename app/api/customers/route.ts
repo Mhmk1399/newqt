@@ -189,6 +189,54 @@ export async function PUT(request: NextRequest) {
   }
 }
 
+// PATCH - Partial update (for toggle operations)
+export async function PATCH(request: NextRequest) {
+  try {
+    await connect();
+    const body = await request.json();
+    const { id, ...updateData } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, message: "ID is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid ID format" },
+        { status: 400 }
+      );
+    }
+
+    const updatedCustomer = await Customer.findByIdAndUpdate(
+      id,
+      { ...updateData, updatedAt: new Date() },
+      { new: true, runValidators: true, select: '-password' }
+    );
+
+    if (!updatedCustomer) {
+      return NextResponse.json(
+        { success: false, message: "Customer not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Customer updated successfully",
+      data: updatedCustomer
+    });
+  } catch (error) {
+    console.error("PATCH Error:", error);
+    return NextResponse.json(
+      { success: false, message: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
 // DELETE - Delete customer
 export async function DELETE(request: NextRequest) {
   try {

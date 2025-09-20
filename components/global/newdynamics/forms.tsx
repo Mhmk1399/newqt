@@ -31,31 +31,35 @@ export function useDynamicForm(
 
   // Initialize default values from the provided field definitions.
   useEffect(() => {
-    const defaultValues: FormValues = {};
-    fields.forEach((field) => {
-      if (field.defaultValue !== undefined) {
-        defaultValues[field.name] = field.defaultValue;
-      } else {
-        switch (field.type) {
-          case "checkbox":
-            defaultValues[field.name] = false;
-            break;
-          case "multiselect":
-            defaultValues[field.name] = [];
-            break;
-          case "file":
-            defaultValues[field.name] = null;
-            break;
-          case "switch":
-            defaultValues[field.name] = false;
-            break;
-          default:
-            defaultValues[field.name] = "";
+    if (initialValues && Object.keys(initialValues).length > 0) {
+      // If initial values are provided, use them
+      setFormValues(initialValues);
+    } else {
+      // Otherwise, use default values from field definitions
+      const defaultValues: FormValues = {};
+      fields.forEach((field) => {
+        if (field.defaultValue !== undefined) {
+          defaultValues[field.name] = field.defaultValue;
+        } else {
+          switch (field.type) {
+            case "checkbox":
+            case "switch":
+              defaultValues[field.name] = false;
+              break;
+            case "multiselect":
+              defaultValues[field.name] = [];
+              break;
+            case "file":
+              defaultValues[field.name] = null;
+              break;
+            default:
+              defaultValues[field.name] = "";
+          }
         }
-      }
-    });
-    setFormValues(defaultValues);
-  }, [fields]);
+      });
+      setFormValues(defaultValues);
+    }
+  }, [fields, initialValues]);
 
   // Checks whether the given field should be visible based on its dependency rules.
   const shouldShowField = (field: FormField): boolean => {
@@ -92,8 +96,8 @@ export function useDynamicForm(
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
-    // field: FormField
+    >,
+    field?: FormField
   ) => {
     const { name, type } = e.target;
     let value;
@@ -103,6 +107,10 @@ export function useDynamicForm(
       value = (e.target as HTMLInputElement).checked;
     } else if (type === "file") {
       value = (e.target as HTMLInputElement).files;
+    } else if (field?.type === "multiselect") {
+      // Handle multiselect
+      const selectElement = e.target as HTMLSelectElement;
+      value = Array.from(selectElement.selectedOptions).map(option => option.value);
     } else {
       value = e.target.value;
     }

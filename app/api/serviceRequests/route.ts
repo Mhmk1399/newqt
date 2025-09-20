@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import Category from "@/models/category";
+import ServiceRequest from "@/models/customersData/serviceRequests";
+import Service from "@/models/customersData/services";
+import Customer from "@/models/customersData/customers";
+import User from "@/models/users";
 import connect from "@/lib/data";
 import mongoose from "mongoose";
 
-// GET - Retrieve categories with filters and pagination
+// GET - Retrieve service requests with filters and pagination
 export async function GET(request: NextRequest) {
   try {
     await connect();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
-    const isActive = searchParams.get("isActive");
+    const status = searchParams.get("status");
+    const priority = searchParams.get("priority");
     const search = searchParams.get("search");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
@@ -22,41 +26,86 @@ export async function GET(request: NextRequest) {
         );
       }
       
-      const category = await Category.findById(id);
-      if (!category) {
+      const serviceRequest = await ServiceRequest.findById(id)
+        .populate({
+          path: "serviceId",
+          select: "name basePrice",
+          model: Service,
+        })
+        .populate({
+          path: "requestedBy",
+          select: "name phoneNumber",
+          model: Customer,
+        })
+        .populate({
+          path: "approvedBy",
+          select: "name email",
+          model: User,
+        })
+        .populate({
+          path: "asiginedto",
+          select: "name email",
+          model: User,
+        });
+        
+      if (!serviceRequest) {
         return NextResponse.json(
-          { success: false, message: "Category not found" },
+          { success: false, message: "Service request not found" },
           { status: 404 }
         );
       }
       
-      return NextResponse.json({ success: true, data: category });
+      return NextResponse.json({ success: true, data: serviceRequest });
     }
 
     // Build query filters
     const query: any = {};
-    if (isActive !== null && isActive !== undefined) {
-      query.isActive = isActive === 'true';
+    if (status) {
+      query.status = status;
+    }
+    if (priority) {
+      query.priority = priority;
     }
     if (search) {
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
+        { title: { $regex: search, $options: 'i' } },
+        { requirements: { $regex: search, $options: 'i' } },
+        { notes: { $regex: search, $options: 'i' } }
       ];
     }
 
     const skip = (page - 1) * limit;
-    const categories = await Category
+    const serviceRequests = await ServiceRequest
       .find(query)
+      .populate({
+        path: "serviceId",
+        select: "name basePrice",
+        model: Service,
+      })
+      .populate({
+        path: "requestedBy",
+        select: "name phoneNumber",
+        model: Customer,
+      })
+      .populate({
+        path: "approvedBy",
+        select: "name email",
+        model: User,
+      })
+      .populate({
+        path: "asiginedto",
+        select: "name email",
+        model: User,
+      })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
     
-    const total = await Category.countDocuments(query);
+    const total = await ServiceRequest.countDocuments(query);
     
     return NextResponse.json({
       success: true,
-      data: categories,
+      data: serviceRequests,
       pagination: {
         page,
         limit,
@@ -73,26 +122,26 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Create new category
+// POST - Create new service request
 export async function POST(request: NextRequest) {
   try {
     await connect();
     const body = await request.json();
-    const { name, description, icon } = body;
+    const { title, serviceId, requestedDate, requirements } = body;
 
     // Validation
-    if (!name) {
+    if (!title || !serviceId || !requestedDate || !requirements) {
       return NextResponse.json(
-        { success: false, message: "Name is required" },
+        { success: false, message: "Title, service ID, requested date, and requirements are required" },
         { status: 400 }
       );
     }
     
-    const category = new Category(body);
-    await category.save();
+    const serviceRequest = new ServiceRequest(body);
+    await serviceRequest.save();
 
     return NextResponse.json(
-      { success: true, message: "Category created successfully", data: category },
+      { success: true, message: "Service request created successfully", data: serviceRequest },
       { status: 201 }
     );
   } catch (error) {
@@ -103,12 +152,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    if ((error as any)?.code === 11000) {
-      return NextResponse.json(
-        { success: false, message: "Category name already exists" },
-        { status: 400 }
-      );
-    }
     return NextResponse.json(
       { success: false, message: "Internal server error" },
       { status: 500 }
@@ -116,7 +159,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PUT - Update category
+// PUT - Update service request
 export async function PUT(request: NextRequest) {
   try {
     await connect();
@@ -137,23 +180,23 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const updatedCategory = await Category.findByIdAndUpdate(
+    const updatedServiceRequest = await ServiceRequest.findByIdAndUpdate(
       id,
       { ...updateData, updatedAt: new Date() },
       { new: true, runValidators: true }
     );
 
-    if (!updatedCategory) {
+    if (!updatedServiceRequest) {
       return NextResponse.json(
-        { success: false, message: "Category not found" },
+        { success: false, message: "Service request not found" },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: "Category updated successfully",
-      data: updatedCategory
+      message: "Service request updated successfully",
+      data: updatedServiceRequest
     });
   } catch (error) {
     console.error("PUT Error:", error);
@@ -170,7 +213,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// PATCH - Partial update (for toggle operations)
+// PATCH - Partial update (for toggle operations and assignments)
 export async function PATCH(request: NextRequest) {
   try {
     await connect();
@@ -191,23 +234,23 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const updatedCategory = await Category.findByIdAndUpdate(
+    const updatedServiceRequest = await ServiceRequest.findByIdAndUpdate(
       id,
       { ...updateData, updatedAt: new Date() },
       { new: true, runValidators: true }
     );
 
-    if (!updatedCategory) {
+    if (!updatedServiceRequest) {
       return NextResponse.json(
-        { success: false, message: "Category not found" },
+        { success: false, message: "Service request not found" },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: "Category updated successfully",
-      data: updatedCategory
+      message: "Service request updated successfully",
+      data: updatedServiceRequest
     });
   } catch (error) {
     console.error("PATCH Error:", error);
@@ -218,7 +261,7 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
-// DELETE - Delete category
+// DELETE - Delete service request
 export async function DELETE(request: NextRequest) {
   try {
     await connect();
@@ -239,19 +282,19 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const deletedCategory = await Category.findByIdAndDelete(id);
+    const deletedServiceRequest = await ServiceRequest.findByIdAndDelete(id);
 
-    if (!deletedCategory) {
+    if (!deletedServiceRequest) {
       return NextResponse.json(
-        { success: false, message: "Category not found" },
+        { success: false, message: "Service request not found" },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: "Category deleted successfully",
-      data: deletedCategory
+      message: "Service request deleted successfully",
+      data: deletedServiceRequest
     });
   } catch (error) {
     console.error("DELETE Error:", error);

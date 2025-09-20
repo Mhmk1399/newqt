@@ -1,9 +1,8 @@
-import FormsSidebar from "@/components/sideBars/FormsSidebar";
-
+import ServiceRequestsManagement from "@/components/admin/ServiceRequestsManagement";
 const Page = () => {
   return (
     <div dir="rtl">
-      <FormsSidebar />
+      <ServiceRequestsManagement />
     </div>
   );
 };

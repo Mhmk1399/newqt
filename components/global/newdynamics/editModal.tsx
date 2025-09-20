@@ -61,7 +61,7 @@ const DynamicUpdateForm: React.FC<DynamicUpdateFormProps> = ({
     // Add the ID to the data object for the update operation
     const dataWithId: FormValues = {
       ...data,
-      _id: itemId,
+      id: itemId,
     };
 
     if (encType === "application/json") {
@@ -93,7 +93,7 @@ const DynamicUpdateForm: React.FC<DynamicUpdateFormProps> = ({
     }
 
     const response = await fetch(endpoint, {
-      method: "PATCH",
+      method: "PUT",
       headers: {
         ...headers,
         "x-item-id": itemId,
@@ -146,20 +146,20 @@ const DynamicUpdateForm: React.FC<DynamicUpdateFormProps> = ({
   return (
     <form
       onSubmit={onFormSubmit}
-      className={`max-w-5xl mx-auto max-h-[500px] overflow-auto bg-white shadow-md rounded-lg p-8 space-y-6 ${className}`}
+      className={`max-w-5xl mx-auto max-h-[500px] overflow-auto bg-transparent p-8 space-y-6 ${className}`}
       dir="rtl"
     >
       {title && (
-        <h2 className="text-2xl font-semibold text-gray-800">{title}</h2>
+        <h2 className="text-3xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-center mb-2">{title}</h2>
       )}
-      {subtitle && <p className="text-sm text-gray-600">{subtitle}</p>}
+      {subtitle && <p className="text-white/70 text-center mb-8">{subtitle}</p>}
 
       {fields.map((field) => {
         const fieldError = errors[field.name];
         return (
-          <div key={field.name} className="space-y-1 grid grid-cols-1">
+          <div key={field.name} className="space-y-3 grid grid-cols-1">
             {field.type !== "checkbox" && (
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-white/90 mb-2">
                 {field.label}
               </label>
             )}
@@ -178,22 +178,34 @@ const DynamicUpdateForm: React.FC<DynamicUpdateFormProps> = ({
                       }
                       onChange={(e) => handleChange(e, field)}
                       rows={field.rows || 3}
-                      className="w-full px-3 py-2 border border-gray-300 placeholder:text-black rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
                       disabled={field.disabled}
-                      // readOnly={field.readOnly}
                       autoComplete={field.autoComplete}
                     />
                   );
                 case "select":
+                  const selectValue = formValues[field.name];
+                  const displayValue = typeof selectValue === 'boolean' ? String(selectValue) : String(selectValue || "");
                   return (
                     <select
                       name={field.name}
-                      value={String(formValues[field.name] || "")}
-                      onChange={(e) => handleChange(e, field)}
-                      className="w-full px-3 py-2 border text-black border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      value={displayValue}
+                      onChange={(e) => {
+                        // Handle boolean conversion for boolean fields
+                        const value = e.target.value;
+                        let convertedValue = value;
+                        if (value === 'true') convertedValue = true;
+                        else if (value === 'false') convertedValue = false;
+                        
+                        const syntheticEvent = {
+                          target: { name: field.name, value: convertedValue }
+                        } as React.ChangeEvent<HTMLSelectElement>;
+                        handleChange(syntheticEvent, field);
+                      }}
+                      className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
                       disabled={field.disabled}
                     >
-                      <option value="">
+                      <option value="" className="bg-gray-800 text-white">
                         {field.placeholder || "انتخاب کنید"}
                       </option>
                       {field.options?.map((option, i) => (
@@ -201,6 +213,7 @@ const DynamicUpdateForm: React.FC<DynamicUpdateFormProps> = ({
                           key={i}
                           value={option.value}
                           disabled={option.disabled}
+                          className="bg-gray-800 text-white"
                         >
                           {option.label}
                         </option>
@@ -218,7 +231,7 @@ const DynamicUpdateForm: React.FC<DynamicUpdateFormProps> = ({
                           : []
                       }
                       onChange={(e) => handleChange(e, field)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
                       disabled={field.disabled}
                     >
                       {field.options?.map((option, i) => (
@@ -226,6 +239,7 @@ const DynamicUpdateForm: React.FC<DynamicUpdateFormProps> = ({
                           key={i}
                           value={option.value}
                           disabled={option.disabled}
+                          className="bg-gray-800 text-white"
                         >
                           {option.label}
                         </option>
@@ -233,6 +247,7 @@ const DynamicUpdateForm: React.FC<DynamicUpdateFormProps> = ({
                     </select>
                   );
                 case "checkbox":
+                case "switch":
                   return (
                     <div className="flex items-center">
                       <input
@@ -241,10 +256,9 @@ const DynamicUpdateForm: React.FC<DynamicUpdateFormProps> = ({
                         checked={!!formValues[field.name]}
                         onChange={(e) => handleChange(e, field)}
                         disabled={field.disabled}
-                        // readOnly={field.readOnly}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        className="h-4 w-4 text-purple-400 border-white/30 rounded focus:ring-purple-400/50 bg-white/10"
                       />
-                      <span className="mr-2 text-gray-700">{field.label}</span>
+                      <span className="mr-2 text-white/90">{field.label}</span>
                     </div>
                   );
                 case "radio":
@@ -259,9 +273,9 @@ const DynamicUpdateForm: React.FC<DynamicUpdateFormProps> = ({
                             checked={formValues[field.name] === option.value}
                             onChange={(e) => handleChange(e, field)}
                             disabled={field.disabled || option.disabled}
-                            className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                            className="h-4 w-4 text-purple-400 border-white/30 focus:ring-purple-400/50 bg-white/10"
                           />
-                          <span className="text-gray-700">{option.label}</span>
+                          <span className="text-white/90">{option.label}</span>
                         </label>
                       ))}
                     </div>
@@ -272,7 +286,7 @@ const DynamicUpdateForm: React.FC<DynamicUpdateFormProps> = ({
                       type="file"
                       name={field.name}
                       onChange={(e) => handleChange(e, field)}
-                      className="w-full text-gray-700 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="w-full text-white/90 p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
                       accept={field.accept}
                       multiple={field.multiple}
                       disabled={field.disabled}
@@ -303,7 +317,7 @@ const DynamicUpdateForm: React.FC<DynamicUpdateFormProps> = ({
                             field
                           );
                         }}
-                        className="w-full px-3 py-2 border text-right placeholder:text-black/40 text-black border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white text-right placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
                         disabled={field.disabled}
                         readOnly={field.readOnly}
                         autoComplete={field.autoComplete}
@@ -319,7 +333,7 @@ const DynamicUpdateForm: React.FC<DynamicUpdateFormProps> = ({
                       placeholder={field.placeholder}
                       value={String(formValues[field.name] || "")}
                       onChange={(e) => handleChange(e, field)}
-                      className="w-full px-3 py-2 border placeholder:text-black/40 text-black border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
                       disabled={field.disabled}
                       readOnly={field.readOnly}
                       autoComplete={field.autoComplete}
@@ -328,16 +342,16 @@ const DynamicUpdateForm: React.FC<DynamicUpdateFormProps> = ({
               }
             })()}
             {fieldError && (
-              <p className="text-xs text-red-600 mt-1">{fieldError}</p>
+              <p className="text-xs text-red-400 mt-1 bg-red-500/10 px-2 py-1 rounded">{fieldError}</p>
             )}
           </div>
         );
       })}
 
-      <div className="flex justify-start space-x-4">
+      <div className="flex justify-start space-x-4 pt-6">
         <button
           type="submit"
-          className="px-6 py-2 bg-blue-600 cursor-pointer text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+          className="px-8 py-3 bg-gradient-to-r from-purple-600 to-violet-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-violet-700 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-purple-500/25"
           disabled={isSubmitting}
         >
           {isSubmitting && (
@@ -352,7 +366,7 @@ const DynamicUpdateForm: React.FC<DynamicUpdateFormProps> = ({
             resetForm();
             onCancel?.();
           }}
-          className="px-6 py-2 text-rose-500 cursor-pointer hover:text-rose-600 rounded-md hover:bg-gray-50 transition-colors"
+          className="px-8 py-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white/90 rounded-xl font-medium hover:bg-white/20 transition-all duration-300"
         >
           {cancelButtonText}
         </button>
