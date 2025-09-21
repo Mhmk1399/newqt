@@ -3,6 +3,7 @@ import ServiceRequest from "@/models/customersData/serviceRequests";
 import Service from "@/models/customersData/services";
 import Customer from "@/models/customersData/customers";
 import User from "@/models/users";
+import Task from "@/models/tasks";
 import connect from "@/lib/data";
 import mongoose from "mongoose";
 
@@ -234,17 +235,46 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const updatedServiceRequest = await ServiceRequest.findByIdAndUpdate(
-      id,
-      { ...updateData, updatedAt: new Date() },
-      { new: true, runValidators: true }
-    );
-
-    if (!updatedServiceRequest) {
+    // Get the current service request to check for assignment changes
+    const currentServiceRequest = await ServiceRequest.findById(id);
+    if (!currentServiceRequest) {
       return NextResponse.json(
         { success: false, message: "Service request not found" },
         { status: 404 }
       );
+    }
+
+    const updatedServiceRequest = await ServiceRequest.findByIdAndUpdate(
+      id,
+      { ...updateData, updatedAt: new Date() },
+      { new: true, runValidators: true }
+    ).populate({
+      path: "serviceId",
+      select: "name",
+      model: Service,
+    });
+
+    // Create tasks for newly assigned users
+    if (updateData.asiginedto && Array.isArray(updateData.asiginedto)) {
+      const currentAssigned = currentServiceRequest.asiginedto?.map(id => id.toString()) || [];
+      const newAssigned = updateData.asiginedto.filter((userId: string) => 
+        !currentAssigned.includes(userId)
+      );
+
+      // Create tasks for new assignments
+      for (const userId of newAssigned) {
+        await Task.create({
+          serviceRequestId: id,
+          assignedUserId: userId,
+          title: ` ${updatedServiceRequest?.title || 'Service Request'}`,
+          description: ` ${updatedServiceRequest?.title}`,
+          status: 'todo',
+          priority: updatedServiceRequest?.priority || 'medium',
+          dueDate: updatedServiceRequest?.scheduledDate,
+          notes: '',
+          deliverables: ''
+        });
+      }
     }
 
     return NextResponse.json({

@@ -5,6 +5,9 @@ import DynamicTable from "@/components/global/newdynamics/dynamicTable";
 import { TableColumn, TableData, FormField, FilterField } from "@/types/dynamicTypes/types";
 import toast from "react-hot-toast";
 import { IoPersonAdd } from "react-icons/io5";
+import DatePicker, { DateObject } from "react-multi-date-picker";
+import persian from "react-date-object/calendars/persian";
+import persian_fa from "react-date-object/locales/persian_fa";
 
 const ServiceRequestsManagement: React.FC = () => {
   const [serviceRequests, setServiceRequests] = useState<TableData[]>([]);
@@ -113,14 +116,25 @@ const ServiceRequestsManagement: React.FC = () => {
       header: "تاریخ برنامهریزی",
       sortable: true,
       render: (value, row) => {
-        const dateValue = value ? new Date(value as string).toISOString().split('T')[0] : '';
         return (
-          <input
-            type="date"
-            value={dateValue}
-            onChange={(e) => handleScheduledDateUpdate(row._id as string, e.target.value)}
-            className="bg-transparent border border-white/20 rounded px-2 py-1 text-xs text-white/90 focus:outline-none focus:ring-1 focus:ring-purple-400/50"
-          />
+          <div className="relative">
+            <DatePicker
+              value={value ? new DateObject(new Date(value as string)) : null}
+              onChange={(val) => {
+                const dateValue = val ? val.toDate().toISOString().split('T')[0] : '';
+                handleScheduledDateUpdate(row?._id as string, dateValue);
+              }}
+              calendar={persian}
+              locale={persian_fa}
+              format="YYYY/MM/DD"
+              placeholder="انتخاب تاریخ"
+              inputClass="bg-transparent border border-white/20 rounded px-2 py-1 text-xs text-white/90 placeholder:text-white/50 focus:outline-none focus:ring-1 focus:ring-purple-400/50 w-24"
+              calendarPosition="bottom-center"
+              containerClassName="w-fit "
+              portalTarget={document.body}
+              className="z-[9999]"
+            />
+          </div>
         );
       },
     },
