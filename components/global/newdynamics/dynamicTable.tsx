@@ -23,6 +23,7 @@ import {
   FilterValues,
 } from "@/types/dynamicTypes/types";
 import { translateField } from "@/utilities/fieldTranslations";
+import { useDynamicData } from "@/hooks/useDynamicData";
 
 interface DynamicTablePropsExtended extends DynamicTableProps {
   onToggleApproval?: (id: string, currentStatus: string) => Promise<void>;
@@ -31,8 +32,8 @@ interface DynamicTablePropsExtended extends DynamicTableProps {
 
 const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
   columns,
-  data,
-  loading = false,
+  data: propData,
+  loading: propLoading = false,
   initialSort = null,
   onSort,
   formFields = [],
@@ -44,7 +45,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
   showActions = true,
   onDelete,
   onToggleApproval, // New prop for approval toggle
-  pagination,
+  pagination: propPagination,
   onPageChange,
   filterFields = [],
   onFilterChange,
@@ -59,6 +60,28 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [filters, setFilters] = useState<FilterValues>({});
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Use SWR hook when endpoint is provided
+  const { data: swrData, loading: swrLoading, pagination: swrPagination, mutate } = useDynamicData({
+    endpoint,
+    filters,
+    page: currentPage,
+    limit: 10,
+  });
+
+  // Use SWR data if endpoint is provided, otherwise use props
+  const data = endpoint ? swrData : propData || [];
+  const loading = endpoint ? swrLoading : propLoading;
+  const pagination = endpoint ? swrPagination : propPagination;
+
+  const handleRefresh = () => {
+    if (endpoint) {
+      mutate();
+    } else if (onRefresh) {
+      onRefresh();
+    }
+  };
 
   const handleSort = (key: string) => {
     let direction: "asc" | "desc" = "asc";
@@ -247,13 +270,17 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
     }
 
     setFilters(newFilters);
-    onFilterChange?.(newFilters);
+    setCurrentPage(1); // Reset to first page when filtering
+    if (!endpoint) {
+      onFilterChange?.(newFilters);
+    }
   };
 
   const clearAllFilters = () => {
     const emptyFilters = {};
     setFilters(emptyFilters);
-    if (onFilterChange) {
+    setCurrentPage(1); // Reset to first page when clearing filters
+    if (!endpoint && onFilterChange) {
       onFilterChange(emptyFilters);
     }
   };
@@ -371,8 +398,8 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
           ? (value as [string, string])
           : (["", ""] as [string, string]);
         return (
-          <div className="flex gap-2">
-            <div className="relative flex-1">
+          <div className="flex gap-2 relative">
+            <div className="relative flex-1 z-100">
               <DatePicker
                 value={
                   dateRange[0] ? new DateObject(new Date(dateRange[0])) : null
@@ -394,7 +421,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                 placeholder="از تاریخ"
                 inputClass="w-full p-3 pr-4 pl-8 border border-gray-300 rounded-lg text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 text-right"
                 calendarPosition="bottom-center"
-                containerClassName="w-full"
+                containerClassName="w-full z-100"
               />
               <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">
                 📅
@@ -422,7 +449,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                 placeholder="تا تاریخ"
                 inputClass="w-full p-3 pr-4 pl-8 border border-gray-300 rounded-lg text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 text-right"
                 calendarPosition="bottom-center"
-                containerClassName="w-full"
+                containerClassName="w-full z-100"
               />
               <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">
                 📅
@@ -459,7 +486,11 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
       }
 
       closeDeleteModal();
-      if (onRefresh) onRefresh();
+      if (endpoint) {
+        mutate();
+      } else if (onRefresh) {
+        onRefresh();
+      }
     } catch (error) {
       console.log("Error deleting item:", error);
       toast.error("خطا در حذف آیتم");
@@ -502,6 +533,17 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3, delay: 0.1 }}
           >
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              onClick={handleRefresh}
+              className="px-6 py-3 bg-green-500/20 backdrop-blur-sm border border-green-400/30 text-green-200 rounded-xl hover:bg-green-500/30 transition-all duration-300 font-medium text-sm flex items-center gap-2"
+            >
+              <span className="text-lg">🔄</span>
+              <span className="hidden sm:inline">بروزرسانی</span>
+            </motion.button>
+
             <AnimatePresence>
               {Object.keys(filters).some((key) => filters[key]) && (
                 <motion.button
@@ -712,7 +754,14 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <motion.button
-              onClick={() => onPageChange?.((pagination?.currentPage || 1) - 1)}
+              onClick={() => {
+                const newPage = (pagination?.currentPage || 1) - 1;
+                if (endpoint) {
+                  setCurrentPage(newPage);
+                } else {
+                  onPageChange?.(newPage);
+                }
+              }}
               disabled={!pagination?.hasPrevPage}
               whileHover={pagination?.hasPrevPage ? { scale: 1.05 } : {}}
               whileTap={pagination?.hasPrevPage ? { scale: 0.95 } : {}}
@@ -728,7 +777,14 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
               {pagination?.currentPage || 1} / {pagination?.totalPages || 1}
             </div>
             <motion.button
-              onClick={() => onPageChange?.((pagination?.currentPage || 1) + 1)}
+              onClick={() => {
+                const newPage = (pagination?.currentPage || 1) + 1;
+                if (endpoint) {
+                  setCurrentPage(newPage);
+                } else {
+                  onPageChange?.(newPage);
+                }
+              }}
               disabled={!pagination?.hasNextPage}
               whileHover={pagination?.hasNextPage ? { scale: 1.05 } : {}}
               whileTap={pagination?.hasNextPage ? { scale: 0.95 } : {}}
@@ -943,7 +999,11 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                       onSuccess={(data) => {
                         console.log(data, "data from edit modal");
                         setIsEditModalOpen(false);
-                        onRefresh?.();
+                        if (endpoint) {
+                          mutate();
+                        } else {
+                          onRefresh?.();
+                        }
                         toast.success("آیتم با موفقیت بروزرسانی شد");
                       }}
                       onError={(error) => {

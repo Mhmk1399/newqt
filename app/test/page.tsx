@@ -1,8 +1,10 @@
-import ServiceRequestsManagement from "@/components/admin/ServiceRequestsManagement";
+import ContactRequestsManagement from "@/components/admin/ContactRequestsManagement";
+import CoWorkersManagement from "@/components/admin/CoWorkersManagement";
+import TeamsManagement from "@/components/admin/TeamsManagement";
 const Page = () => {
   return (
     <div dir="rtl">
-      <ServiceRequestsManagement />
+      <CoWorkersManagement />
     </div>
   );
 };

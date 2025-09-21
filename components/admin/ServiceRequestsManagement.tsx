@@ -2,28 +2,21 @@
 
 import React, { useState, useEffect } from "react";
 import DynamicTable from "@/components/global/newdynamics/dynamicTable";
-import { TableColumn, TableData, FormField, FilterField } from "@/types/dynamicTypes/types";
+import DynamicForm from "@/components/global/newdynamics/dynamicForm";
+import { TableColumn, FormField, FilterField } from "@/types/dynamicTypes/types";
+import { motion, AnimatePresence } from "framer-motion";
+import { IoAdd, IoClose, IoPersonAdd } from "react-icons/io5";
 import toast from "react-hot-toast";
-import { IoPersonAdd } from "react-icons/io5";
 import DatePicker, { DateObject } from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
 
 const ServiceRequestsManagement: React.FC = () => {
-  const [serviceRequests, setServiceRequests] = useState<TableData[]>([]);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [users, setUsers] = useState<{_id: string, name: string, email: string}[]>([]);
   const [services, setServices] = useState<{_id: string, name: string}[]>([]);
   const [customers, setCustomers] = useState<{_id: string, name: string}[]>([]);
-  const [loading, setLoading] = useState(true);
   const [assignmentModal, setAssignmentModal] = useState<{isOpen: boolean, serviceRequestId: string | null}>({isOpen: false, serviceRequestId: null});
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    totalPages: 1,
-    totalItems: 0,
-    itemsPerPage: 10,
-    hasNextPage: false,
-    hasPrevPage: false,
-  });
 
   const columns: TableColumn[] = [
     {
@@ -229,7 +222,7 @@ const ServiceRequestsManagement: React.FC = () => {
     },
     {
       name: "scheduledDate",
-      label: "تاریخ برنامه‌ریزی شده",
+      label: "تاریخ برنامهریزی شده",
       type: "date",
     },
     {
@@ -241,9 +234,9 @@ const ServiceRequestsManagement: React.FC = () => {
     },
     {
       name: "notes",
-      label: "یادداشت‌ها",
+      label: "یادداشتها",
       type: "textarea",
-      placeholder: "یادداشت‌های اضافی را وارد کنید",
+      placeholder: "یادداشتهای اضافی را وارد کنید",
     },
   ];
 
@@ -287,7 +280,7 @@ const ServiceRequestsManagement: React.FC = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/users');
+      const response = await fetch('/api/users?dropdown=true');
       const result = await response.json();
       if (result.success) {
         setUsers(result.data || []);
@@ -321,77 +314,6 @@ const ServiceRequestsManagement: React.FC = () => {
     }
   };
 
-  const fetchServiceRequests = async (filters: any = {}, page = 1) => {
-    try {
-      setLoading(true);
-      const params: Record<string, string> = {
-        page: page.toString(),
-        limit: (pagination?.itemsPerPage || 10).toString(),
-      };
-      
-      // Handle search filters
-      if (filters.title || filters.requirements) {
-        const searchTerms: string[] = [];
-        if (filters.title) searchTerms.push(String(filters.title));
-        if (filters.requirements) searchTerms.push(String(filters.requirements));
-        params.search = searchTerms.join(' ');
-      }
-      
-      // Handle other filters
-      if (filters.status) {
-        params.status = String(filters.status);
-      }
-      if (filters.priority) {
-        params.priority = String(filters.priority);
-      }
-      
-      const searchParams = new URLSearchParams(params);
-      
-      const response = await fetch(`/api/serviceRequests?${searchParams}`);
-      const result = await response.json();
-      
-      if (result.success) {
-        setServiceRequests(result.data || []);
-        if (result.pagination) {
-          setPagination({
-            currentPage: result.pagination.page,
-            totalPages: result.pagination.pages,
-            totalItems: result.pagination.total,
-            itemsPerPage: result.pagination.limit,
-            hasNextPage: result.pagination.page < result.pagination.pages,
-            hasPrevPage: result.pagination.page > 1,
-          });
-        }
-      } else {
-        toast.error(result.message || "خطا در بارگذاری درخواست‌های سرویس");
-      }
-    } catch (error) {
-      console.error("Error fetching service requests:", error);
-      toast.error("خطا در بارگذاری درخواست‌های سرویس");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    try {
-      const response = await fetch(`/api/serviceRequests?id=${id}`, {
-        method: "DELETE",
-      });
-      
-      const result = await response.json();
-      if (result.success) {
-        toast.success("درخواست سرویس با موفقیت حذف شد");
-        fetchServiceRequests();
-      } else {
-        toast.error(result.message || "خطا در حذف درخواست سرویس");
-      }
-    } catch (error) {
-      console.error("Error deleting service request:", error);
-      toast.error("خطا در حذف درخواست سرویس");
-    }
-  };
-
   const openAssignmentModal = (serviceRequestId: string) => {
     setAssignmentModal({isOpen: true, serviceRequestId});
   };
@@ -415,7 +337,6 @@ const ServiceRequestsManagement: React.FC = () => {
       const result = await response.json();
       if (result.success) {
         toast.success("تاریخ برنامهریزی بهروزرسانی شد");
-        fetchServiceRequests();
       } else {
         toast.error(result.message || "خطا در بهروزرسانی تاریخ");
       }
@@ -429,21 +350,10 @@ const ServiceRequestsManagement: React.FC = () => {
     if (!assignmentModal.serviceRequestId) return;
     
     try {
-      const serviceRequest = serviceRequests.find(sr => sr._id === assignmentModal.serviceRequestId);
-      if (!serviceRequest) return;
-      
-      const currentAssignments = Array.isArray(serviceRequest.asiginedto) 
-        ? serviceRequest.asiginedto.map((user: any) => typeof user === 'object' ? user._id : user)
-        : [];
-      
-      const newAssignments = currentAssignments.includes(userId) 
-        ? currentAssignments.filter((id: string) => id !== userId)
-        : [...currentAssignments, userId];
-      
       const response = await fetch("/api/serviceRequests", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: assignmentModal.serviceRequestId, asiginedto: newAssignments }),
+        body: JSON.stringify({ id: assignmentModal.serviceRequestId, asiginedto: [userId] }),
       });
       
       if (!response.ok) {
@@ -453,9 +363,7 @@ const ServiceRequestsManagement: React.FC = () => {
       const result = await response.json();
       if (result.success) {
         const user = users.find(u => u._id === userId);
-        const action = currentAssignments.includes(userId) ? 'حذف شد' : 'تخصیص یافت';
-        toast.success(`کاربر ${user?.name} ${action}`);
-        fetchServiceRequests();
+        toast.success(`کاربر ${user?.name} تخصیص یافت`);
       } else {
         toast.error(result.message || "خطا در تخصیص کاربر");
       }
@@ -469,11 +377,10 @@ const ServiceRequestsManagement: React.FC = () => {
     fetchUsers();
     fetchServices();
     fetchCustomers();
-    fetchServiceRequests();
   }, []);
 
   // Custom actions for the table
-  const customActions = (row: TableData) => (
+  const customActions = (row: any) => (
     <button
       onClick={(e) => {
         e.stopPropagation();
@@ -497,26 +404,100 @@ const ServiceRequestsManagement: React.FC = () => {
       
       <div className="relative z-10 p-6">
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-3">مدیریت درخواست‌های سرویس</h1>
-          <p className="text-white/70 text-lg">مدیریت کامل درخواست‌های سرویس با امکان جستجو، فیلتر، ویرایش و تخصیص</p>
+          <h1 className="text-4xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-3">مدیریت درخواستهای سرویس</h1>
+          <p className="text-white/70 text-lg">مدیریت کامل درخواستهای سرویس با امکان جستجو، فیلتر، ویرایش و تخصیص</p>
+        </div>
+
+        <div className="mb-6 flex justify-end">
+          <motion.button
+            onClick={() => setIsAddModalOpen(true)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-violet-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-violet-700 transition-all duration-300 flex items-center gap-3 shadow-lg hover:shadow-purple-500/25"
+          >
+            <IoAdd className="text-xl" />
+            افزودن
+          </motion.button>
         </div>
       
         <DynamicTable
           columns={columns}
-          data={serviceRequests}
-          loading={loading}
+          data={[]}
+          loading={false}
           formFields={formFields}
           endpoint="/api/serviceRequests"
           formTitle="ویرایش درخواست سرویس"
           formSubtitle="اطلاعات درخواست سرویس را ویرایش کنید"
-          onRefresh={() => fetchServiceRequests()}
-          onDelete={handleDelete}
-          pagination={pagination}
-          onPageChange={(page) => fetchServiceRequests({}, page)}
           filterFields={filterFields}
-          onFilterChange={(filters) => fetchServiceRequests(filters, 1)}
           customActions={customActions}
         />
+
+        <AnimatePresence>
+          {isAddModalOpen && (
+            <motion.div
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gradient-to-br from-[#030014] via-[#0A0A2E] to-[#030014]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsAddModalOpen(false)}
+            >
+              {/* Luxury Background Elements */}
+              <div className="absolute inset-0 z-0">
+                <div className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-r from-purple-500/20 to-violet-500/20 rounded-full filter blur-3xl"></div>
+                <div className="absolute bottom-32 right-32 w-80 h-80 bg-gradient-to-r from-pink-500/20 to-rose-500/20 rounded-full filter blur-3xl"></div>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-500/15 to-cyan-500/15 rounded-full filter blur-3xl"></div>
+              </div>
+              
+              <motion.div
+                className="relative z-10 bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl w-full max-w-4xl shadow-2xl border border-white/20"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
+                }}
+              >
+                {/* Decorative corner elements */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-purple-500/20 to-transparent rounded-tr-3xl"></div>
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-pink-500/20 to-transparent rounded-bl-3xl"></div>
+                
+                <div className="p-8 overflow-auto max-h-[90vh] relative z-10">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-2xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text">
+                      افزودن درخواست سرویس جدید
+                    </h3>
+                    <button onClick={() => setIsAddModalOpen(false)}>
+                      <IoClose
+                        size={24}
+                        className="text-white/70 hover:text-white transition-colors"
+                      />
+                    </button>
+                  </div>
+                  
+                  <DynamicForm
+                    title=""
+                    subtitle=""
+                    fields={formFields}
+                    endpoint="/api/serviceRequests"
+                    method="POST"
+                    submitButtonText="افزودن درخواست سرویس"
+                    onSuccess={() => {
+                      setIsAddModalOpen(false);
+                      toast.success("درخواست سرویس با موفقیت افزوده شد");
+                    }}
+                    onError={() => {
+                      toast.error("خطا در افزودن درخواست سرویس");
+                    }}
+                    onCancel={() => setIsAddModalOpen(false)}
+                    className="bg-transparent border-0 shadow-none p-0"
+                  />
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
       
       {/* Assignment Modal */}
@@ -553,31 +534,18 @@ const ServiceRequestsManagement: React.FC = () => {
               </div>
               
               <div className="space-y-3 max-h-80 overflow-y-auto">
-                {users.map((user) => {
-                  const currentServiceRequest = serviceRequests.find(sr => sr._id === assignmentModal.serviceRequestId);
-                  const isAssigned = currentServiceRequest && Array.isArray(currentServiceRequest.asiginedto) && 
-                    currentServiceRequest.asiginedto.some((assignedUser: any) => 
-                      (typeof assignedUser === 'object' ? assignedUser._id : assignedUser) === user._id
-                    );
-                  
-                  return (
-                    <button
-                      key={user._id}
-                      onClick={() => handleAssignUser(user._id)}
-                      className={`w-full text-right px-4 py-3 rounded-xl transition-all duration-200 ${
-                        isAssigned 
-                          ? 'bg-purple-500/20 text-purple-200 border border-purple-400/30' 
-                          : 'bg-white/10 text-white/90 border border-white/20 hover:bg-white/20'
-                      }`}
-                    >
-                      <div className="flex justify-between items-center">
-                        <span>{user.name}</span>
-                        {isAssigned && <span className="text-purple-300">✓</span>}
-                      </div>
-                      <div className="text-sm text-white/60 text-right">{user.email}</div>
-                    </button>
-                  );
-                })}
+                {users.map((user) => (
+                  <button
+                    key={user._id}
+                    onClick={() => handleAssignUser(user._id)}
+                    className="w-full text-right px-4 py-3 rounded-xl transition-all duration-200 bg-white/10 text-white/90 border border-white/20 hover:bg-white/20"
+                  >
+                    <div className="flex justify-between items-center">
+                      <span>{user.name}</span>
+                    </div>
+                    <div className="text-sm text-white/60 text-right">{user.email}</div>
+                  </button>
+                ))}
               </div>
               
               <div className="mt-6 flex justify-end">

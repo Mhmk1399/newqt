@@ -1,8 +1,8 @@
-import TasksManagement from "@/components/admin/TasksManagement";
+import UsersManagement from "@/components/admin/UsersManagement";
 const page = () => {
   return (
     <div>
-      <TasksManagement />
+      <UsersManagement />
     </div>
   );
 };

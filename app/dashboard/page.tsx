@@ -2,19 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
+import DynamicDashboard from "@/components/global/newdynamics/DynamicDashboard";
 
 interface DecodedToken {
   userId: string;
   phoneNumber: string;
   name: string;
-  userType: "user" | "customer" | "coworker";
+  userType: "user" | "customer" | "coworker" | "admin";
+  role?: string;
   exp: number;
 }
 
 export default function UnifiedDashboard() {
   const router = useRouter();
-  const [userType, setUserType] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const clearTokenAndRedirect = () => {
@@ -62,9 +63,12 @@ export default function UnifiedDashboard() {
       if (
         userData.exists &&
         decoded.userType &&
-        ["user", "customer", "coworker"].includes(decoded.userType)
+        ["user", "customer", "coworker", "admin"].includes(decoded.userType)
       ) {
-        setUserType(decoded.userType);
+        // Use role from API response, fallback to token role or userType
+        const role = userData.role || decoded.role || decoded.userType;
+        console.log("User role:", role);
+        setUserRole(role);
       } else {
         clearTokenAndRedirect();
       }
@@ -88,22 +92,22 @@ export default function UnifiedDashboard() {
     );
   }
 
-  const renderDashboard = () => {
-    switch (userType) {
-      case "user":
-        return <FormsSidebar />;
-      case "customer":
-        return <CustomerSideBar />;
-      case "coworker":
-        return <CoWorkerSideBar />;
-      default:
-        return null;
-    }
-  };
+  if (!userRole) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-[#030014] via-[#0A0A2E] to-[#030014]">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">
+            خطا در احراز هویت
+          </h1>
+          <p className="text-white/70">لطفاً دوباره وارد شوید</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen" dir="rtl">
-      {renderDashboard()}
+      <DynamicDashboard userRole={userRole} />
     </div>
   );
 }

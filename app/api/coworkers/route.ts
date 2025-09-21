@@ -1,93 +1,97 @@
 import { NextRequest, NextResponse } from "next/server";
 import CoWorker from "@/models/coWorker";
+import User from "@/models/users";
 import connect from "@/lib/data";
-import Project from "@/models/customersData/projects";
-import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 
-// GET - Get all coworkers or single coworker by ID in headers, or authenticated user's profile
+// GET - Retrieve coworkers with filters and pagination
 export async function GET(request: NextRequest) {
   try {
     await connect();
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    const isActive = searchParams.get("isActive");
+    const isApprove = searchParams.get("isApprove");
+    const experties = searchParams.get("experties");
+    const search = searchParams.get("search");
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
 
-    const id = request.headers.get("id");
-    const token = request.headers.get("authorization")?.replace("Bearer ", "");
-
-    if (token && !id) {
-      // Get authenticated user's profile
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-        userId: string;
-      };
-      const coworker = await CoWorker.findById(decoded.userId)
-        .populate({
-          path: "projects",
-          model: Project,
-        })
-        .select("-password");
-
-      if (!coworker) {
+    if (id) {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
         return NextResponse.json(
-          {
-            success: false,
-            error: "Coworker not found",
-          },
-          { status: 404 }
+          { success: false, message: "Invalid ID format" },
+          { status: 400 }
         );
       }
 
-      return NextResponse.json({
-        success: true,
-        data: coworker,
-      });
-    } else if (id) {
-      // Get single coworker by ID
       const coworker = await CoWorker.findById(id)
-        .populate({
-          path: "projects",
-          model: Project,
-        })
-        .select("-password");
-
-      if (!coworker) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Coworker not found",
-          },
-          { status: 404 }
-        );
-      }
-
-      return NextResponse.json({
-        success: true,
-        data: coworker,
-      });
-    } else {
-      // Get all coworkers - filter by approval status based on request
-      const showAll = request.nextUrl.searchParams.get("showAll") === "true";
-      const filter = showAll ? {} : { isApprove: true };
-
-      const coworkers = await CoWorker.find(filter)
-        .populate({
-          path: "projects",
-          model: Project,
-        })
         .populate({
           path: "aprovedBy",
           select: "name email",
+          model: User,
         })
-        .select("-password");
-      return NextResponse.json({
-        success: true,
-        data: coworkers,
-      });
+        .select('-password');
+      
+      if (!coworker) {
+        return NextResponse.json(
+          { success: false, message: "Coworker not found" },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({ success: true, data: coworker });
     }
-  } catch (error) {
-    console.log(error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to fetch coworkers",
+
+    // Build query filters
+    const query: any = {};
+    if (isActive !== null && isActive !== undefined) {
+      query.isActive = isActive === "true";
+    }
+    if (isApprove !== null && isApprove !== undefined) {
+      query.isApprove = isApprove === "true";
+    }
+    if (experties) {
+      query.experties = experties;
+    }
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+        { phoneNumber: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+    const coworkers = await CoWorker.find(query)
+      .populate({
+        path: "aprovedBy",
+        select: "name email",
+        model: User,
+      })
+      .select('-password')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await CoWorker.countDocuments(query);
+
+    return NextResponse.json({
+      success: true,
+      data: coworkers,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
       },
+    });
+  } catch (error) {
+    console.error("GET Error:", error);
+    return NextResponse.json(
+      { success: false, message: "Internal server error" },
       { status: 500 }
     );
   }
@@ -98,178 +102,150 @@ export async function POST(request: NextRequest) {
   try {
     await connect();
     const body = await request.json();
+    const { name, phoneNumber, password, experties } = body;
 
-    const coworker = new CoWorker(body);
+    // Validation
+    if (!name || !phoneNumber || !password) {
+      return NextResponse.json(
+        { success: false, message: "Name, phone number, and password are required" },
+        { status: 400 }
+      );
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12);
+    
+    const coworker = new CoWorker({
+      ...body,
+      password: hashedPassword
+    });
     await coworker.save();
 
+    // Return coworker without password
+    const { password: _, ...coworkerWithoutPassword } = coworker.toObject();
+
     return NextResponse.json(
-      {
-        success: true,
-        data: coworker,
-      },
+      { success: true, message: "Coworker created successfully", data: coworkerWithoutPassword },
       { status: 201 }
     );
   } catch (error) {
+    console.error("POST Error:", error);
+    if (error instanceof mongoose.Error.ValidationError) {
+      return NextResponse.json(
+        { success: false, message: "Validation error", errors: error.errors },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to create coworker",
-      },
-      { status: 400 }
+      { success: false, message: "Internal server error" },
+      { status: 500 }
     );
   }
 }
 
-// PUT - Update coworker (authenticated user updates their own profile)
+// PUT - Update coworker
 export async function PUT(request: NextRequest) {
   try {
     await connect();
     const body = await request.json();
-    const token = request.headers.get("authorization")?.replace("Bearer ", "");
+    const { id, password, ...updateData } = body;
 
-    if (!token) {
+    if (!id) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Authentication required",
-        },
-        { status: 401 }
+        { success: false, message: "ID is required" },
+        { status: 400 }
       );
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      userId: string;
-    };
-    const { id, ...updateData } = body;
-
-    // Use authenticated user's ID if no ID provided, or verify ownership
-    const targetId = id || decoded.userId;
-    if (id && id !== decoded.userId) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized to update this profile",
-        },
-        { status: 403 }
+        { success: false, message: "Invalid ID format" },
+        { status: 400 }
       );
     }
 
-    const coworker = await CoWorker.findByIdAndUpdate(targetId, updateData, {
-      new: true,
-      runValidators: true,
-    }).select("-password");
+    // Hash password if provided
+    if (password) {
+      updateData.password = await bcrypt.hash(password, 12);
+    }
 
-    if (!coworker) {
+    const updatedCoworker = await CoWorker.findByIdAndUpdate(
+      id,
+      { ...updateData, updatedAt: new Date() },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!updatedCoworker) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Coworker not found",
-        },
+        { success: false, message: "Coworker not found" },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      data: coworker,
+      message: "Coworker updated successfully",
+      data: updatedCoworker,
     });
-  } catch (error: unknown) {
-    if (error instanceof Error && error.name === "JsonWebTokenError") {
+  } catch (error) {
+    console.error("PUT Error:", error);
+    if (error instanceof mongoose.Error.ValidationError) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid token",
-        },
-        { status: 401 }
+        { success: false, message: "Validation error", errors: error.errors },
+        { status: 400 }
       );
     }
     return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to update coworker",
-      },
-      { status: 400 }
+      { success: false, message: "Internal server error" },
+      { status: 500 }
     );
   }
 }
 
-// PATCH - Approve or decline coworker
+// PATCH - Partial update (for toggle operations)
 export async function PATCH(request: NextRequest) {
   try {
     await connect();
     const body = await request.json();
-    const { coworkerId, action } = body;
+    const { id, ...updateData } = body;
 
-    const token = request.headers.get("authorization")?.replace("Bearer ", "");
-    if (!token) {
+    if (!id) {
       return NextResponse.json(
-        { success: false, error: "Authentication required" },
-        { status: 401 }
-      );
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      userId: string;
-    };
-
-    if (!coworkerId || !action) {
-      return NextResponse.json(
-        { success: false, error: "Coworker ID and action are required" },
+        { success: false, message: "ID is required" },
         { status: 400 }
       );
     }
 
-    let updateData;
-    if (action === "approve") {
-      updateData = { aprovedBy: decoded.userId, isApprove: true };
-    } else if (action === "decline") {
-      updateData = { aprovedBy: null, isApprove: false };
-    } else {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json(
-        { success: false, error: "Invalid action. Use 'approve' or 'decline'" },
+        { success: false, message: "Invalid ID format" },
         { status: 400 }
       );
     }
 
-    const coworker = await CoWorker.findByIdAndUpdate(coworkerId, updateData, {
-      new: true,
-      runValidators: true,
-    })
-      .populate("aprovedBy", "name email")
-      .select("-password");
+    const updatedCoworker = await CoWorker.findByIdAndUpdate(
+      id,
+      { ...updateData, updatedAt: new Date() },
+      { new: true, runValidators: true }
+    ).select('-password');
 
-    if (!coworker) {
+    if (!updatedCoworker) {
       return NextResponse.json(
-        { success: false, error: "Coworker not found" },
+        { success: false, message: "Coworker not found" },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      data: coworker,
-      message: `Coworker ${
-        action === "approve" ? "approved" : "declined"
-      } successfully`,
+      message: "Coworker updated successfully",
+      data: updatedCoworker,
     });
-  } catch (error: unknown) {
-    if (error instanceof Error && error.name === "JsonWebTokenError") {
-      return NextResponse.json(
-        { success: false, error: "Invalid token" },
-        { status: 401 }
-      );
-    }
+  } catch (error) {
+    console.error("PATCH Error:", error);
     return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to update coworker approval status",
-      },
-      { status: 400 }
+      { success: false, message: "Internal server error" },
+      { status: 500 }
     );
   }
 }
@@ -278,26 +254,28 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     await connect();
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
 
-    const id = request.headers.get("id");
     if (!id) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "ID is required",
-        },
+        { success: false, message: "ID is required" },
         { status: 400 }
       );
     }
 
-    const coworker = await CoWorker.findByIdAndDelete(id);
-
-    if (!coworker) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Coworker not found",
-        },
+        { success: false, message: "Invalid ID format" },
+        { status: 400 }
+      );
+    }
+
+    const deletedCoworker = await CoWorker.findByIdAndDelete(id).select('-password');
+
+    if (!deletedCoworker) {
+      return NextResponse.json(
+        { success: false, message: "Coworker not found" },
         { status: 404 }
       );
     }
@@ -305,15 +283,13 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Coworker deleted successfully",
+      data: deletedCoworker,
     });
   } catch (error) {
+    console.error("DELETE Error:", error);
     return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to delete coworker",
-      },
-      { status: 400 }
+      { success: false, message: "Internal server error" },
+      { status: 500 }
     );
   }
 }

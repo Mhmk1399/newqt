@@ -110,7 +110,7 @@ const TasksManagement: React.FC = () => {
               calendarPosition="bottom-center"
               containerClassName="w-full"
               portalTarget={document.body}
-              className="z-[9999]"
+              className=" fixed"
             />
           </div>
         );
@@ -283,7 +283,7 @@ const TasksManagement: React.FC = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/users');
+      const response = await fetch('/api/users?dropdown=true');
       const result = await response.json();
       if (result.success) {
         setUsers(result.data || []);
@@ -344,6 +344,25 @@ const TasksManagement: React.FC = () => {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    try {
+      const response = await fetch(`/api/tasks?id=${id}`, {
+        method: "DELETE",
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        toast.success("تسک با موفقیت حذف شد");
+        fetchTasks();
+      } else {
+        toast.error(result.message || "خطا در حذف تسک");
+      }
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      toast.error("خطا در حذف تسک");
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
     fetchServiceRequests();
@@ -374,10 +393,19 @@ const TasksManagement: React.FC = () => {
           formTitle="ویرایش تسک"
           formSubtitle="اطلاعات تسک را ویرایش کنید"
           onRefresh={() => fetchTasks()}
+          onDelete={handleDelete}
           pagination={pagination}
           onPageChange={(page) => fetchTasks(page)}
           filterFields={filterFields}
-          onFilterChange={(filters) => fetchTasks(1, filters)}
+          onFilterChange={(filters) => {
+            const stringFilters: Record<string, string> = {};
+            Object.entries(filters).forEach(([key, value]) => {
+              if (value !== null && value !== undefined) {
+                stringFilters[key] = String(value);
+              }
+            });
+            fetchTasks(1, stringFilters);
+          }}
         />
       </div>
     </div>

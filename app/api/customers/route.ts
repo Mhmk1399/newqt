@@ -87,17 +87,18 @@ export async function POST(request: NextRequest) {
   try {
     await connect();
     const body = await request.json();
-    const { name, phoneNumber, password } = body;
+    const { name, phoneNumber } = body;
 
     // Validation
-    if (!name || !phoneNumber || !password) {
+    if (!name || !phoneNumber) {
       return NextResponse.json(
-        { success: false, message: "Name, phone number, and password are required" },
+        { success: false, message: "Name and phone number are required" },
         { status: 400 }
       );
     }
 
-    // Hash password
+    // Generate default password if not provided
+    const password = body.password || '123456';
     const hashedPassword = await bcrypt.hash(password, 10);
     
     const customer = new Customer({
@@ -241,8 +242,20 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     await connect();
+    
+    // Try to get ID from query params first
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
+    let id = searchParams.get("id");
+    
+    // If not in query params, try to get from request body
+    if (!id) {
+      try {
+        const body = await request.json();
+        id = body.id;
+      } catch {
+        // If body parsing fails, continue with null id
+      }
+    }
 
     if (!id) {
       return NextResponse.json(

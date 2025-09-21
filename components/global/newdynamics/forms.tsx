@@ -59,7 +59,7 @@ export function useDynamicForm(
       });
       setFormValues(defaultValues);
     }
-  }, [fields, initialValues]);
+  }, []);
 
   // Checks whether the given field should be visible based on its dependency rules.
   const shouldShowField = (field: FormField): boolean => {

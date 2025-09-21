@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema<IUser>(
     phoneNumber: {
       type: String,
       required: true,
-      unique: true
+      unique: true,
     },
     email: {
       type: String,
@@ -25,25 +25,24 @@ const userSchema = new mongoose.Schema<IUser>(
       required: true,
       minlength: 8,
     },
-   role: {
+    role: {
       type: String,
-      enum: ["admin", "manager","editor","designer",'video-shooter'],
+      enum: ["admin", "manager", "editor", "designer", "video-shooter"],
       default: "designer",
-  },
+    },
     teamId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Team",
     },
-    permissions: {
+    permissions: [{
       type: String,
-      trim: true,
-    },
+    }],
     isActive: {
       type: Boolean,
       default: true,
     },
-
-},{
+  },
+  {
     timestamps: true,
   }
 );

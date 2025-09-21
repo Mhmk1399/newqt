@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
     } else if (decoded.userType === "coworker") {
       userExists = await CoWorker.findById(userId);
     }
+    console.log(userExists, "asdasd");
 
     return NextResponse.json({ exists: !!userExists });
   } catch (error: unknown) {
