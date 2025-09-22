@@ -63,7 +63,12 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
   const [currentPage, setCurrentPage] = useState(1);
 
   // Use SWR hook when endpoint is provided
-  const { data: swrData, loading: swrLoading, pagination: swrPagination, mutate } = useDynamicData({
+  const {
+    data: swrData,
+    loading: swrLoading,
+    pagination: swrPagination,
+    mutate,
+  } = useDynamicData({
     endpoint,
     filters,
     page: currentPage,
@@ -316,9 +321,15 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
             }}
             className="w-full p-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
           >
-            <option value="" className="bg-gray-800 text-white">{field.placeholder || "انتخاب کنید"}</option>
+            <option value="" className="bg-gray-800 text-white">
+              {field.placeholder || "انتخاب کنید"}
+            </option>
             {field.options?.map((option) => (
-              <option key={option.value} value={option.value} className="bg-gray-800 text-white">
+              <option
+                key={option.value}
+                value={option.value}
+                className="bg-gray-800 text-white"
+              >
                 {option.label}
               </option>
             ))}
@@ -332,7 +343,10 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
             value={value ? String(value) : ""}
             onChange={(e) => {
               const numValue = e.target.value;
-              updateFilter(field.key, numValue === "" ? null : Number(numValue));
+              updateFilter(
+                field.key,
+                numValue === "" ? null : Number(numValue)
+              );
             }}
             placeholder={field.placeholder}
             min={field.min || 0}
@@ -350,7 +364,8 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
               type="number"
               value={numRange[0] ? String(numRange[0]) : ""}
               onChange={(e) => {
-                const minValue = e.target.value === "" ? null : Number(e.target.value);
+                const minValue =
+                  e.target.value === "" ? null : Number(e.target.value);
                 const maxValue = numRange[1];
                 if (minValue !== null || maxValue !== null) {
                   updateFilter(field.key, [minValue || 0, maxValue || 0]);
@@ -366,7 +381,8 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
               type="number"
               value={numRange[1] ? String(numRange[1]) : ""}
               onChange={(e) => {
-                const maxValue = e.target.value === "" ? null : Number(e.target.value);
+                const maxValue =
+                  e.target.value === "" ? null : Number(e.target.value);
                 const minValue = numRange[0];
                 if (minValue !== null || maxValue !== null) {
                   updateFilter(field.key, [minValue || 0, maxValue || 0]);
@@ -505,7 +521,8 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         style={{
-          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
+          boxShadow:
+            "0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
         }}
       >
         <div className="flex items-center gap-3 mb-6">
@@ -540,7 +557,6 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
               onClick={handleRefresh}
               className="px-6 py-3 bg-green-500/20 backdrop-blur-sm border border-green-400/30 text-green-200 rounded-xl hover:bg-green-500/30 transition-all duration-300 font-medium text-sm flex items-center gap-2"
             >
-              <span className="text-lg">🔄</span>
               <span className="hidden sm:inline">بروزرسانی</span>
             </motion.button>
 
@@ -577,7 +593,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
         </div>
       </motion.div>
 
-      <div className="overflow-x-auto shadow-2xl rounded-2xl md:overflow-x-scroll bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20">
+      <div className="overflow-x-auto shadow-2xl rounded-2xl md:overflow-x-scroll bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 scrollbar-luxury">
         <table className="min-w-full">
           <thead className="bg-gradient-to-r from-purple-500/20 to-violet-500/20 backdrop-blur-sm">
             <tr>
@@ -722,12 +738,15 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
               <span className="hidden sm:inline">
                 نمایش{" "}
                 <span className="font-bold text-blue-600">
-                  {((pagination?.currentPage || 1) - 1) * (pagination?.itemsPerPage || 10) + 1}
+                  {((pagination?.currentPage || 1) - 1) *
+                    (pagination?.itemsPerPage || 10) +
+                    1}
                 </span>{" "}
                 تا{" "}
                 <span className="font-bold text-blue-600">
                   {Math.min(
-                    (pagination?.currentPage || 1) * (pagination?.itemsPerPage || 10),
+                    (pagination?.currentPage || 1) *
+                      (pagination?.itemsPerPage || 10),
                     pagination?.totalItems || 0
                   )}
                 </span>{" "}
@@ -739,9 +758,13 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
               </span>
               <span className="sm:hidden">
                 <span className="font-bold text-blue-600">
-                  {((pagination?.currentPage || 1) - 1) * (pagination?.itemsPerPage || 10) + 1}-
+                  {((pagination?.currentPage || 1) - 1) *
+                    (pagination?.itemsPerPage || 10) +
+                    1}
+                  -
                   {Math.min(
-                    (pagination?.currentPage || 1) * (pagination?.itemsPerPage || 10),
+                    (pagination?.currentPage || 1) *
+                      (pagination?.itemsPerPage || 10),
                     pagination?.totalItems || 0
                   )}
                 </span>{" "}
@@ -814,7 +837,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
               <div className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-r from-purple-500/20 to-violet-500/20 rounded-full filter blur-3xl"></div>
               <div className="absolute bottom-32 right-32 w-80 h-80 bg-gradient-to-r from-pink-500/20 to-rose-500/20 rounded-full filter blur-3xl"></div>
             </div>
-            
+
             <motion.div
               className="relative z-10 bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 w-11/12 md:max-w-2xl p-8"
               initial={{ scale: 0.8, opacity: 0 }}
@@ -823,13 +846,14 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
               transition={{ duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
               style={{
-                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
+                boxShadow:
+                  "0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
               }}
             >
               {/* Decorative corner elements */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-purple-500/20 to-transparent rounded-tr-3xl"></div>
               <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-pink-500/20 to-transparent rounded-bl-3xl"></div>
-              
+
               <div className="relative z-10">
                 <div className="flex justify-between items-center border-b border-white/20 pb-4 mb-6">
                   <h3 className="text-2xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text">
@@ -842,110 +866,116 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                     />
                   </button>
                 </div>
-                <div className="space-y-4 max-h-96 overflow-y-auto px-2">
-                {Object.entries(selectedRow).map(([key, val]) => {
-                  if (
-                    [
-                      "_id",
-                      "type",
-                      "phone",
-                      "provider",
-                      "date",
-                      "updatedAt",
-                      "glass",
-                    ].includes(key)
-                  )
-                    return null;
+                <div className="space-y-4 max-h-96 overflow-y-auto px-2 scrollbar-luxury">
+                  {Object.entries(selectedRow).map(([key, val]) => {
+                    if (
+                      [
+                        "_id",
+                        "type",
+                        "phone",
+                        "provider",
+                        "date",
+                        "updatedAt",
+                        "glass",
+                      ].includes(key)
+                    )
+                      return null;
 
-                  const column = columns.find((col) => col.key === key);
+                    const column = columns.find((col) => col.key === key);
 
-                  const getDisplayValue = () => {
-                    if (key === "glassCount") {
-                      if (
-                        selectedRow.glass &&
-                        Array.isArray(selectedRow.glass)
-                      ) {
-                        return selectedRow.glass.length.toString();
+                    const getDisplayValue = () => {
+                      if (key === "glassCount") {
+                        if (
+                          selectedRow.glass &&
+                          Array.isArray(selectedRow.glass)
+                        ) {
+                          return selectedRow.glass.length.toString();
+                        }
+                        return "0";
                       }
-                      return "0";
-                    }
 
-                    if (key === "approved") {
-                      return val ? "تایید شده" : "تایید نشده";
-                    }
+                      if (key === "approved") {
+                        return val ? "تایید شده" : "تایید نشده";
+                      }
 
-                    if (column?.render) {
-                      return column.render(
-                        val as string | number | boolean,
-                        selectedRow
-                      );
-                    }
+                      if (column?.render) {
+                        return column.render(
+                          val as string | number | boolean,
+                          selectedRow
+                        );
+                      }
 
-                    if (key === "createdAt" || key === "updatedAt") {
-                      return new Date(String(val)).toLocaleDateString("fa-IR");
-                    }
+                      if (key === "createdAt" || key === "updatedAt") {
+                        return new Date(String(val)).toLocaleDateString(
+                          "fa-IR"
+                        );
+                      }
 
-                    if (val !== undefined && isPriceColumn(key, val)) {
-                      return `${Number(val).toLocaleString()} ریال`;
-                    }
+                      if (val !== undefined && isPriceColumn(key, val)) {
+                        return `${Number(val).toLocaleString()} ریال`;
+                      }
 
-                    if (Array.isArray(val)) {
-                      type ItemWithNameOrId =
-                        | string
-                        | number
-                        | boolean
-                        | {
-                            name?: string;
-                            code?: string;
-                            title?: string;
-                            _id?: string;
-                          };
+                      if (Array.isArray(val)) {
+                        type ItemWithNameOrId =
+                          | string
+                          | number
+                          | boolean
+                          | {
+                              name?: string;
+                              code?: string;
+                              title?: string;
+                              _id?: string;
+                            };
 
-                      return val
-                        .map((item: ItemWithNameOrId) => {
-                          if (typeof item === "object" && item !== null) {
-                            return (
-                              item.name ??
-                              item.code ??
-                              item.title ??
-                              item._id ??
-                              "نامشخص"
-                            );
-                          }
-                          return String(item);
-                        })
-                        .join(", ");
-                    }
+                        return val
+                          .map((item: ItemWithNameOrId) => {
+                            if (typeof item === "object" && item !== null) {
+                              return (
+                                item.name ??
+                                item.code ??
+                                item.title ??
+                                item._id ??
+                                "نامشخص"
+                              );
+                            }
+                            return String(item);
+                          })
+                          .join(", ");
+                      }
 
-                    if (typeof val === "object" && val !== null) {
-                      const obj = val as {
-                        name?: string;
-                        code?: string;
-                        title?: string;
-                        _id?: string;
-                      };
-                      return (
-                        obj.name ?? obj.code ?? obj.title ?? obj._id ?? "نامشخص"
-                      );
-                    }
+                      if (typeof val === "object" && val !== null) {
+                        const obj = val as {
+                          name?: string;
+                          code?: string;
+                          title?: string;
+                          _id?: string;
+                        };
+                        return (
+                          obj.name ??
+                          obj.code ??
+                          obj.title ??
+                          obj._id ??
+                          "نامشخص"
+                        );
+                      }
 
-                    return String(val || "");
-                  };
+                      return String(val || "");
+                    };
 
-                  return (
-                    <div
-                      key={key}
-                      className="flex justify-between border-b border-white/10 pb-3 mb-3"
-                    >
-                      <span className="font-medium text-white/90">
-                        {translateField(key)}
-                      </span>
-                      <span className="text-white/80 break-all">
-                        {getDisplayValue()}
-                      </span>
-                    </div>
-                  );
-                })}
+                    return (
+                      <div
+                        key={key}
+                        className="flex justify-between border-b border-white/10 pb-3 mb-3"
+                      >
+                        <span className="font-medium text-white/90">
+                          {translateField(key)}
+                        </span>
+                        <span className="text-white/80 break-all">
+                          {getDisplayValue()}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </motion.div>
@@ -971,7 +1001,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                 <div className="absolute bottom-32 right-32 w-80 h-80 bg-gradient-to-r from-pink-500/20 to-rose-500/20 rounded-full filter blur-3xl"></div>
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-500/15 to-cyan-500/15 rounded-full filter blur-3xl"></div>
               </div>
-              
+
               <motion.div
                 className="relative z-10 bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl w-full max-w-4xl shadow-2xl border border-white/20"
                 initial={{ scale: 0.8, opacity: 0 }}
@@ -980,14 +1010,15 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                 transition={{ duration: 0.2 }}
                 onClick={(e) => e.stopPropagation()}
                 style={{
-                  boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
+                  boxShadow:
+                    "0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
                 }}
               >
                 {/* Decorative corner elements */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-purple-500/20 to-transparent rounded-tr-3xl"></div>
                 <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-pink-500/20 to-transparent rounded-bl-3xl"></div>
-                
-                <div className="p-8 overflow-auto max-h-[90vh] relative z-10">
+
+                <div className="p-8 overflow-auto max-h-[90vh] relative z-10 scrollbar-luxury">
                   {isEditModalOpen && selectedRow && (
                     <DynamicUpdateForm
                       title={formTitle}

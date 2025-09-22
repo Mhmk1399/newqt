@@ -3,6 +3,9 @@ import { DynamicFormProps, FormValues } from "@/types/dynamicTypes/types";
 import React from "react";
 import { useDynamicForm } from "./forms";
 import { formatNumber } from "@/utilities/numberComma";
+import DatePicker, { DateObject } from "react-multi-date-picker";
+import persian from "react-date-object/calendars/persian";
+import persian_fa from "react-date-object/locales/persian_fa";
 
 const DynamicForm: React.FC<DynamicFormProps> = ({
   title,
@@ -103,6 +106,32 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
 
             {fields.map((field) => {
               const fieldError = errors[field.name];
+              
+              // Check if field should be visible based on dependencies
+              const shouldShowField = () => {
+                if (!field.dependsOn) return true;
+                
+                const dependentValue = formValues[field.dependsOn.field];
+                const { operator, value } = field.dependsOn;
+                
+                switch (operator) {
+                  case "eq":
+                    return dependentValue === value;
+                  case "neq":
+                    return dependentValue !== value;
+                  case "gt":
+                    return Number(dependentValue) > Number(value);
+                  case "lt":
+                    return Number(dependentValue) < Number(value);
+                  case "contains":
+                    return String(dependentValue).includes(String(value));
+                  default:
+                    return true;
+                }
+              };
+              
+              if (!shouldShowField()) return null;
+              
               return (
                 <div key={field.name} className="space-y-1">
                   {field.type !== "checkbox" && (
@@ -280,6 +309,39 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                             value={String(formValues[field.name] || "")}
                             onChange={(e) => handleChange(e, field)}
                           />
+                        );
+                      case "date":
+                        return (
+                          <div className="relative">
+                            <DatePicker
+                              value={
+                                formValues[field.name] 
+                                  ? new DateObject(new Date(formValues[field.name] as string))
+                                  : null
+                              }
+                              onChange={(val) => {
+                                const dateValue = val ? val.toDate().toISOString() : "";
+                                handleChange(
+                                  {
+                                    target: {
+                                      name: field.name,
+                                      value: dateValue,
+                                    },
+                                  } as unknown as React.ChangeEvent<HTMLInputElement>,
+                                  field
+                                );
+                              }}
+                              calendar={persian}
+                              locale={persian_fa}
+                              format="YYYY/MM/DD"
+                              placeholder={field.placeholder || "تاریخ را انتخاب کنید"}
+                              inputClass="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white/90 placeholder:text-white/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300 text-right"
+                              calendarPosition="bottom-right"
+                              containerClassName="w-full"
+                              disabled={field.disabled}
+                              readOnly={field.readOnly}
+                            />
+                          </div>
                         );
                       default:
                         return (

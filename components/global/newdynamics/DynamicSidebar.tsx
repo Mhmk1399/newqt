@@ -183,7 +183,7 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
             </div>
 
             {/* Menu Items */}
-            <div className="flex-1 p-4 space-y-3 overflow-y-auto">
+            <div className="flex-1 p-4 space-y-3 overflow-y-auto scrollbar-luxury">
               {items.map((item) => (
                 <button
                   key={item.key}

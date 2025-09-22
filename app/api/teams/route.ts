@@ -224,7 +224,17 @@ export async function DELETE(request: NextRequest) {
   try {
     await connect();
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
+    let id = searchParams.get("id");
+    
+    // If no ID in query params, try to get it from request body
+    if (!id) {
+      try {
+        const body = await request.json();
+        id = body.id;
+      } catch {
+        // Ignore JSON parsing errors
+      }
+    }
 
     if (!id) {
       return NextResponse.json(

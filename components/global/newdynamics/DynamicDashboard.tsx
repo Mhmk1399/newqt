@@ -11,7 +11,8 @@ import {
   IoCheckbox, 
   IoSettings,
   IoBusinessOutline,
-  IoDocumentText
+  IoDocumentText,
+  IoCard
 } from "react-icons/io5";
 
 // Import all admin components
@@ -25,6 +26,7 @@ import VideosManagement from "@/components/admin/VideosManagement";
 import TeamsManagement from "@/components/admin/TeamsManagement";
 import ContactRequestsManagement from "@/components/admin/ContactRequestsManagement";
 import CoWorkersManagement from "@/components/admin/CoWorkersManagement";
+import TransactionsManagement from "@/components/admin/TransactionsManagement";
 
 interface DashboardConfig {
   userType: string;
@@ -112,6 +114,12 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
         label: "مدیریت همکاران",
         icon: <IoPersonAdd />,
         component: CoWorkersManagement
+      },
+      {
+        key: "transactions",
+        label: "مدیریت تراکنشها",
+        icon: <IoCard />,
+        component: TransactionsManagement
       }
     ]
   };

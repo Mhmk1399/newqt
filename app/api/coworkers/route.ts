@@ -169,9 +169,30 @@ export async function PUT(request: NextRequest) {
       updateData.password = await bcrypt.hash(password, 12);
     }
 
+    // Handle socialLinks nested object properly
+    const processedUpdateData = { ...updateData };
+    const socialLinksFields: { [key: string]: string } = {};
+    
+    // Extract socialLinks dot-notation fields
+    Object.keys(processedUpdateData).forEach(key => {
+      if (key.startsWith('socialLinks.')) {
+        const socialKey = key.replace('socialLinks.', '');
+        socialLinksFields[socialKey] = processedUpdateData[key];
+        delete processedUpdateData[key];
+      }
+    });
+    
+    // If we have socialLinks fields, merge them properly
+    if (Object.keys(socialLinksFields).length > 0) {
+      processedUpdateData.socialLinks = {
+        ...processedUpdateData.socialLinks,
+        ...socialLinksFields
+      };
+    }
+
     const updatedCoworker = await CoWorker.findByIdAndUpdate(
       id,
-      { ...updateData, updatedAt: new Date() },
+      { ...processedUpdateData, updatedAt: new Date() },
       { new: true, runValidators: true }
     ).select('-password');
 
@@ -255,7 +276,17 @@ export async function DELETE(request: NextRequest) {
   try {
     await connect();
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
+    let id = searchParams.get("id");
+    
+    // If no ID in query params, try to get it from request body
+    if (!id) {
+      try {
+        const body = await request.json();
+        id = body.id;
+      } catch {
+        // Ignore JSON parsing errors
+      }
+    }
 
     if (!id) {
       return NextResponse.json(

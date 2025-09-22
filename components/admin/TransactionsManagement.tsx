@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DynamicTable from "@/components/global/newdynamics/dynamicTable";
 import DynamicForm from "@/components/global/newdynamics/dynamicForm";
 import { TableColumn, FormField, FilterField } from "@/types/dynamicTypes/types";
@@ -8,45 +8,70 @@ import { motion, AnimatePresence } from "framer-motion";
 import { IoAdd, IoClose } from "react-icons/io5";
 import toast from "react-hot-toast";
 
-const TeamsManagement: React.FC = () => {
+const TransactionsManagement: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [users, setUsers] = useState<{_id: string, name: string}[]>([]);
+  const [customers, setCustomers] = useState<{_id: string, name: string}[]>([]);
 
   const columns: TableColumn[] = [
     {
-      key: "name",
-      header: "نام تیم",
+      key: "date",
+      header: "تاریخ",
+      sortable: true,
+      render: (value) => new Date(value as string).toLocaleDateString("fa-IR"),
+    },
+    {
+      key: "subject",
+      header: "موضوع",
       sortable: true,
     },
     {
-      key: "specialization",
-      header: "تخصص",
+      key: "type",
+      header: "نوع تراکنش",
       sortable: true,
-    },
-    {
-      key: "description",
-      header: "توضیحات",
-      sortable: false,
       render: (value) => {
-        const text = value as string || "-";
-        return (
-          <div className="max-w-xs truncate" title={text}>
-            {text.length > 50 ? `${text.substring(0, 50)}...` : text}
-          </div>
-        );
+        const typeMap: { [key: string]: string } = {
+          income: "درآمد",
+          expense: "هزینه"
+        };
+        return typeMap[value as string] || value;
       },
     },
     {
-      key: "isActive",
-      header: "وضعیت",
+      key: "paid",
+      header: "پرداختی",
       sortable: true,
-      render: (value) => (
-        <span className={`px-2 py-1 rounded-full text-xs ${
-          value ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-        }`}>
-          {value ? "فعال" : "غیرفعال"}
-        </span>
-      ),
+      render: (value) => `${Number(value).toLocaleString()} ریال`,
     },
+    {
+      key: "received",
+      header: "دریافتی",
+      sortable: true,
+      render: (value) => `${Number(value).toLocaleString()} ریال`,
+    },
+    {
+      key: "users",
+      header: "کاربر",
+      sortable: false,
+      render: (value) => {
+        if (typeof value === 'object' && value && 'name' in value) {
+          return (value as Record<string, unknown>).name as string;
+        }
+        return value || "-";
+      },
+    },
+    {
+      key: "customer",
+      header: "مشتری",
+      sortable: false,
+      render: (value) => {
+        if (typeof value === 'object' && value && 'name' in value) {
+          return (value as Record<string, unknown>).name as string;
+        }
+        return value || "-";
+      },
+    },
+
     {
       key: "createdAt",
       header: "تاریخ ایجاد",
@@ -57,36 +82,69 @@ const TeamsManagement: React.FC = () => {
 
   const formFields: FormField[] = [
     {
-      name: "name",
-      label: "نام تیم",
+      name: "date",
+      label: "تاریخ تراکنش",
+      type: "date",
+      validation: [{ type: "required", message: "تاریخ الزامی است" }],
+    },
+    {
+      name: "subject",
+      label: "موضوع",
       type: "text",
-      placeholder: "نام تیم را وارد کنید",
-      validation: [{ type: "required", message: "نام تیم الزامی است" }],
+      placeholder: "موضوع تراکنش را وارد کنید",
+      validation: [{ type: "required", message: "موضوع الزامی است" }],
     },
     {
-      name: "specialization",
-      label: "تخصص",
-      type: "text",
-      placeholder: "تخصص تیم را وارد کنید",
-      validation: [{ type: "required", message: "تخصص الزامی است" }],
-    },
-    {
-      name: "description",
-      label: "توضیحات",
-      type: "textarea",
-      placeholder: "توضیحات تیم را وارد کنید",
-      validation: [{ type: "required", message: "توضیحات الزامی است" }],
-    },
-    {
-      name: "isActive",
-      label: "وضعیت",
+      name: "type",
+      label: "نوع تراکنش",
       type: "select",
       options: [
-        { label: "فعال", value: "true" },
-        { label: "غیرفعال", value: "false" },
+        { label: "درآمد", value: "income" },
+        { label: "هزینه", value: "expense" },
       ],
-      defaultValue: "true",
+      validation: [{ type: "required", message: "نوع تراکنش الزامی است" }],
     },
+    {
+      name: "paid",
+      label: "مبلغ پرداختی",
+      type: "number",
+      placeholder: "مبلغ پرداختی را وارد کنید",
+      defaultValue: 0,
+      dependsOn: {
+        field: "type",
+        operator: "eq",
+        value: "expense"
+      },
+      validation: [{ type: "required", message: "مبلغ پرداختی الزامی است" }],
+    },
+    {
+      name: "received",
+      label: "مبلغ دریافتی",
+      type: "number",
+      placeholder: "مبلغ دریافتی را وارد کنید",
+      defaultValue: 0,
+      dependsOn: {
+        field: "type",
+        operator: "eq",
+        value: "income"
+      },
+      validation: [{ type: "required", message: "مبلغ دریافتی الزامی است" }],
+    },
+    {
+      name: "users",
+      label: "کاربر",
+      type: "select",
+      placeholder: "کاربر را انتخاب کنید",
+      options: users.map(user => ({ label: user.name, value: user._id })),
+    },
+    {
+      name: "customer",
+      label: "مشتری",
+      type: "select",
+      placeholder: "مشتری را انتخاب کنید",
+      options: customers.map(customer => ({ label: customer.name, value: customer._id })),
+    },
+
   ];
 
   const filterFields: FilterField[] = [
@@ -94,18 +152,59 @@ const TeamsManagement: React.FC = () => {
       key: "search",
       label: "جستجو",
       type: "text",
-      placeholder: "نام، تخصص یا توضیحات تیم را جستجو کنید...",
+      placeholder: "موضوع تراکنش را جستجو کنید...",
     },
     {
-      key: "isActive",
-      label: "وضعیت",
+      key: "type",
+      label: "نوع تراکنش",
       type: "select",
       options: [
-        { label: "فعال", value: "true" },
-        { label: "غیرفعال", value: "false" },
+        { label: "درآمد", value: "income" },
+        { label: "هزینه", value: "expense" },
       ],
     },
+    {
+      key: "users",
+      label: "کاربر",
+      type: "select",
+      options: users.map(user => ({ label: user.name, value: user._id })),
+    },
+    {
+      key: "customer",
+      label: "مشتری",
+      type: "select",
+      options: customers.map(customer => ({ label: customer.name, value: customer._id })),
+    },
   ];
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/users?dropdown=true');
+      const result = await response.json();
+      if (result.success) {
+        setUsers(result.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  const fetchCustomers = async () => {
+    try {
+      const response = await fetch('/api/customers?dropdown=true');
+      const result = await response.json();
+      if (result.success) {
+        setCustomers(result.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+    fetchCustomers();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#030014] via-[#0A0A2E] to-[#030014] relative overflow-hidden" dir="rtl">
@@ -118,8 +217,8 @@ const TeamsManagement: React.FC = () => {
       
       <div className="relative z-10 p-6">
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-3">مدیریت تیمها</h1>
-          <p className="text-white/70 text-lg">مدیریت کامل تیمها با امکان جستجو، فیلتر، ویرایش و حذف</p>
+          <h1 className="text-4xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-3">مدیریت تراکنش‌ها</h1>
+          <p className="text-white/70 text-lg">مدیریت کامل تراکنش‌های مالی با امکان جستجو، فیلتر و ویرایش</p>
         </div>
 
         <div className="mb-6 flex justify-end">
@@ -139,9 +238,9 @@ const TeamsManagement: React.FC = () => {
           data={[]}
           loading={false}
           formFields={formFields}
-          endpoint="/api/teams"
-          formTitle="ویرایش تیم"
-          formSubtitle="اطلاعات تیم را ویرایش کنید"
+          endpoint="/api/transactions"
+          formTitle="ویرایش تراکنش"
+          formSubtitle="اطلاعات تراکنش را ویرایش کنید"
           filterFields={filterFields}
         />
 
@@ -179,7 +278,7 @@ const TeamsManagement: React.FC = () => {
                 <div className="p-8 overflow-auto max-h-[90vh] relative z-10">
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-2xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text">
-                      افزودن تیم جدید
+                      افزودن تراکنش جدید
                     </h3>
                     <button onClick={() => setIsAddModalOpen(false)}>
                       <IoClose
@@ -193,15 +292,15 @@ const TeamsManagement: React.FC = () => {
                     title=""
                     subtitle=""
                     fields={formFields}
-                    endpoint="/api/teams"
+                    endpoint="/api/transactions"
                     method="POST"
-                    submitButtonText="افزودن تیم"
+                    submitButtonText="افزودن تراکنش"
                     onSuccess={() => {
                       setIsAddModalOpen(false);
-                      toast.success("تیم با موفقیت افزوده شد");
+                      toast.success("تراکنش با موفقیت افزوده شد");
                     }}
                     onError={() => {
-                      toast.error("خطا در افزودن تیم");
+                      toast.error("خطا در افزودن تراکنش");
                     }}
                     onCancel={() => setIsAddModalOpen(false)}
                     className="bg-transparent border-0 shadow-none p-0"
@@ -216,4 +315,4 @@ const TeamsManagement: React.FC = () => {
   );
 };
 
-export default TeamsManagement;
+export default TransactionsManagement;

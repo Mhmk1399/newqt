@@ -162,8 +162,20 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     await connect();
+    
+    // Try to get ID from query params first
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
+    let id = searchParams.get("id");
+    
+    // If not in query params, try to get from request body
+    if (!id) {
+      try {
+        const body = await request.json();
+        id = body.id;
+      } catch {
+        // If body parsing fails, continue with null id
+      }
+    }
 
     if (!id) {
       return NextResponse.json(

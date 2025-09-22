@@ -193,7 +193,7 @@ const DynamicUpdateForm: React.FC<DynamicUpdateFormProps> = ({
                       onChange={(e) => {
                         // Handle boolean conversion for boolean fields
                         const value = e.target.value;
-                        let convertedValue = value;
+                        let convertedValue: string | boolean = value;
                         if (value === 'true') convertedValue = true;
                         else if (value === 'false') convertedValue = false;
                         
@@ -366,7 +366,7 @@ const DynamicUpdateForm: React.FC<DynamicUpdateFormProps> = ({
             resetForm();
             onCancel?.();
           }}
-          className="px-8 py-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white/90 rounded-xl font-medium hover:bg-white/20 transition-all duration-300"
+          className="px-8 py-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white/90 rounded-xl font-medium hover:bg-white/20 transition-all mx-4 duration-300"
         >
           {cancelButtonText}
         </button>
