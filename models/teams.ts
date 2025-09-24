@@ -6,33 +6,40 @@ export interface ITeam {
   specialization: string;
   description: string;
   isActive: boolean;
+  amount: Number;
 }
 
-const teamSchema = new mongoose.Schema<ITeam>({
-  name: {
-    type: String,
-    required: true,
-    trim: true,
-    unique: true
+const teamSchema = new mongoose.Schema<ITeam>(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+      unique: true,
+    },
+    specialization: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    amount: {
+      type: Number,
+    },
+    description: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
-  specialization: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  description: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  isActive: {
-    type: Boolean,
-    default: true
+  {
+    timestamps: true,
   }
-}, {
-  timestamps: true
-});
+);
 
-const Team = mongoose.models.Team || mongoose.model<ITeam>('Team', teamSchema);
+const Team = mongoose.models.Team || mongoose.model<ITeam>("Team", teamSchema);
 
 export default Team;

@@ -4,8 +4,11 @@ import React, { useState, useEffect } from "react";
 import DynamicTable from "@/components/global/newdynamics/dynamicTable";
 import { TableColumn, FilterField } from "@/types/dynamicTypes/types";
 import { motion } from "framer-motion";
-import { FaReceipt, FaArrowUp, FaArrowDown, FaCalendar } from "react-icons/fa";
+import { FaReceipt, FaArrowUp, FaArrowDown, FaCalendar, FaTasks, FaMoneyBillWave, FaCheckCircle } from "react-icons/fa";
 import { IoWallet } from "react-icons/io5";
+import DatePicker, { DateObject } from "react-multi-date-picker";
+import persian from "react-date-object/calendars/persian";
+import persian_fa from "react-date-object/locales/persian_fa";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
@@ -38,6 +41,15 @@ const UsersTransActions: React.FC = () => {
   // State for transactions data
   const [transactionsData, setTransactionsData] = useState<any[]>([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
+
+  // State for salary calculation
+  const [salaryDateRange, setSalaryDateRange] = useState<[string, string]>(["", ""]);
+  const [completedTasksCount, setCompletedTasksCount] = useState(0);
+  const [taskAmount, setTaskAmount] = useState(0); // Will be loaded from user's team
+  const [totalSalary, setTotalSalary] = useState(0);
+  const [salaryLoading, setSalaryLoading] = useState(false);
+  const [teamInfo, setTeamInfo] = useState<any>(null);
+  const [teamLoading, setTeamLoading] = useState(false);
 
   // Extract user info from token
   useEffect(() => {
@@ -195,6 +207,103 @@ const UsersTransActions: React.FC = () => {
     }
   }, [transactionsData]);
 
+  // Fetch user's team information and amount
+  const fetchUserTeamInfo = async () => {
+    if (!userInfo?.userId) return;
+
+    setTeamLoading(true);
+    try {
+      const token =
+        localStorage.getItem("userToken") || localStorage.getItem("token");
+      
+      // Get user details with team information populated
+      const userResponse = await fetch(`/api/users?id=${userInfo.userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const userResult = await userResponse.json();
+
+      if (userResult.success && userResult.data.teamId) {
+        // Team info is already populated in the user response
+        setTeamInfo(userResult.data.teamId);
+        setTaskAmount(Number(userResult.data.teamId.amount) || 0);
+      } else {
+        console.log("User has no team assigned");
+        setTaskAmount(0);
+        setTeamInfo(null);
+      }
+    } catch (error) {
+      console.error("Error fetching team info:", error);
+      toast.error("خطا در دریافت اطلاعات تیم");
+    } finally {
+      setTeamLoading(false);
+    }
+  };
+
+  // Fetch completed tasks count based on date range
+  const fetchCompletedTasks = async () => {
+    if (!userInfo?.userId || !salaryDateRange[0] || !salaryDateRange[1]) {
+      setCompletedTasksCount(0);
+      return;
+    }
+
+    setSalaryLoading(true);
+    try {
+      const token =
+        localStorage.getItem("userToken") || localStorage.getItem("token");
+      
+      const response = await fetch(
+        `/api/tasks?assignedUserId=${userInfo.userId}&status=completed&completedDateFrom=${salaryDateRange[0]}&completedDateTo=${salaryDateRange[1]}&limit=1000`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (result.success) {
+        const completedTasks = result.data || [];
+        const count = completedTasks.length;
+        setCompletedTasksCount(count);
+      } else {
+        console.error("Tasks API error:", result);
+        toast.error("خطا در دریافت تسک‌ها");
+      }
+    } catch (error) {
+      console.error("Error fetching completed tasks:", error);
+      toast.error("خطا در دریافت اطلاعات تسک‌ها");
+    } finally {
+      setSalaryLoading(false);
+    }
+  };
+
+  // Update salary calculation when count or amount changes
+  useEffect(() => {
+    setTotalSalary(completedTasksCount * taskAmount);
+  }, [completedTasksCount, taskAmount]);
+
+  // Fetch user team info when user info is available
+  useEffect(() => {
+    if (userInfo?.userId) {
+      fetchUserTeamInfo();
+    }
+  }, [userInfo]);
+
+  // Fetch completed tasks when date range changes
+  useEffect(() => {
+    if (salaryDateRange[0] && salaryDateRange[1]) {
+      fetchCompletedTasks();
+    } else {
+      setCompletedTasksCount(0);
+    }
+  }, [salaryDateRange, userInfo]);
+
   const columns: TableColumn[] = [
     {
       key: "date",
@@ -321,6 +430,192 @@ const UsersTransActions: React.FC = () => {
             خوش آمدید {userInfo.name} - مشاهده تراکنش‌های مالی شما
           </p>
         </div>
+
+        {/* Salary Calculation Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 p-8 mb-8"
+        >
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-2">
+              محاسبه حقوق
+            </h2>
+            <p className="text-white/70">محاسبه حقوق بر اساس تسک‌های تکمیل شده</p>
+          </div>
+
+          {/* Date Range Picker */}
+          <div className="flex justify-center mb-8">
+            <div className="w-full max-w-md">
+              <label className="block text-white/70 text-sm mb-3 text-center">
+                بازه زمانی محاسبه حقوق
+              </label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <DatePicker
+                    value={
+                      salaryDateRange[0] ? new DateObject(new Date(salaryDateRange[0])) : null
+                    }
+                    onChange={(val) => {
+                      const fromDate = val
+                        ? val.toDate().toISOString().split("T")[0]
+                        : "";
+                      const newRange: [string, string] = [fromDate, salaryDateRange[1]];
+                      setSalaryDateRange(newRange);
+                    }}
+                    calendar={persian}
+                    locale={persian_fa}
+                    format="YYYY/MM/DD"
+                    placeholder="از تاریخ"
+                    inputClass="w-full p-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300 text-center"
+                    calendarPosition="bottom-center"
+                    containerClassName="w-full"
+                  />
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 text-sm">
+                    📅
+                  </div>
+                </div>
+                <div className="flex items-center px-2">
+                  <span className="text-white/50">تا</span>
+                </div>
+                <div className="relative flex-1">
+                  <DatePicker
+                    value={
+                      salaryDateRange[1] ? new DateObject(new Date(salaryDateRange[1])) : null
+                    }
+                    onChange={(val) => {
+                      const toDate = val
+                        ? val.toDate().toISOString().split("T")[0]
+                        : "";
+                      const newRange: [string, string] = [salaryDateRange[0], toDate];
+                      setSalaryDateRange(newRange);
+                    }}
+                    calendar={persian}
+                    locale={persian_fa}
+                    format="YYYY/MM/DD"
+                    placeholder="تا تاریخ"
+                    inputClass="w-full p-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300 text-center"
+                    calendarPosition="bottom-center"
+                    containerClassName="w-full"
+                  />
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 text-sm">
+                    📅
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Salary Calculation Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Completed Tasks Count */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 backdrop-blur-xl rounded-2xl p-6 border border-blue-500/30"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <FaTasks className="text-blue-400 text-2xl" />
+                <FaCheckCircle className="text-blue-400/50 text-3xl" />
+              </div>
+              <h3 className="text-blue-400 text-sm font-medium mb-1">
+                تسک‌های تکمیل شده
+              </h3>
+              <p className="text-white text-2xl font-bold">
+                {salaryLoading ? (
+                  <span className="animate-pulse">...</span>
+                ) : salaryDateRange[0] && salaryDateRange[1] ? (
+                  `${completedTasksCount} عدد`
+                ) : (
+                  <span className="text-white/50 text-lg">بازه زمانی را انتخاب کنید</span>
+                )}
+              </p>
+              {salaryDateRange[0] && salaryDateRange[1] && (
+                <p className="text-blue-300/70 text-xs mt-2">
+                  از {new Date(salaryDateRange[0]).toLocaleDateString("fa-IR")} تا{" "}
+                  {new Date(salaryDateRange[1]).toLocaleDateString("fa-IR")}
+                </p>
+              )}
+            </motion.div>
+
+            {/* Amount Per Task from Team */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-gradient-to-br from-green-500/20 to-green-600/10 backdrop-blur-xl rounded-2xl p-6 border border-green-500/30"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <FaMoneyBillWave className="text-green-400 text-2xl" />
+                <IoWallet className="text-green-400/50 text-3xl" />
+              </div>
+              <h3 className="text-green-400 text-sm font-medium mb-2">
+                مبلغ هر تسک (از تیم)
+              </h3>
+              
+              {teamLoading ? (
+                <div className="text-center">
+                  <span className="text-white/50 animate-pulse">در حال بارگذاری...</span>
+                </div>
+              ) : teamInfo ? (
+                <div>
+                  <div className="bg-white/10 rounded-lg px-3 py-2 text-center mb-2">
+                    <p className="text-white text-lg font-bold">
+                      {taskAmount.toLocaleString()} ریال
+                    </p>
+                  </div>
+                  <p className="text-green-300/70 text-xs text-center">
+                    تیم: {teamInfo.name}
+                  </p>
+                  <p className="text-green-300/50 text-xs text-center">
+                    {teamInfo.specialization}
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <div className="bg-white/10 rounded-lg px-3 py-2 mb-2">
+                    <p className="text-white/50 text-sm">
+                      تیمی تخصیص داده نشده
+                    </p>
+                  </div>
+                  <p className="text-green-300/50 text-xs">
+                    لطفاً با مدیر تماس بگیرید
+                  </p>
+                </div>
+              )}
+            </motion.div>
+
+            {/* Total Salary */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="bg-gradient-to-br from-purple-500/20 to-purple-600/10 backdrop-blur-xl rounded-2xl p-6 border border-purple-500/30"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <FaReceipt className="text-purple-400 text-2xl" />
+                <FaMoneyBillWave className="text-purple-400/50 text-3xl" />
+              </div>
+              <h3 className="text-purple-400 text-sm font-medium mb-1">
+                کل حقوق
+              </h3>
+              <p className="text-white text-2xl font-bold">
+                {salaryDateRange[0] && salaryDateRange[1] ? (
+                  `${totalSalary.toLocaleString()} ریال`
+                ) : (
+                  <span className="text-white/50 text-lg">-</span>
+                )}
+              </p>
+              {salaryDateRange[0] && salaryDateRange[1] && (
+                <p className="text-purple-300/70 text-xs mt-2">
+                  {completedTasksCount} × {taskAmount.toLocaleString()}
+                </p>
+              )}
+            </motion.div>
+          </div>
+        </motion.div>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

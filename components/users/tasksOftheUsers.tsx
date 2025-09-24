@@ -17,6 +17,8 @@ import {
   FaArrowRight,
   FaArrowLeft,
   FaBell,
+  FaVideo,
+  FaPlay,
 } from "react-icons/fa";
 import {
   IoAdd,
@@ -28,6 +30,7 @@ import {
 } from "react-icons/io5";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import VideoUploadModal from "@/components/modals/VideoUploadModal";
 
 interface DecodedToken {
   userId: string;
@@ -57,6 +60,7 @@ interface Task {
     name: string;
     email: string;
   };
+  attachedVideo?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -80,6 +84,8 @@ const TasksOfTheUsers: React.FC = () => {
   const [tempValue, setTempValue] = useState<string>("");
   const [comments, setComments] = useState<TaskComment[]>([]);
   const [newComment, setNewComment] = useState("");
+  const [isVideoUploadModalOpen, setIsVideoUploadModalOpen] = useState(false);
+  const [videoUploadTaskId, setVideoUploadTaskId] = useState<string | null>(null);
 
   // Task status columns configuration
   const statusColumns = [
@@ -177,38 +183,39 @@ const TasksOfTheUsers: React.FC = () => {
     extractUserFromToken();
   }, [router]);
 
-  // Fetch user tasks
-  useEffect(() => {
-    const fetchUserTasks = async () => {
-      if (!userInfo?.userId) return;
+  // Fetch user tasks function
+  const fetchUserTasks = async () => {
+    if (!userInfo?.userId) return;
 
-      try {
-        const token =
-          localStorage.getItem("userToken") || localStorage.getItem("token");
-        const response = await fetch(
-          `/api/tasks?assignedUserId=${userInfo.userId}&limit=1000`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        const result = await response.json();
-
-        if (result.success) {
-          setTasks(result.data || []);
-        } else {
-          console.error("Tasks API error:", result);
-          toast.error("خطا در دریافت تسک‌ها");
+    try {
+      const token =
+        localStorage.getItem("userToken") || localStorage.getItem("token");
+      const response = await fetch(
+        `/api/tasks?assignedUserId=${userInfo.userId}&limit=1000`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
-      } catch (error) {
-        console.error("Error fetching tasks:", error);
-        toast.error("خطا در دریافت اطلاعات");
-      }
-    };
+      );
 
+      const result = await response.json();
+
+      if (result.success) {
+        setTasks(result.data || []);
+      } else {
+        console.error("Tasks API error:", result);
+        toast.error("خطا در دریافت تسک‌ها");
+      }
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+      toast.error("خطا در دریافت اطلاعات");
+    }
+  };
+
+  // Fetch user tasks on component mount
+  useEffect(() => {
     fetchUserTasks();
   }, [userInfo]);
 
@@ -385,6 +392,32 @@ const TasksOfTheUsers: React.FC = () => {
   const cancelFieldEdit = () => {
     setEditingField(null);
     setTempValue("");
+  };
+
+  // Handle video upload - Open modal
+  const handleVideoUpload = (taskId: string) => {
+    setVideoUploadTaskId(taskId);
+    setIsVideoUploadModalOpen(true);
+  };
+
+  // Handle video upload success
+  const handleVideoUploadSuccess = (videoUrl: string) => {
+    if (videoUploadTaskId) {
+      updateTaskField(videoUploadTaskId, "attachedVideo", videoUrl);
+      // Refresh tasks to ensure we have the latest data
+      setTimeout(() => {
+        fetchUserTasks();
+      }, 1000);
+      setIsVideoUploadModalOpen(false);
+      setVideoUploadTaskId(null);
+    }
+  };
+
+  // Handle video upload error
+  const handleVideoUploadError = (error: string) => {
+    console.error("Video upload error:", error);
+    setIsVideoUploadModalOpen(false);
+    setVideoUploadTaskId(null);
   };
 
   if (loading) {
@@ -592,7 +625,7 @@ const TasksOfTheUsers: React.FC = () => {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
-                className={`bg-gradient-to-br ${column.color} backdrop-blur-xl rounded-2xl border ${column.borderColor} p-4`}
+                className={`bg-gradient-to-br ${column.color} backdrop-blur-xl h-70 overflow-y-auto scrollbar-luxury rounded-2xl border ${column.borderColor} p-4`}
               >
                 {/* Column Header */}
                 <div className="flex items-center justify-between mb-4">
@@ -608,7 +641,7 @@ const TasksOfTheUsers: React.FC = () => {
                 </div>
 
                 {/* Task Cards */}
-                <div className="space-y-3 max-h-[600px] overflow-y-auto scrollbar-luxury">
+                <div className="space-y-3 max-h-[600px] ">
                   {columnTasks.map((task) => (
                     <motion.div
                       key={task._id}
@@ -679,6 +712,14 @@ const TasksOfTheUsers: React.FC = () => {
                               <FaFileUpload className="text-xs text-white/40" />
                               <span className="text-xs text-white/40">
                                 تحویل
+                              </span>
+                            </div>
+                          )}
+                          {task.attachedVideo && (
+                            <div className="flex items-center gap-1">
+                              <FaVideo className="text-xs text-purple-400" />
+                              <span className="text-xs text-purple-400">
+                                ویدیو
                               </span>
                             </div>
                           )}
@@ -917,6 +958,58 @@ const TasksOfTheUsers: React.FC = () => {
                           <FaEdit className="text-white/40 opacity-0 group-hover:opacity-100 transition-opacity mt-2" />
                         </div>
                       )}
+
+                      {/* Video Section - Under Notes */}
+                      <div className="mt-4 pt-4 border-t border-white/20">
+                        <label className="block text-white/70 text-sm mb-3">ویدیوی ضمیمه</label>
+                        
+                        {selectedTask.attachedVideo ? (
+                          <div className="space-y-4">
+                            {/* Video Display */}
+                            <div className="bg-black/50 rounded-lg overflow-hidden">
+                              <iframe
+                                src={selectedTask.attachedVideo}
+                                className="w-full h-48 border-0"
+                                title="ویدیوی ضمیمه تسک"
+                                allowFullScreen
+                              />
+                            </div>
+                            
+                            {/* Video Actions */}
+                            <div className="flex gap-3">
+                              <button
+                                onClick={() => window.open(selectedTask.attachedVideo, '_blank')}
+                                className="flex items-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors"
+                              >
+                                <FaPlay />
+                                بازکردن در تب جدید
+                              </button>
+                              
+                              <button
+                                onClick={() => handleVideoUpload(selectedTask._id)}
+                                className="flex items-center gap-2 px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg text-blue-300 text-sm transition-colors"
+                              >
+                                <FaVideo />
+                                تعویض ویدیو
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="border-2 border-dashed border-white/30 rounded-lg p-6 text-center hover:border-white/50 transition-colors">
+                            <FaVideo className="mx-auto text-white/50 text-3xl mb-3" />
+                            <p className="text-white/60 text-sm mb-4">
+                              هنوز ویدیویی آپلود نشده است
+                            </p>
+                            <button
+                              onClick={() => handleVideoUpload(selectedTask._id)}
+                              className="px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-purple-300 text-sm transition-colors flex items-center justify-center gap-2 mx-auto"
+                            >
+                              <FaVideo />
+                              آپلود ویدیو
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -1078,18 +1171,58 @@ const TasksOfTheUsers: React.FC = () => {
                       </p>
                     </div>
 
-                    {/* File Upload Section */}
+                    {/* Video Upload Section */}
                     <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                      <label className="block text-white/70 text-sm mb-2">
-                        آپلود فایل
+                      <label className="block text-white/70 text-sm mb-3">
+                        ویدیوی ضمیمه
                       </label>
-                      <div className="border-2 border-dashed border-white/30 rounded-lg p-4 text-center">
-                        <FaFileUpload className="mx-auto text-white/50 text-2xl mb-2" />
-                        <p className="text-white/60 text-sm">
-                          فایل را اینجا بکشید یا کلیک کنید
-                        </p>
-                        <input type="file" className="hidden" />
-                      </div>
+                      
+                      {selectedTask.attachedVideo ? (
+                        <div className="space-y-4">
+                          {/* Video Display */}
+                          <div className="bg-black/50 rounded-lg overflow-hidden">
+                            <iframe
+                              src={selectedTask.attachedVideo}
+                              className="w-full h-48 border-0"
+                              title="ویدیوی ضمیمه تسک"
+                              allowFullScreen
+                            />
+                          </div>
+                          
+                          {/* Video Actions */}
+                          <div className="flex gap-3">
+                            <button
+                              onClick={() => window.open(selectedTask.attachedVideo, '_blank')}
+                              className="flex items-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors"
+                            >
+                              <FaPlay />
+                              بازکردن در تب جدید
+                            </button>
+                            
+                            <button
+                              onClick={() => handleVideoUpload(selectedTask._id)}
+                              className="flex items-center gap-2 px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg text-blue-300 text-sm transition-colors"
+                            >
+                              <FaVideo />
+                              تعویض ویدیو
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed border-white/30 rounded-lg p-6 text-center hover:border-white/50 transition-colors">
+                          <FaVideo className="mx-auto text-white/50 text-3xl mb-3" />
+                          <p className="text-white/60 text-sm mb-4">
+                            هنوز ویدیویی آپلود نشده است
+                          </p>
+                          <button
+                            onClick={() => handleVideoUpload(selectedTask._id)}
+                            className="px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-purple-300 text-sm transition-colors flex items-center justify-center gap-2 mx-auto"
+                          >
+                            <FaVideo />
+                            آپلود ویدیو
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1098,6 +1231,18 @@ const TasksOfTheUsers: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Video Upload Modal */}
+      <VideoUploadModal
+        isOpen={isVideoUploadModalOpen}
+        taskId={videoUploadTaskId || ""}
+        onClose={() => {
+          setIsVideoUploadModalOpen(false);
+          setVideoUploadTaskId(null);
+        }}
+        onSuccess={handleVideoUploadSuccess}
+        onError={handleVideoUploadError}
+      />
     </div>
   );
 };

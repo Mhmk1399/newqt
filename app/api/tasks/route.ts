@@ -27,6 +27,24 @@ export async function GET(request: NextRequest) {
     if (searchParams.get("priority")) {
       filter.priority = searchParams.get("priority");
     }
+    
+    // Filter by completion date range
+    if (searchParams.get("completedDateFrom") || searchParams.get("completedDateTo")) {
+      const completedDateFilter: any = {};
+      
+      if (searchParams.get("completedDateFrom")) {
+        completedDateFilter.$gte = new Date(searchParams.get("completedDateFrom")!);
+      }
+      
+      if (searchParams.get("completedDateTo")) {
+        const toDate = new Date(searchParams.get("completedDateTo")!);
+        toDate.setHours(23, 59, 59, 999); // End of day
+        completedDateFilter.$lte = toDate;
+      }
+      
+      filter.completedDate = completedDateFilter;
+    }
+    
     if (searchParams.get("assignedUserId")) {
       const assignedUserId = searchParams.get("assignedUserId");
       filter.assignedUserId = assignedUserId;

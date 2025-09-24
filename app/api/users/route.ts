@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
       const user = await User.findById(id).populate({
         path: "teamId",
-        select: "name",
+        select: "name specialization amount",
         model: Team,
       }).select('-password');
       

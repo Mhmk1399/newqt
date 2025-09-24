@@ -14,6 +14,7 @@ export interface ITask {
   completedDate?: Date;
   notes: string;
   deliverables: string;
+  attachedVideo?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -65,6 +66,11 @@ const taskSchema = new mongoose.Schema<ITask>({
     trim: true
   },
   deliverables: {
+    type: String,
+    default: '',
+    trim: true
+  },
+  attachedVideo: {
     type: String,
     default: '',
     trim: true
