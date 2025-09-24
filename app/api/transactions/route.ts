@@ -4,6 +4,7 @@ import User from "@/models/users";
 import Customer from "@/models/customersData/customers";
 import connect from "@/lib/data";
 import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
 
 // GET - Retrieve transactions with filters and pagination
 export async function GET(request: NextRequest) {
@@ -13,8 +14,43 @@ export async function GET(request: NextRequest) {
     const id = searchParams.get("id");
     const type = searchParams.get("type");
     const search = searchParams.get("search");
+    const users = searchParams.get("users"); // Filter by user ID
+    const customer = searchParams.get("customer"); // Filter by customer ID
+    const summary = searchParams.get("summary"); // Request summary data
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
+
+    // Check if a specific user ID is requested and validate access
+    if (users) {
+      const authHeader = request.headers.get("authorization");
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        try {
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(
+            token,
+            process.env.JWT_SECRET || "your-secret-key"
+          ) as { userId: string; userType: string };
+          
+          // Only allow users to access their own transactions (unless admin)
+          if (decoded.userType !== "admin" && decoded.userId !== users) {
+            return NextResponse.json(
+              { success: false, message: "Unauthorized access to user transactions" },
+              { status: 403 }
+            );
+          }
+        } catch (tokenError) {
+          return NextResponse.json(
+            { success: false, message: "Invalid token" },
+            { status: 401 }
+          );
+        }
+      } else {
+        return NextResponse.json(
+          { success: false, message: "Authorization header required" },
+          { status: 401 }
+        );
+      }
+    }
 
     if (id) {
       if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -49,8 +85,41 @@ export async function GET(request: NextRequest) {
     // Build query filters
     const query: any = {};
     if (type) query.type = type;
+    if (users && mongoose.Types.ObjectId.isValid(users)) {
+      query.users = users;
+    }
+    if (customer && mongoose.Types.ObjectId.isValid(customer)) {
+      query.customer = customer;
+    }
     if (search) {
       query.$or = [{ subject: { $regex: search, $options: "i" } }];
+    }
+
+    // If summary is requested, calculate and return summary data
+    if (summary === "true") {
+      const transactions = await Transaction.find(query);
+      
+      const summaryData = {
+        totalIncome: 0,
+        totalExpense: 0,
+        balance: 0,
+        transactionCount: transactions.length
+      };
+
+      transactions.forEach(transaction => {
+        if (transaction.type === "income") {
+          summaryData.totalIncome += transaction.received || 0;
+        } else if (transaction.type === "expense") {
+          summaryData.totalExpense += transaction.paid || 0;
+        }
+      });
+
+      summaryData.balance = summaryData.totalIncome - summaryData.totalExpense;
+
+      return NextResponse.json({
+        success: true,
+        summary: summaryData,
+      });
     }
 
     const skip = (page - 1) * limit;

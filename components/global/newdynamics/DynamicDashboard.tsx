@@ -28,6 +28,9 @@ import ContactRequestsManagement from "@/components/admin/ContactRequestsManagem
 import CoWorkersManagement from "@/components/admin/CoWorkersManagement";
 import TransactionsManagement from "@/components/admin/TransactionsManagement";
 
+// Import user components
+import UsersTransActions from "@/components/users/usersTransActions";
+
 interface DashboardConfig {
   userType: string;
   items: {
@@ -51,9 +54,22 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
   const [activeKey, setActiveKey] = useState<string>("");
   const [isMobile, setIsMobile] = useState(false);
 
+  // Default user configuration  
+  const defaultUserConfig: DashboardConfig = {
+    userType: "user",
+    items: [
+      {
+        key: "transactions",
+        label: "تراکنش‌های من",
+        icon: <IoCard />,
+        component: UsersTransActions
+      },
+    ]
+  };
+
   // Default admin configuration
   const defaultAdminConfig: DashboardConfig = {
-    userType: "user",
+    userType: "admin",
     items: [
       {
         key: "customers",
@@ -134,15 +150,19 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Get configuration for current user role
+    // Get configuration for current user role
   const getCurrentConfig = (): DashboardConfig | null => {
     if (configs) {
       return configs.find(config => config.userType === userRole) || null;
     }
     
-    // Return default config for admin
-    if (userRole === 'user') {
+    // Default configurations
+    if (userRole === 'admin') {
       return defaultAdminConfig;
+    }
+    
+    if (userRole === 'user' || userRole === 'customer' || userRole === 'coworker') {
+      return defaultUserConfig;
     }
     
     return null;
