@@ -6,6 +6,7 @@ import DynamicForm from "@/components/global/newdynamics/dynamicForm";
 import { TableColumn, FormField, FilterField } from "@/types/dynamicTypes/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { IoAdd, IoClose } from "react-icons/io5";
+import { FaExclamationTriangle, FaCheckCircle, FaTimes } from "react-icons/fa";
 import toast from "react-hot-toast";
 import DatePicker, { DateObject } from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
@@ -53,6 +54,7 @@ const TasksManagement: React.FC = () => {
           todo: { label: "انجام نشده", color: "bg-gray-100 text-gray-800" },
           "in-progress": { label: "در حال انجام", color: "bg-blue-100 text-blue-800" },
           review: { label: "بررسی", color: "bg-yellow-100 text-yellow-800" },
+          accepted: { label: "تایید شده", color: "bg-emerald-100 text-emerald-800" },
           completed: { label: "تکمیل شده", color: "bg-green-100 text-green-800" },
           cancelled: { label: "لغو شده", color: "bg-red-100 text-red-800" }
         };
@@ -196,6 +198,7 @@ const TasksManagement: React.FC = () => {
         { label: "انجام نشده", value: "todo" },
         { label: "در حال انجام", value: "in-progress" },
         { label: "بررسی", value: "review" },
+        { label: "تایید شده", value: "accepted" },
         { label: "تکمیل شده", value: "completed" },
         { label: "لغو شده", value: "cancelled" },
       ],
@@ -252,6 +255,7 @@ const TasksManagement: React.FC = () => {
         { label: "انجام نشده", value: "todo" },
         { label: "در حال انجام", value: "in-progress" },
         { label: "بررسی", value: "review" },
+        { label: "تایید شده", value: "accepted" },
         { label: "تکمیل شده", value: "completed" },
         { label: "لغو شده", value: "cancelled" },
       ],
@@ -334,6 +338,74 @@ const TasksManagement: React.FC = () => {
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-3">مدیریت تسکها</h1>
           <p className="text-white/70 text-lg">مدیریت کامل تسکها با امکان جستجو، فیلتر، ویرایش و تخصیص</p>
+        </div>
+
+        {/* Quick Review Tasks Section */}
+        <div className="mb-8">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-r from-yellow-500/20 via-orange-500/15 to-red-500/20 backdrop-blur-xl rounded-2xl border border-yellow-400/40 p-6 shadow-2xl shadow-yellow-500/10"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-yellow-500 p-2 rounded-full">
+                  <FaExclamationTriangle className="text-white text-lg animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-yellow-300">تسک‌های در انتظار بررسی</h3>
+                  <p className="text-yellow-200/80 text-sm">تسک‌های ارسال شده توسط کاربران که نیاز به بررسی و تایید دارند</p>
+                </div>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  // This will filter the main table to show only review tasks
+                  const filterEvent = new CustomEvent('filterTable', { 
+                    detail: { key: 'status', value: 'review' } 
+                  });
+                  window.dispatchEvent(filterEvent);
+                }}
+                className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                مشاهده همه
+              </motion.button>
+            </div>
+            
+            {/* Quick Review Actions */}
+            <div className="bg-white/10 rounded-xl p-4">
+              <p className="text-white/90 text-sm mb-3">عملیات سریع برای تسک‌های در بررسی:</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center gap-2 px-4 py-3 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 rounded-lg text-emerald-300 text-sm transition-colors"
+                >
+                  <FaCheckCircle />
+                  تایید همه تسک‌های انتخاب شده
+                </motion.button>
+                
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center gap-2 px-4 py-3 bg-green-600/20 hover:bg-green-600/30 border border-green-500/30 rounded-lg text-green-300 text-sm transition-colors"
+                >
+                  <FaCheckCircle />
+                  تکمیل همه تسک‌های انتخاب شده
+                </motion.button>
+                
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center gap-2 px-4 py-3 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-lg text-red-300 text-sm transition-colors"
+                >
+                  <FaTimes />
+                  رد همه تسک‌های انتخاب شده
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
         </div>
 
         <div className="mb-6 flex justify-end">

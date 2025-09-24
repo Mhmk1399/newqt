@@ -16,6 +16,7 @@ interface DecodedToken {
 export default function UnifiedDashboard() {
   const router = useRouter();
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [userType, setUserType] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const clearTokenAndRedirect = () => {
@@ -65,10 +66,21 @@ export default function UnifiedDashboard() {
         decoded.userType &&
         ["user", "customer", "coworker", "admin"].includes(decoded.userType)
       ) {
-        // Use role from API response, fallback to token role or userType
-        const role = userData.role || decoded.role || decoded.userType;
-        console.log("User role:", role);
-        setUserRole(role);
+        // Set userType from token
+        setUserType(decoded.userType);
+        
+        // For users from User model, use their actual role; for others, use userType
+        if (decoded.userType === "user") {
+          // For User model, get role from userData or token
+          const role = userData.role || decoded.role || "designer"; // default role
+          setUserRole(role);
+        } else {
+          // For Customer and CoWorker models, userRole is same as userType
+          setUserRole(decoded.userType);
+        }
+        
+        console.log("User type:", decoded.userType);
+        console.log("User role:", decoded.userType === "user" ? (userData.role || decoded.role) : decoded.userType);
       } else {
         clearTokenAndRedirect();
       }
@@ -92,7 +104,7 @@ export default function UnifiedDashboard() {
     );
   }
 
-  if (!userRole) {
+  if (!userRole || !userType) {
     return (
       <div className="h-screen flex items-center justify-center bg-gradient-to-br from-[#030014] via-[#0A0A2E] to-[#030014]">
         <div className="text-center">
@@ -107,7 +119,7 @@ export default function UnifiedDashboard() {
 
   return (
     <div className="h-screen" dir="rtl">
-      <DynamicDashboard userRole={userRole} />
+      <DynamicDashboard userRole={userRole} userType={userType} />
     </div>
   );
 }

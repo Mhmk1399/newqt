@@ -30,6 +30,7 @@ import TransactionsManagement from "@/components/admin/TransactionsManagement";
 
 // Import user components
 import UsersTransActions from "@/components/users/usersTransActions";
+import TasksOfTheUsers from "@/components/users/tasksOftheUsers";
 
 interface DashboardConfig {
   userType: string;
@@ -43,20 +44,41 @@ interface DashboardConfig {
 
 interface DynamicDashboardProps {
   userRole: string;
+  userType?: string; // Add userType to distinguish between user types
   configs?: DashboardConfig[];
 }
 
 const DynamicDashboard: React.FC<DynamicDashboardProps> = ({ 
   userRole, 
+  userType = "user", // Default to user type
   configs 
 }) => {
   const [activeComponent, setActiveComponent] = useState<React.ComponentType | null>(null);
   const [activeKey, setActiveKey] = useState<string>("");
   const [isMobile, setIsMobile] = useState(false);
 
-  // Default user configuration  
+  // Default user configuration (for regular users from User model)
   const defaultUserConfig: DashboardConfig = {
     userType: "user",
+    items: [
+      {
+        key: "tasks",
+        label: "تسک‌های من",
+        icon: <IoCheckbox />,
+        component: TasksOfTheUsers
+      },
+      {
+        key: "transactions",
+        label: "تراکنش‌های من",
+        icon: <IoCard />,
+        component: UsersTransActions
+      },
+    ]
+  };
+
+  // Customer configuration (for users from Customer model) - placeholder for future
+  const defaultCustomerConfig: DashboardConfig = {
+    userType: "customer",
     items: [
       {
         key: "transactions",
@@ -64,6 +86,21 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
         icon: <IoCard />,
         component: UsersTransActions
       },
+      // Add customer-specific items here in the future
+    ]
+  };
+
+  // CoWorker configuration (for users from CoWorker model) - placeholder for future
+  const defaultCoWorkerConfig: DashboardConfig = {
+    userType: "coworker",
+    items: [
+      {
+        key: "tasks",
+        label: "پروژه‌های من",
+        icon: <IoCheckbox />,
+        component: TasksOfTheUsers
+      },
+      // Add coworker-specific items here in the future
     ]
   };
 
@@ -150,21 +187,40 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-    // Get configuration for current user role
+    // Get configuration for current user role and type
   const getCurrentConfig = (): DashboardConfig | null => {
+    console.log('Dashboard Config - UserType:', userType, 'UserRole:', userRole);
+    
     if (configs) {
-      return configs.find(config => config.userType === userRole) || null;
+      return configs.find(config => config.userType === userType) || null;
     }
     
-    // Default configurations
-    if (userRole === 'admin') {
-      return defaultAdminConfig;
+    // Default configurations based on userType and userRole
+    // For users from the User model, check their role
+    if (userType === 'user') {
+      if (userRole === 'admin') {
+        console.log('Loading admin configuration');
+        return defaultAdminConfig;
+      } else {
+        // Other user roles (manager, editor, designer, video-shooter) get user config
+        console.log('Loading user configuration for role:', userRole);
+        return defaultUserConfig;
+      }
     }
     
-    if (userRole === 'user' || userRole === 'customer' || userRole === 'coworker') {
-      return defaultUserConfig;
+    // For customers, they get customer config
+    if (userType === 'customer') {
+      console.log('Loading customer configuration');
+      return defaultCustomerConfig;
     }
     
+    // For coworkers, they get coworker config
+    if (userType === 'coworker') {
+      console.log('Loading coworker configuration');
+      return defaultCoWorkerConfig;
+    }
+    
+    console.log('No configuration found for userType:', userType, 'userRole:', userRole);
     return null;
   };
 

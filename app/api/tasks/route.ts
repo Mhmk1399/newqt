@@ -3,6 +3,7 @@ import Task from "@/models/tasks";
 import ServiceRequest from "@/models/customersData/serviceRequests";
 import User from "@/models/users";
 import connect from "@/lib/data";
+import jwt from "jsonwebtoken";
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,7 +28,38 @@ export async function GET(request: NextRequest) {
       filter.priority = searchParams.get("priority");
     }
     if (searchParams.get("assignedUserId")) {
-      filter.assignedUserId = searchParams.get("assignedUserId");
+      const assignedUserId = searchParams.get("assignedUserId");
+      filter.assignedUserId = assignedUserId;
+      
+      // Check authorization for user-specific requests
+      const authHeader = request.headers.get("authorization");
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        try {
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(
+            token,
+            process.env.JWT_SECRET || "your-secret-key"
+          ) as { userId: string; userType: string };
+          
+          // Only allow users to access their own tasks (unless admin)
+          if (decoded.userType !== "admin" && decoded.userId !== assignedUserId) {
+            return NextResponse.json(
+              { success: false, message: "Unauthorized access to user tasks" },
+              { status: 403 }
+            );
+          }
+        } catch (tokenError) {
+          return NextResponse.json(
+            { success: false, message: "Invalid token" },
+            { status: 401 }
+          );
+        }
+      } else {
+        return NextResponse.json(
+          { success: false, message: "Authorization header required for user-specific requests" },
+          { status: 401 }
+        );
+      }
     }
 
     const skip = (page - 1) * limit;

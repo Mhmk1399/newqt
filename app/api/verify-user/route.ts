@@ -32,18 +32,26 @@ export async function POST(request: NextRequest) {
     }
 
     // Check user exists in appropriate model based on userType
-    let userExists: unknown = null;
+    let userExists: any = null;
+    let userRole: string | null = null;
 
     if (decoded.userType === "user") {
       userExists = await User.findById(userId);
+      if (userExists) {
+        userRole = userExists.role; // Get the actual role from User model
+      }
     } else if (decoded.userType === "customer") {
       userExists = await Customer.findById(userId);
     } else if (decoded.userType === "coworker") {
       userExists = await CoWorker.findById(userId);
     }
-    console.log(userExists, "asdasd");
+    
+    console.log(userExists, "User verification result");
 
-    return NextResponse.json({ exists: !!userExists });
+    return NextResponse.json({ 
+      exists: !!userExists,
+      role: userRole // Include role for User model users
+    });
   } catch (error: unknown) {
     console.log(error);
     return NextResponse.json({ exists: false }, { status: 500 });
