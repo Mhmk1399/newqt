@@ -41,6 +41,12 @@ export interface IService {
   teamId: mongoose.Types.ObjectId;
   isActive: boolean;
   isVip: boolean;
+  options?: Array<{
+    key: string;
+    values: string;
+    images?: string[];
+  }>;
+  requieredFileds?: string[]; // Note: keeping the typo as it matches your model
 }
 
 // Project Types

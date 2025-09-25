@@ -1,3 +1,5 @@
+import React from 'react';
+
 export type FormFieldValue =
   | string
   | number
@@ -25,7 +27,9 @@ export type FormFieldType =
   | "file"
   | "switch"
   | "modelRef" // New type for fields that reference other models
-  | "hidden";
+  | "hidden"
+  | "custom"
+  | "array";
 
 export type ValidationRule =
   | {
@@ -75,6 +79,8 @@ export interface FormField {
   refModel?: string;
   multiple?: boolean;
   isRequired?: boolean;
+  render?: () => React.ReactNode;
+  arrayFields?: FormField[];
 }
 export interface FormFieldDependency {
   field: string;

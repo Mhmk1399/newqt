@@ -135,7 +135,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
               return (
                 <div key={field.name} className="space-y-1">
                   {field.type !== "checkbox" && (
-                    <label className="block text-sm font-medium text-white/90 mb-2">
+                    <label className="block text-sm font-medium text-white/90 my-4">
                       {field.label}
                     </label>
                   )}
@@ -341,6 +341,40 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                               disabled={field.disabled}
                               readOnly={field.readOnly}
                             />
+                          </div>
+                        );
+                      case "custom":
+                        return field.render ? field.render() : null;
+                      case "array":
+                        // For now, we'll handle array fields as a simple text input
+                        // You can extend this to have a more sophisticated array editor
+                        return (
+                          <div className="space-y-2">
+                            <textarea
+                              name={field.name}
+                              placeholder={field.placeholder || "Enter items separated by commas"}
+                              value={Array.isArray(formValues[field.name]) 
+                                ? (formValues[field.name] as string[]).join(', ')
+                                : String(formValues[field.name] || "")
+                              }
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                const arrayValue = value.split(',').map(item => item.trim()).filter(item => item);
+                                handleChange({
+                                  target: {
+                                    name: field.name,
+                                    value: arrayValue,
+                                  },
+                                } as unknown as React.ChangeEvent<HTMLInputElement>, field);
+                              }}
+                              rows={3}
+                              className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white/90 placeholder:text-white/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
+                              disabled={field.disabled}
+                              readOnly={field.readOnly}
+                            />
+                            <p className="text-xs text-white/60">
+                              Items should be separated by commas
+                            </p>
                           </div>
                         );
                       default:

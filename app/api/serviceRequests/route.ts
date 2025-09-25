@@ -256,7 +256,7 @@ export async function PATCH(request: NextRequest) {
 
     // Create tasks for newly assigned users
     if (updateData.asiginedto && Array.isArray(updateData.asiginedto)) {
-      const currentAssigned = currentServiceRequest.asiginedto?.map(id => id.toString()) || [];
+      const currentAssigned: string[] = currentServiceRequest.asiginedto?.map((id: mongoose.Types.ObjectId) => id.toString()) || [];
       const newAssigned = updateData.asiginedto.filter((userId: string) => 
         !currentAssigned.includes(userId)
       );

@@ -8,7 +8,6 @@ const serviceRequestSchema = new mongoose.Schema<IServiceRequest>(
       required: true,
       trim: true,
     },
-
     serviceId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Service",
@@ -40,8 +39,7 @@ const serviceRequestSchema = new mongoose.Schema<IServiceRequest>(
       type: Date,
     },
     requirements: {
-      type: String,
-      required: true,
+      type: String, // JSON string of dynamic field values
       trim: true,
     },
     notes: {

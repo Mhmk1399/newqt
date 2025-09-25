@@ -30,7 +30,7 @@ const serviceSchema = new mongoose.Schema<IService>(
     isVip: {
       type: Boolean,
       default: false,
-    }
+    },
   },
   {
     timestamps: true,

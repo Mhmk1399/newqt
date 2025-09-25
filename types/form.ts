@@ -1,3 +1,5 @@
+import React from 'react';
+
 // Form field types
 export type FormFieldType =
   | "text"
@@ -11,7 +13,9 @@ export type FormFieldType =
   | "checkbox"
   | "checkbox-group"
   | "radio"
-  | "hidden";
+  | "hidden"
+  | "custom"
+  | "array";
 
 export interface FormFieldOption {
   value: string;
@@ -39,6 +43,8 @@ export interface FormField {
   readonly?: boolean;
   hidden?: boolean;
   onChange?: (fieldName: string, value: string | string[]) => void;
+  render?: () => React.ReactNode;
+  arrayFields?: FormField[];
 }
 
 export interface FormConfig {
