@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Transaction from "@/models/transaction";
 import User from "@/models/users";
 import Customer from "@/models/customersData/customers";
+import CoWorker from "@/models/coWorker";
 import connect from "@/lib/data";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
@@ -16,12 +17,17 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search");
     const users = searchParams.get("users"); // Filter by user ID
     const customer = searchParams.get("customer"); // Filter by customer ID
+    const coworker = searchParams.get("coworker"); // Filter by coworker ID
     const summary = searchParams.get("summary"); // Request summary data
+    const dateFrom = searchParams.get("dateFrom"); // Date range filter start
+    const dateTo = searchParams.get("dateTo"); // Date range filter end
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
+    
+    console.log('Transaction API params:', { users, customer, coworker, summary, page, limit });
 
-    // Check if a specific user ID is requested and validate access
-    if (users) {
+    // Check if filtering by specific user, customer, or coworker is requested and validate access
+    if (users || customer || coworker) {
       const authHeader = request.headers.get("authorization");
       if (authHeader && authHeader.startsWith("Bearer ")) {
         try {
@@ -29,12 +35,56 @@ export async function GET(request: NextRequest) {
           const decoded = jwt.verify(
             token,
             process.env.JWT_SECRET || "your-secret-key"
-          ) as { userId: string; userType: string };
+          ) as { userId: string; userType: "user" | "admin" | "customer" | "coworker" };
           
-          // Only allow users to access their own transactions (unless admin)
-          if (decoded.userType !== "admin" && decoded.userId !== users) {
+          // Admins can access all transactions
+          if (decoded.userType === "admin") {
+            // Admin has full access, no restrictions
+          }
+          // Users (staff) can access user transactions
+          else if (users && decoded.userType === "user" && decoded.userId !== users) {
             return NextResponse.json(
-              { success: false, message: "Unauthorized access to user transactions" },
+              { success: false, message: "Users can only access their own transactions" },
+              { status: 403 }
+            );
+          }
+          // Customers can only access their own customer transactions
+          else if (customer && decoded.userType === "customer" && decoded.userId !== customer) {
+            return NextResponse.json(
+              { success: false, message: "Customers can only access their own transactions" },
+              { status: 403 }
+            );
+          }
+          // CoWorkers can only access their own coworker transactions
+          else if (coworker && decoded.userType === "coworker" && decoded.userId !== coworker) {
+            return NextResponse.json(
+              { success: false, message: "CoWorkers can only access their own transactions" },
+              { status: 403 }
+            );
+          }
+          // Additional validation for cross-type access attempts
+          else if (decoded.userType === "coworker" && (users || customer)) {
+            return NextResponse.json(
+              { success: false, message: "CoWorkers cannot access user or customer transactions" },
+              { status: 403 }
+            );
+          }
+          else if (decoded.userType === "customer" && (users || coworker)) {
+            return NextResponse.json(
+              { success: false, message: "Customers cannot access user or coworker transactions" },
+              { status: 403 }
+            );
+          }
+          else if (decoded.userType === "user" && (customer || coworker)) {
+            return NextResponse.json(
+              { success: false, message: "Users cannot access customer or coworker transactions without admin privileges" },
+              { status: 403 }
+            );
+          }
+          // Invalid userType
+          else if (!["user", "admin", "customer", "coworker"].includes(decoded.userType)) {
+            return NextResponse.json(
+              { success: false, message: "Invalid user type" },
               { status: 403 }
             );
           }
@@ -91,9 +141,31 @@ export async function GET(request: NextRequest) {
     if (customer && mongoose.Types.ObjectId.isValid(customer)) {
       query.customer = customer;
     }
+    // Note: CoWorker transactions would require adding a 'coworker' field to the Transaction model
+    if (coworker && mongoose.Types.ObjectId.isValid(coworker)) {
+      // This would need a 'coworker' field in the Transaction schema
+      // For now, return empty results if coworker filtering is requested
+      query.coworker = coworker; // This will return no results since the field doesn't exist
+    }
     if (search) {
       query.$or = [{ subject: { $regex: search, $options: "i" } }];
     }
+    
+    // Date range filtering
+    if (dateFrom || dateTo) {
+      query.date = {};
+      if (dateFrom) {
+        query.date.$gte = new Date(dateFrom);
+      }
+      if (dateTo) {
+        // Add one day to include the entire end date
+        const endDate = new Date(dateTo);
+        endDate.setDate(endDate.getDate() + 1);
+        query.date.$lt = endDate;
+      }
+    }
+    
+    console.log('Transaction query:', query);
 
     // If summary is requested, calculate and return summary data
     if (summary === "true") {
@@ -139,6 +211,8 @@ export async function GET(request: NextRequest) {
       .limit(limit);
 
     const total = await Transaction.countDocuments(query);
+    
+    console.log('Transaction results:', { transactionCount: transactions.length, total });
 
     return NextResponse.json({
       success: true,

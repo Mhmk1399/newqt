@@ -2,18 +2,17 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  FaVideo, 
-  FaImage, 
-  FaPaintBrush, 
-  FaStar, 
+import {
+  FaVideo,
+  FaImage,
+  FaPaintBrush,
+  FaStar,
   FaCalendarAlt,
   FaStickyNote,
   FaHashtag,
   FaEdit,
   FaExclamationTriangle,
-
-  FaDollarSign
+  FaDollarSign,
 } from "react-icons/fa";
 import { IoSparkles, IoClose } from "react-icons/io5";
 import DatePicker from "react-multi-date-picker";
@@ -75,7 +74,7 @@ const LuxuryServiceRequest: React.FC = () => {
     quantity: 1,
     scheduledDate: undefined,
     notes: "",
-    dynamicFields: {}
+    dynamicFields: {},
   });
 
   // Extract user info from token
@@ -116,19 +115,20 @@ const LuxuryServiceRequest: React.FC = () => {
   useEffect(() => {
     const fetchServices = async () => {
       if (!userInfo?.userId) return;
-      
+
       setLoading(true);
       try {
-        const token = localStorage.getItem("userToken") || localStorage.getItem("token");
+        const token =
+          localStorage.getItem("userToken") || localStorage.getItem("token");
         const response = await fetch("/api/services?isActive=true&limit=100", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         });
-        
+
         const result = await response.json();
-        
+
         if (result.success) {
           setServices(result.data || []);
         } else {
@@ -154,7 +154,7 @@ const LuxuryServiceRequest: React.FC = () => {
       quantity: 1,
       scheduledDate: undefined,
       notes: "",
-      dynamicFields: {}
+      dynamicFields: {},
     });
     setShowRequestForm(true);
   };
@@ -162,13 +162,16 @@ const LuxuryServiceRequest: React.FC = () => {
   // Handle form submission
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    
+
     if (!selectedService || !userInfo?.userId) return;
 
     // Validate required fields
-    const missingFields = selectedService.requieredFileds?.filter(
-      field => !formData.dynamicFields[field] || formData.dynamicFields[field].trim() === ""
-    ) || [];
+    const missingFields =
+      selectedService.requieredFileds?.filter(
+        (field) =>
+          !formData.dynamicFields[field] ||
+          formData.dynamicFields[field].trim() === ""
+      ) || [];
 
     if (missingFields.length > 0) {
       toast.error(`لطفا فیلدهای زیر را پر کنید: ${missingFields.join(", ")}`);
@@ -177,8 +180,9 @@ const LuxuryServiceRequest: React.FC = () => {
 
     setSubmitting(true);
     try {
-      const token = localStorage.getItem("userToken") || localStorage.getItem("token");
-      
+      const token =
+        localStorage.getItem("userToken") || localStorage.getItem("token");
+
       // Prepare request data
       const requestData = {
         title: `${selectedService.name} - ${formData.quantity} عدد`,
@@ -188,7 +192,7 @@ const LuxuryServiceRequest: React.FC = () => {
         requirements: JSON.stringify(formData.dynamicFields),
         notes: formData.notes,
         requestedBy: userInfo.userId,
-        requestedDate: new Date()
+        requestedDate: new Date(),
       };
 
       // Submit to API
@@ -202,13 +206,13 @@ const LuxuryServiceRequest: React.FC = () => {
       });
 
       const result = await response.json();
-      
+
       if (!result.success) {
         throw new Error(result.message || "Failed to submit request");
       }
-      
+
       toast.success("درخواست با موفقیت ثبت شد! 🎉");
-      
+
       // Reset form
       setShowRequestForm(false);
       setSelectedService(null);
@@ -217,7 +221,7 @@ const LuxuryServiceRequest: React.FC = () => {
         quantity: 1,
         scheduledDate: undefined,
         notes: "",
-        dynamicFields: {}
+        dynamicFields: {},
       });
     } catch (error) {
       console.error("Error submitting request:", error);
@@ -232,21 +236,22 @@ const LuxuryServiceRequest: React.FC = () => {
     const name = serviceName.toLowerCase();
     if (name.includes("video")) return FaVideo;
     if (name.includes("edit")) return FaEdit;
-    if (name.includes("graphic") || name.includes("design")) return FaPaintBrush;
+    if (name.includes("graphic") || name.includes("design"))
+      return FaPaintBrush;
     return FaImage;
   };
 
   // Render dynamic field input
   const renderDynamicField = (fieldName: string) => {
     const fieldValue = formData.dynamicFields[fieldName] || "";
-    
+
     const updateField = (value: any) => {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         dynamicFields: {
           ...prev.dynamicFields,
-          [fieldName]: value
-        }
+          [fieldName]: value,
+        },
       }));
     };
 
@@ -282,7 +287,10 @@ const LuxuryServiceRequest: React.FC = () => {
           <textarea
             value={fieldValue}
             onChange={(e) => updateField(e.target.value)}
-            placeholder={`توضیح ${fieldName.replace("_", " ")} خود را بنویسید...`}
+            placeholder={`توضیح ${fieldName.replace(
+              "_",
+              " "
+            )} خود را بنویسید...`}
             className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 resize-none"
             rows={4}
           />
@@ -347,7 +355,6 @@ const LuxuryServiceRequest: React.FC = () => {
           </p>
         </div>
 
-
         {/* Services Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
           {services.map((service, index) => {
@@ -363,16 +370,14 @@ const LuxuryServiceRequest: React.FC = () => {
                 onClick={() => handleServiceSelect(service)}
               >
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:border-white/40 transition-all duration-300 hover:bg-white/15 relative overflow-hidden">
-                  
                   {/* Glow effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-pink-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  
+
                   {/* VIP Badge */}
                   {service.isVip && (
                     <div className="absolute top-3 left-3">
                       <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full text-gray-900 text-xs font-semibold">
                         <FaStar className="text-xs" />
-                        VIP
                       </div>
                     </div>
                   )}
@@ -380,7 +385,6 @@ const LuxuryServiceRequest: React.FC = () => {
                   {/* Service Header */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                   
                       <div>
                         <h3 className="text-white font-medium text-lg group-hover:text-purple-300 transition-colors">
                           {service.name}
@@ -402,7 +406,10 @@ const LuxuryServiceRequest: React.FC = () => {
                     <div className="mb-4">
                       <div className="flex flex-wrap gap-1">
                         {service.options.slice(0, 3).map((option, idx) => (
-                          <div key={idx} className="px-2 py-1 bg-purple-500/20 rounded text-purple-300 text-xs">
+                          <div
+                            key={idx}
+                            className="px-2 py-1 bg-purple-500/20 rounded text-purple-300 text-xs"
+                          >
                             {option.key}
                           </div>
                         ))}
@@ -415,8 +422,6 @@ const LuxuryServiceRequest: React.FC = () => {
                     </div>
                   )}
 
-              
-
                   {/* Price and Action */}
                   <div className="flex items-center justify-between mt-4">
                     <div className="flex items-center gap-1">
@@ -426,7 +431,6 @@ const LuxuryServiceRequest: React.FC = () => {
                       </span>
                       <span className="text-white/60 text-sm">تومان</span>
                     </div>
-                 
                   </div>
                 </div>
               </motion.div>
@@ -443,8 +447,12 @@ const LuxuryServiceRequest: React.FC = () => {
           >
             <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/20 max-w-md mx-auto">
               <FaExclamationTriangle className="text-yellow-400 text-4xl mx-auto mb-4" />
-              <h3 className="text-white text-xl font-semibold mb-2">هیچ سرویسی یافت نشد</h3>
-              <p className="text-white/60">در حال حاضر سرویسی برای نمایش وجود ندارد</p>
+              <h3 className="text-white text-xl font-semibold mb-2">
+                هیچ سرویسی یافت نشد
+              </h3>
+              <p className="text-white/60">
+                در حال حاضر سرویسی برای نمایش وجود ندارد
+              </p>
             </div>
           </motion.div>
         )}
@@ -461,7 +469,7 @@ const LuxuryServiceRequest: React.FC = () => {
             onClick={() => setShowRequestForm(false)}
           >
             <motion.div
-              className="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-auto shadow-2xl border border-white/20"
+              className="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto scrollbar-luxury  shadow-2xl border border-white/20"
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
@@ -471,7 +479,13 @@ const LuxuryServiceRequest: React.FC = () => {
                 {/* Modal Header */}
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${selectedService?.isVip ? 'bg-yellow-400' : 'bg-purple-500'}`}></div>
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        selectedService?.isVip
+                          ? "bg-yellow-400"
+                          : "bg-purple-500"
+                      }`}
+                    ></div>
                     <h2 className="text-2xl font-bold text-white">
                       درخواست سرویس
                     </h2>
@@ -490,10 +504,6 @@ const LuxuryServiceRequest: React.FC = () => {
                     {/* Service Info Header */}
                     <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                       <div className="flex items-center gap-3 mb-3">
-                        {(() => {
-                          const IconComponent = getServiceIcon(selectedService?.name || "");
-                          return <IconComponent className="text-purple-400 text-xl" />;
-                        })()}
                         <div>
                           <h3 className="text-xl font-bold text-white">
                             {selectedService?.name}
@@ -516,13 +526,20 @@ const LuxuryServiceRequest: React.FC = () => {
 
                     {/* Quantity */}
                     <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                      <label className="block text-white/70 text-sm mb-2">تعداد</label>
+                      <label className="block text-white/70 text-sm mb-2">
+                        تعداد
+                      </label>
                       <select
                         value={formData.quantity}
-                        onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            quantity: Number(e.target.value),
+                          })
+                        }
                         className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50"
                       >
-                        {[1, 2, 3, 4, 5, 10, 15, 20].map(num => (
+                        {[1, 2, 3, 4, 5, 10, 15, 20].map((num) => (
                           <option key={num} value={num} className="bg-gray-800">
                             {num} عدد
                           </option>
@@ -546,7 +563,12 @@ const LuxuryServiceRequest: React.FC = () => {
                         calendar={persian}
                         locale={persian_fa}
                         value={formData.scheduledDate}
-                        onChange={(date) => setFormData({ ...formData, scheduledDate: date?.toDate?.() })}
+                        onChange={(date) =>
+                          setFormData({
+                            ...formData,
+                            scheduledDate: date?.toDate?.(),
+                          })
+                        }
                         format="YYYY/MM/DD"
                         placeholder="انتخاب تاریخ (اختیاری)"
                         className="w-full"
@@ -555,8 +577,11 @@ const LuxuryServiceRequest: React.FC = () => {
                     </div>
 
                     {/* Dynamic Required Fields */}
-                    {selectedService?.requieredFileds?.map(field => (
-                      <div key={field} className="bg-white/5 rounded-xl p-4 border border-white/10">
+                    {selectedService?.requieredFileds?.map((field) => (
+                      <div
+                        key={field}
+                        className="bg-white/5 rounded-xl p-4 border border-white/10"
+                      >
                         {renderDynamicField(field)}
                       </div>
                     ))}
@@ -569,7 +594,9 @@ const LuxuryServiceRequest: React.FC = () => {
                       </label>
                       <textarea
                         value={formData.notes}
-                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, notes: e.target.value })
+                        }
                         placeholder="هرگونه نیاز خاص یا اطلاعات اضافی..."
                         className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 resize-none"
                         rows={4}
@@ -579,10 +606,13 @@ const LuxuryServiceRequest: React.FC = () => {
 
                   {/* Sidebar */}
                   <div className="space-y-4">
-                    {/* Service Details */}
+                   
+                    {/* مجموع درخواست  */}
                     <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                      <label className="block text-white/70 text-sm mb-2">جزئیات سرویس</label>
-                      <div className="space-y-2 text-sm">
+                      <label className="block text-white/70 text-sm mb-2">
+                        مجموع هزینه درخواست
+                      </label>
+                      <div className="space-y-3 text-sm">
                         <div className="flex items-center justify-between">
                           <span className="text-white/60">قیمت پایه:</span>
                           <span className="text-green-400 font-bold">
@@ -590,35 +620,66 @@ const LuxuryServiceRequest: React.FC = () => {
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-white/60">نوع:</span>
-                          <span className={selectedService?.isVip ? "text-yellow-400" : "text-blue-400"}>
-                            {selectedService?.isVip ? "VIP" : "عادی"}
+                          <span className="text-white/60">
+                            تعداد درخواست داده شده:
+                          </span>
+                          <span className="text-blue-400 font-semibold">
+                            {formData.quantity} عدد
                           </span>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-white/60">وضعیت:</span>
-                          <span className="text-green-400">فعال</span>
+                        <div className="border-t border-white/20 pt-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-white/60">محاسبه:</span>
+                            <span className="text-white/70 text-xs">
+                              {selectedService?.basePrice.toLocaleString()} × {formData.quantity}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg p-3 border border-purple-400/30">
+                          <div className="flex items-center justify-between">
+                            <span className="text-white font-semibold">مجموع کل:</span>
+                            <span className="text-yellow-400 font-bold text-lg">
+                              {((selectedService?.basePrice || 0) * formData.quantity).toLocaleString()} تومان
+                            </span>
+                          </div>
+                          {formData.quantity >= 3 && (
+                            <div className="mt-2 text-green-400 text-xs flex items-center gap-1">
+                              <IoSparkles className="text-yellow-400" />
+                              تخفیف عمده ممکن است اعمال شود
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
 
                     {/* Options */}
-                    {selectedService?.options && selectedService.options.length > 0 && (
-                      <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                        <label className="block text-white/70 text-sm mb-2">گزینه‌های موجود</label>
-                        <div className="space-y-2">
-                          {selectedService.options.map((option, idx) => (
-                            <div key={idx} className="bg-white/10 rounded-lg p-2">
-                              <div className="text-purple-300 text-xs font-medium">{option.key}</div>
-                              <div className="text-white/70 text-xs">
-                                {option.values.split(',').slice(0, 3).join(', ')}
-                                {option.values.split(',').length > 3 && '...'}
+                    {selectedService?.options &&
+                      selectedService.options.length > 0 && (
+                        <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                          <label className="block text-white/70 text-sm mb-2">
+                            گزینه‌های موجود
+                          </label>
+                          <div className="space-y-2">
+                            {selectedService.options.map((option, idx) => (
+                              <div
+                                key={idx}
+                                className="bg-white/10 rounded-lg p-2"
+                              >
+                                <div className="text-purple-300 text-xs font-medium">
+                                  {option.key}
+                                </div>
+                                <div className="text-white/70 text-xs">
+                                  {option.values
+                                    .split(",")
+                                    .slice(0, 3)
+                                    .join(", ")}
+                                  {option.values.split(",").length > 3 && "..."}
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
                     {/* Submit Button */}
                     <motion.button
@@ -632,7 +693,11 @@ const LuxuryServiceRequest: React.FC = () => {
                         <div className="flex items-center justify-center gap-2">
                           <motion.div
                             animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            transition={{
+                              duration: 1,
+                              repeat: Infinity,
+                              ease: "linear",
+                            }}
                             className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full"
                           />
                           در حال ارسال...

@@ -22,7 +22,17 @@ interface ApiResponse {
 }
 
 const fetcher = async (url: string): Promise<ApiResponse> => {
-  const response = await fetch(url);
+  const token = localStorage.getItem("userToken") || localStorage.getItem("token");
+  
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  
+  const response = await fetch(url, { headers });
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
   }
@@ -40,6 +50,11 @@ export const useDynamicData = ({ endpoint, filters = {}, page = 1, limit = 10 }:
   Object.entries(filters).forEach(([key, value]) => {
     if (key === 'name' || key === 'description') {
       if (value) searchTerms.push(String(value));
+    } else if (key === 'dateRange' && Array.isArray(value)) {
+      // Handle dateRange as separate dateFrom and dateTo parameters
+      const [dateFrom, dateTo] = value as [string, string];
+      if (dateFrom) params.dateFrom = dateFrom;
+      if (dateTo) params.dateTo = dateTo;
     } else if (value !== null && value !== undefined && value !== '') {
       params[key] = String(value);
     }
@@ -50,7 +65,7 @@ export const useDynamicData = ({ endpoint, filters = {}, page = 1, limit = 10 }:
   }
 
   const searchParams = new URLSearchParams(params);
-  const swrKey = `${endpoint}?${searchParams}`;
+  const swrKey = `${endpoint}${endpoint.includes('?') ? '&' : '?'}${searchParams}`;
 
   const { data, error, isLoading, mutate } = useSWR<ApiResponse>(
     swrKey,
