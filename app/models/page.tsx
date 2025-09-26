@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { FiUser, FiCamera, FiMapPin, FiScissors } from "react-icons/fi";
+import { FiUser, FiCamera, FiMapPin, FiScissors, FiChevronDown } from "react-icons/fi";
+import { motion, AnimatePresence } from "framer-motion";
 import gsap from "gsap";
 import CoworkerShowcaseCard from "../../components/static/coworkerShowcaseCard";
 
@@ -20,6 +21,118 @@ interface CoWorker {
   socialLinks?: object;
   isActive: boolean;
 }
+
+interface ExpertiseOption {
+  value: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+interface ExpertiseDropdownProps {
+  options: ExpertiseOption[];
+  selectedValue: string;
+  onSelect: (value: string) => void;
+}
+
+const ExpertiseDropdown: React.FC<ExpertiseDropdownProps> = ({
+  options,
+  selectedValue,
+  onSelect,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedOption = options.find((opt) => opt.value === selectedValue);
+
+  return (
+    <div className="relative">
+      {/* Dropdown Button */}
+      <motion.button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-2xl p-4 flex items-center justify-between text-white hover:bg-white/15 transition-all duration-300"
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+      >
+        <div className="flex items-center gap-3">
+          {selectedOption && (
+            <>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-purple-500/20 to-blue-500/20 flex items-center justify-center">
+                <selectedOption.icon className="text-lg text-purple-300" />
+              </div>
+              <span className="font-medium text-lg">{selectedOption.label}</span>
+            </>
+          )}
+        </div>
+        <motion.div
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          transition={{ duration: 0.3 }}
+          className="text-white/60"
+        >
+          <FiChevronDown className="text-xl" />
+        </motion.div>
+      </motion.button>
+
+      {/* Dropdown Menu */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="absolute top-full left-0 right-0 mt-2 bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl border border-white/20 rounded-2xl p-2 shadow-2xl z-50"
+          >
+            {options.map((option, index) => {
+              const IconComponent = option.icon;
+              const isSelected = option.value === selectedValue;
+              
+              return (
+                <motion.button
+                  key={option.value}
+                  onClick={() => {
+                    onSelect(option.value);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 p-4 rounded-xl transition-all duration-200 ${
+                    isSelected
+                      ? "bg-gradient-to-r from-purple-600/50 to-blue-600/50 text-white"
+                      : "text-white/80 hover:bg-white/10 hover:text-white"
+                  }`}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  whileHover={{ x: 4 }}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    isSelected 
+                      ? "bg-white/20" 
+                      : "bg-gradient-to-r from-purple-500/20 to-blue-500/20"
+                  }`}>
+                    <IconComponent className="text-lg" />
+                  </div>
+                  <span className="font-medium">{option.label}</span>
+                  {isSelected && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="mr-auto w-2 h-2 bg-white rounded-full"
+                    />
+                  )}
+                </motion.button>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Backdrop to close dropdown */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+    </div>
+  );
+};
 
 const ModelsPage = () => {
   const [selectedExpertise, setSelectedExpertise] = useState<string>("model");
@@ -105,7 +218,8 @@ const ModelsPage = () => {
 
         {/* Expertise Switch */}
         <div className="flex justify-center mb-12">
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-2 flex flex-wrap gap-2">
+          {/* Desktop Version - Horizontal Tabs */}
+          <div className="hidden sm:flex bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-2 gap-2">
             {expertiseOptions.map((option) => {
               const IconComponent = option.icon;
               return (
@@ -123,6 +237,15 @@ const ModelsPage = () => {
                 </button>
               );
             })}
+          </div>
+
+          {/* Mobile Version - Luxury Dropdown */}
+          <div className="sm:hidden w-full max-w-sm">
+            <ExpertiseDropdown
+              options={expertiseOptions}
+              selectedValue={selectedExpertise}
+              onSelect={setSelectedExpertise}
+            />
           </div>
         </div>
 

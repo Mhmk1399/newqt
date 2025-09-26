@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import CoWorker from "@/models/coWorker";
 import connect from "@/lib/data";
-import Project from "@/models/customersData/projects";
 
 export async function GET(request: NextRequest) {
   try {
     await connect();
     const id = request.headers.get("id");
 
-    const coworker = await CoWorker.findById(id).populate({
-      path: "projects",
-      model: Project,
-    });
+    const coworker = await CoWorker.findById(id);
 
     if (!coworker) {
       return NextResponse.json(

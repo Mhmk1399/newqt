@@ -56,12 +56,6 @@ const coWorkerSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    projects: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Project",
-      },
-    ],
   },
   {
     timestamps: true,

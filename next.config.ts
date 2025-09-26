@@ -5,13 +5,16 @@ const nextConfig: NextConfig = {
   experimental: {
     // Enable large file uploads
     serverActions: {
-      bodySizeLimit: '350mb' // Slightly higher than our 300MB limit
-    }
+      bodySizeLimit: "350mb", // Slightly higher than our 300MB limit
+    },
+  },
+  images: {
+    domains: ["qtt.s3.ir-thr-at1.arvanstorage.ir"],
   },
   // API route configuration for large uploads
   api: {
     bodyParser: {
-      sizeLimit: '350mb', // Slightly higher than our 300MB limit
+      sizeLimit: "350mb", // Slightly higher than our 300MB limit
     },
   },
 };
