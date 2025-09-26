@@ -7,7 +7,7 @@ import {
   FaComment,
   FaPhone,
 } from "react-icons/fa";
-import { ContactRequestFormData, ContactRequestStatus, ApiResponse } from "@/types/contactRequest";
+import { ContactRequestFormData, ContactRequestStatus } from "@/types/contactRequest";
 import { contactRequestApi } from "@/lib/api/contactRequest";
 
 export default function ContactForm() {

@@ -32,6 +32,7 @@ function Card(props: CardProps) {
     clamp: false,
   });
 
+  console.log(exitX);
   useEffect(() => {
     const getImageColor = () => {
       const img = new window.Image();

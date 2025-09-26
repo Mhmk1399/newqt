@@ -27,28 +27,33 @@ export async function GET(request: NextRequest) {
     if (searchParams.get("priority")) {
       filter.priority = searchParams.get("priority");
     }
-    
+
     // Filter by completion date range
-    if (searchParams.get("completedDateFrom") || searchParams.get("completedDateTo")) {
-      const completedDateFilter: any = {};
-      
+    if (
+      searchParams.get("completedDateFrom") ||
+      searchParams.get("completedDateTo")
+    ) {
+      const completedDateFilter: { $gte?: Date; $lte?: Date } = {};
+
       if (searchParams.get("completedDateFrom")) {
-        completedDateFilter.$gte = new Date(searchParams.get("completedDateFrom")!);
+        completedDateFilter.$gte = new Date(
+          searchParams.get("completedDateFrom")!
+        );
       }
-      
+
       if (searchParams.get("completedDateTo")) {
         const toDate = new Date(searchParams.get("completedDateTo")!);
         toDate.setHours(23, 59, 59, 999); // End of day
         completedDateFilter.$lte = toDate;
       }
-      
+
       filter.completedDate = completedDateFilter;
     }
-    
+
     if (searchParams.get("assignedUserId")) {
       const assignedUserId = searchParams.get("assignedUserId");
       filter.assignedUserId = assignedUserId;
-      
+
       // Check authorization for user-specific requests
       const authHeader = request.headers.get("authorization");
       if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -58,15 +63,19 @@ export async function GET(request: NextRequest) {
             token,
             process.env.JWT_SECRET || "your-secret-key"
           ) as { userId: string; userType: string };
-          
+
           // Only allow users to access their own tasks (unless admin)
-          if (decoded.userType !== "admin" && decoded.userId !== assignedUserId) {
+          if (
+            decoded.userType !== "admin" &&
+            decoded.userId !== assignedUserId
+          ) {
             return NextResponse.json(
               { success: false, message: "Unauthorized access to user tasks" },
               { status: 403 }
             );
           }
         } catch (tokenError) {
+          console.log(tokenError)
           return NextResponse.json(
             { success: false, message: "Invalid token" },
             { status: 401 }
@@ -74,7 +83,10 @@ export async function GET(request: NextRequest) {
         }
       } else {
         return NextResponse.json(
-          { success: false, message: "Authorization header required for user-specific requests" },
+          {
+            success: false,
+            message: "Authorization header required for user-specific requests",
+          },
           { status: 401 }
         );
       }
@@ -212,11 +224,11 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     await connect();
-    
+
     // Try to get ID from query params first
     const { searchParams } = new URL(request.url);
     let id = searchParams.get("id");
-    
+
     // If not in query params, try to get from request body
     if (!id) {
       try {

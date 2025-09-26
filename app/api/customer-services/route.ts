@@ -3,6 +3,10 @@ import Service from "@/models/customersData/services";
 import Customer from "@/models/customersData/customers";
 import connect from "@/lib/data";
 
+interface filterquery {
+  isActive: boolean;
+  isVip?: boolean;
+}
 export async function GET(request: NextRequest) {
   try {
     await connect();
@@ -10,8 +14,8 @@ export async function GET(request: NextRequest) {
     const customerId = searchParams.get("customerId");
 
     // If customerId provided, filter services based on customer VIP status
-    let query: any = { isActive: true };
-    
+    const query: filterquery = { isActive: true };
+
     if (customerId) {
       const customer = await Customer.findById(customerId);
       if (!customer) {
@@ -52,13 +56,24 @@ export async function POST(request: NextRequest) {
   try {
     await connect();
     const body = await request.json();
-    
-    const { name, description, basePrice, teamId, options, requieredFileds, isVip = false } = body;
+
+    const {
+      name,
+      description,
+      basePrice,
+      teamId,
+      options,
+      requieredFileds,
+      isVip = false,
+    } = body;
 
     // Validation
     if (!name || !basePrice || !teamId) {
       return NextResponse.json(
-        { success: false, message: "Name, base price, and team ID are required" },
+        {
+          success: false,
+          message: "Name, base price, and team ID are required",
+        },
         { status: 400 }
       );
     }
@@ -76,14 +91,19 @@ export async function POST(request: NextRequest) {
 
     await service.save();
 
-    const populatedService = await Service.findById(service._id)
-      .populate("teamId", "name specialization");
+    const populatedService = await Service.findById(service._id).populate(
+      "teamId",
+      "name specialization"
+    );
 
-    return NextResponse.json({
-      success: true,
-      message: "Service created successfully",
-      data: populatedService,
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Service created successfully",
+        data: populatedService,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Error creating service:", error);
     return NextResponse.json(

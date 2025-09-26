@@ -5,6 +5,21 @@ import connect from "@/lib/data";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
+interface filterquery {
+  isActive?: boolean;
+  isVip?: boolean;
+  role?: string;
+  businessScale?: string;
+  status?: string;
+  type?: string;
+  $or?: Array<{
+    name?: { $regex: string; $options: string };
+    email?: { $regex: string; $options: string };
+    message?: { $regex: string; $options: string };
+    phoneNumber?: { $regex: string; $options: string };
+    businessName?: { $regex: string; $options: string };
+  }>;
+}
 // GET - Retrieve users with filters and pagination
 export async function GET(request: NextRequest) {
   try {
@@ -19,7 +34,9 @@ export async function GET(request: NextRequest) {
 
     // Simple dropdown request
     if (searchParams.get("dropdown") === "true") {
-      const users = await User.find({ isActive: true }).select('_id name email').sort({ name: 1 });
+      const users = await User.find({ isActive: true })
+        .select("_id name email")
+        .sort({ name: 1 });
       return NextResponse.json({ success: true, data: users });
     }
 
@@ -31,12 +48,14 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      const user = await User.findById(id).populate({
-        path: "teamId",
-        select: "name specialization amount",
-        model: Team,
-      }).select('-password');
-      
+      const user = await User.findById(id)
+        .populate({
+          path: "teamId",
+          select: "name specialization amount",
+          model: Team,
+        })
+        .select("-password");
+
       if (!user) {
         return NextResponse.json(
           { success: false, message: "User not found" },
@@ -48,7 +67,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build query filters
-    const query: any = {};
+    const query: filterquery = {};
     if (isActive !== null && isActive !== undefined) {
       query.isActive = isActive === "true";
     }
@@ -70,7 +89,7 @@ export async function GET(request: NextRequest) {
         select: "name",
         model: Team,
       })
-      .select('-password')
+      .select("-password")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -101,22 +120,25 @@ export async function POST(request: NextRequest) {
   try {
     await connect();
     const body = await request.json();
-    const { name, phoneNumber, email, password, role } = body;
+    const { name, phoneNumber, password } = body;
 
     // Validation
     if (!name || !phoneNumber || !password) {
       return NextResponse.json(
-        { success: false, message: "Name, phone number, and password are required" },
+        {
+          success: false,
+          message: "Name, phone number, and password are required",
+        },
         { status: 400 }
       );
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
-    
+
     const user = new User({
       ...body,
-      password: hashedPassword
+      password: hashedPassword,
     });
     await user.save();
 
@@ -124,7 +146,11 @@ export async function POST(request: NextRequest) {
     const { password: _, ...userWithoutPassword } = user.toObject();
 
     return NextResponse.json(
-      { success: true, message: "User created successfully", data: userWithoutPassword },
+      {
+        success: true,
+        message: "User created successfully",
+        data: userWithoutPassword,
+      },
       { status: 201 }
     );
   } catch (error) {
@@ -172,7 +198,7 @@ export async function PUT(request: NextRequest) {
       id,
       { ...updateData, updatedAt: new Date() },
       { new: true, runValidators: true }
-    ).select('-password');
+    ).select("-password");
 
     if (!updatedUser) {
       return NextResponse.json(
@@ -226,7 +252,7 @@ export async function PATCH(request: NextRequest) {
       id,
       { ...updateData, updatedAt: new Date() },
       { new: true, runValidators: true }
-    ).select('-password');
+    ).select("-password");
 
     if (!updatedUser) {
       return NextResponse.json(
@@ -253,11 +279,11 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     await connect();
-    
+
     // Try to get ID from query params first
     const { searchParams } = new URL(request.url);
     let id = searchParams.get("id");
-    
+
     // If not in query params, try to get from request body
     if (!id) {
       try {
@@ -282,7 +308,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const deletedUser = await User.findByIdAndDelete(id).select('-password');
+    const deletedUser = await User.findByIdAndDelete(id).select("-password");
 
     if (!deletedUser) {
       return NextResponse.json(

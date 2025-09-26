@@ -2,10 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import Transaction from "@/models/transaction";
 import User from "@/models/users";
 import Customer from "@/models/customersData/customers";
-import CoWorker from "@/models/coWorker";
 import connect from "@/lib/data";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
+
+interface filterquery {
+  users?: string;
+  customer?: string;
+  coworker?: string;
+  status?: string;
+  type?: string;
+  date?: {
+    $gte?: Date;
+    $lt?: Date;
+  };
+  $or?: Array<{
+    subject?: { $regex: string; $options: string };
+  }>;
+}
 
 // GET - Retrieve transactions with filters and pagination
 export async function GET(request: NextRequest) {
@@ -125,6 +139,7 @@ export async function GET(request: NextRequest) {
             );
           }
         } catch (tokenError) {
+          console.log(tokenError);
           return NextResponse.json(
             { success: false, message: "Invalid token" },
             { status: 401 }
@@ -169,7 +184,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build query filters
-    const query: any = {};
+    const query: filterquery = {};
     if (type) query.type = type;
     if (users && mongoose.Types.ObjectId.isValid(users)) {
       query.users = users;
@@ -270,7 +285,7 @@ export async function POST(request: NextRequest) {
   try {
     await connect();
     const body = await request.json();
-    const { subject, type, paid, received } = body;
+    const { subject, type } = body;
 
     // Validation
     if (!subject || !type) {

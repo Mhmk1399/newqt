@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import DynamicTable from "@/components/global/newdynamics/dynamicTable";
-import { TableColumn, FilterField } from "@/types/dynamicTypes/types";
+import { TableColumn, FilterField, TableData } from "@/types/dynamicTypes/types";
 import { motion } from "framer-motion";
 import { FaMoneyBillWave, FaArrowUp, FaArrowDown } from "react-icons/fa";
 import { IoTrendingDown } from "react-icons/io5";
@@ -23,19 +23,6 @@ const CustomerTransactions: React.FC = () => {
 
   // Get user info from JWT token
   const userInfo = getUserFromToken();
-
-  // Redirect if no valid token or not a customer
-  if (!userInfo) {
-    toast.error("لطفاً ابتدا وارد حساب کاربری خود شوید");
-    router.push("/auth");
-    return null;
-  }
-
-  if (userInfo.userType !== "customer") {
-    toast.error("دسترسی محدود به مشتریان");
-    router.push("/");
-    return null;
-  }
 
   // SWR fetcher function
   const fetcher = async (url: string) => {
@@ -79,6 +66,19 @@ const CustomerTransactions: React.FC = () => {
       revalidateOnReconnect: true,
     }
   );
+
+  // Handle authentication after hooks
+  if (!userInfo) {
+    toast.error("لطفاً ابتدا وارد حساب کاربری خود شوید");
+    router.push("/auth");
+    return null;
+  }
+
+  if (userInfo.userType !== "customer") {
+    toast.error("دسترسی محدود به مشتریان");
+    router.push("/");
+    return null;
+  }
 
   const stats: TransactionStats = statsData?.summary || {
     totalIncome: 0,
@@ -137,7 +137,8 @@ const CustomerTransactions: React.FC = () => {
       key: "amount",
       header: "مبلغ",
       sortable: true,
-      render: (value, row: any) => {
+      render: (value: string | number | boolean, row?: TableData | undefined) => {
+        if (!row) return "-";
         const amount = row.type === "income" ? row.received : row.paid;
         const color = row.type === "income" ? "text-green-400" : "text-red-400";
         const sign = row.type === "income" ? "+" : "-";

@@ -380,7 +380,7 @@ const ServiceRequestsManagement: React.FC = () => {
   }, []);
 
   // Custom actions for the table
-  const customActions = (row: any) => (
+  const customActions = (row: Record<string, unknown>) => (
     <button
       onClick={(e) => {
         e.stopPropagation();

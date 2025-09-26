@@ -110,7 +110,9 @@ export function useDynamicForm(
     } else if (field?.type === "multiselect") {
       // Handle multiselect
       const selectElement = e.target as HTMLSelectElement;
-      value = Array.from(selectElement.selectedOptions).map(option => option.value);
+      value = Array.from(selectElement.selectedOptions).map(
+        (option) => option.value
+      );
     } else {
       value = e.target.value;
     }
@@ -297,6 +299,7 @@ export function useDynamicForm(
       if (response.ok) {
       }
     } catch (error) {
+      console.log(error);
     } finally {
       setIsSubmitting(false);
     }

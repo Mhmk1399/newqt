@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import User from "@/models/users";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import connect from "@/lib/data";
 import costumer from "@/models/customersData/customers";
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       await newUser.save();
 
       // Generate JWT token
-      const tokenPayload: any = {
+      const tokenPayload: JwtPayload = {
         userId: newUser._id,
         phoneNumber: newUser.phoneNumber,
         name: newUser.name,
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Generate JWT token
-      const tokenPayload: any = {
+      const tokenPayload: JwtPayload = {
         userId: foundUser._id,
         phoneNumber: foundUser.phoneNumber,
         name: foundUser.name,

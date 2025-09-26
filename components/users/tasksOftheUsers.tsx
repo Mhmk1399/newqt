@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaCalendarAlt,
-  FaUser,
   FaComment,
   FaFileUpload,
   FaEdit,
@@ -14,20 +13,11 @@ import {
   FaFlag,
   FaClock,
   FaCheckCircle,
-  FaArrowRight,
-  FaArrowLeft,
   FaBell,
   FaVideo,
   FaPlay,
 } from "react-icons/fa";
-import {
-  IoAdd,
-  IoClose,
-  IoChevronDown,
-  IoChevronUp,
-  IoChevronForward,
-  IoChevronBack,
-} from "react-icons/io5";
+import { IoClose, IoChevronForward, IoChevronBack } from "react-icons/io5";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import VideoUploadModal from "@/components/modals/VideoUploadModal";
@@ -40,11 +30,20 @@ interface DecodedToken {
   exp: number;
 }
 
+// Define task status type for reuse
+type TaskStatus =
+  | "todo"
+  | "in-progress"
+  | "review"
+  | "completed"
+  | "cancelled"
+  | "accepted";
+
 interface Task {
   _id: string;
   title: string;
   description: string;
-  status: "todo" | "in-progress" | "review" | "completed" | "cancelled" | "accepted";
+  status: TaskStatus;
   priority: "low" | "medium" | "high" | "urgent";
   startDate?: string;
   dueDate?: string;
@@ -65,13 +64,7 @@ interface Task {
   updatedAt: string;
 }
 
-interface TaskComment {
-  _id: string;
-  taskId: string;
-  userId: string;
-  content: string;
-  createdAt: string;
-}
+
 
 const TasksOfTheUsers: React.FC = () => {
   const router = useRouter();
@@ -82,10 +75,11 @@ const TasksOfTheUsers: React.FC = () => {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState<string>("");
-  const [comments, setComments] = useState<TaskComment[]>([]);
-  const [newComment, setNewComment] = useState("");
+
   const [isVideoUploadModalOpen, setIsVideoUploadModalOpen] = useState(false);
-  const [videoUploadTaskId, setVideoUploadTaskId] = useState<string | null>(null);
+  const [videoUploadTaskId, setVideoUploadTaskId] = useState<string | null>(
+    null
+  );
 
   // Task status columns configuration
   const statusColumns = [
@@ -220,7 +214,7 @@ const TasksOfTheUsers: React.FC = () => {
   }, [userInfo]);
 
   // Update task status
-  const updateTaskStatus = async (taskId: string, newStatus: string) => {
+  const updateTaskStatus = async (taskId: string, newStatus: TaskStatus) => {
     try {
       const token =
         localStorage.getItem("userToken") || localStorage.getItem("token");
@@ -245,7 +239,7 @@ const TasksOfTheUsers: React.FC = () => {
             task._id === taskId
               ? {
                   ...task,
-                  status: newStatus as any,
+                  status: newStatus,
                   ...(newStatus === "completed"
                     ? { completedDate: new Date().toISOString() }
                     : {}),
@@ -728,43 +722,48 @@ const TasksOfTheUsers: React.FC = () => {
                         {/* Status change buttons for current task */}
                         <div className="flex gap-1">
                           {/* Previous status button - Users can go backwards except from protected statuses */}
-                          {column.id !== "todo" && column.id !== "accepted" && column.id !== "completed" && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const prevStatus =
-                                  column.id === "review"
-                                    ? "in-progress"
-                                    : "todo";
-                                updateTaskStatus(task._id, prevStatus);
-                              }}
-                              className="text-orange-400 hover:text-orange-300 text-xs p-1 rounded hover:bg-white/10 flex items-center"
-                              title="مرحله قبل"
-                            >
-                              <IoChevronForward />
-                            </button>
-                          )}
+                          {column.id !== "todo" &&
+                            column.id !== "accepted" &&
+                            column.id !== "completed" && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const prevStatus =
+                                    column.id === "review"
+                                      ? "in-progress"
+                                      : "todo";
+                                  updateTaskStatus(task._id, prevStatus);
+                                }}
+                                className="text-orange-400 hover:text-orange-300 text-xs p-1 rounded hover:bg-white/10 flex items-center"
+                                title="مرحله قبل"
+                              >
+                                <IoChevronForward />
+                              </button>
+                            )}
 
                           {/* Next status button - Users can only go up to 'review', not 'accepted' or 'completed' */}
-                          {column.id !== "review" && column.id !== "completed" && column.id !== "accepted" && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const nextStatus =
-                                  column.id === "todo"
-                                    ? "in-progress"
-                                    : "review"; // Users can only go up to 'review'
-                                updateTaskStatus(task._id, nextStatus);
-                              }}
-                              className="text-green-400 hover:text-green-300 text-xs p-1 rounded hover:bg-white/10 flex items-center"
-                              title="مرحله بعد"
-                            >
-                              <IoChevronBack />
-                            </button>
-                          )}
-                          
+                          {column.id !== "review" &&
+                            column.id !== "completed" &&
+                            column.id !== "accepted" && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const nextStatus =
+                                    column.id === "todo"
+                                      ? "in-progress"
+                                      : "review"; // Users can only go up to 'review'
+                                  updateTaskStatus(task._id, nextStatus);
+                                }}
+                                className="text-green-400 hover:text-green-300 text-xs p-1 rounded hover:bg-white/10 flex items-center"
+                                title="مرحله بعد"
+                              >
+                                <IoChevronBack />
+                              </button>
+                            )}
+
                           {/* Show locked message for protected statuses */}
-                          {(column.id === "accepted" || column.id === "completed") && (
+                          {(column.id === "accepted" ||
+                            column.id === "completed") && (
                             <span className="text-xs text-white/50 px-2 py-1 rounded bg-white/10">
                               🔒 فقط مدیر
                             </span>
@@ -961,8 +960,10 @@ const TasksOfTheUsers: React.FC = () => {
 
                       {/* Video Section - Under Notes */}
                       <div className="mt-4 pt-4 border-t border-white/20">
-                        <label className="block text-white/70 text-sm mb-3">ویدیوی ضمیمه</label>
-                        
+                        <label className="block text-white/70 text-sm mb-3">
+                          ویدیوی ضمیمه
+                        </label>
+
                         {selectedTask.attachedVideo ? (
                           <div className="space-y-4">
                             {/* Video Display */}
@@ -974,19 +975,26 @@ const TasksOfTheUsers: React.FC = () => {
                                 allowFullScreen
                               />
                             </div>
-                            
+
                             {/* Video Actions */}
                             <div className="flex gap-3">
                               <button
-                                onClick={() => window.open(selectedTask.attachedVideo, '_blank')}
+                                onClick={() =>
+                                  window.open(
+                                    selectedTask.attachedVideo,
+                                    "_blank"
+                                  )
+                                }
                                 className="flex items-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors"
                               >
                                 <FaPlay />
                                 بازکردن در تب جدید
                               </button>
-                              
+
                               <button
-                                onClick={() => handleVideoUpload(selectedTask._id)}
+                                onClick={() =>
+                                  handleVideoUpload(selectedTask._id)
+                                }
                                 className="flex items-center gap-2 px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg text-blue-300 text-sm transition-colors"
                               >
                                 <FaVideo />
@@ -1001,7 +1009,9 @@ const TasksOfTheUsers: React.FC = () => {
                               هنوز ویدیویی آپلود نشده است
                             </p>
                             <button
-                              onClick={() => handleVideoUpload(selectedTask._id)}
+                              onClick={() =>
+                                handleVideoUpload(selectedTask._id)
+                              }
                               className="px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-purple-300 text-sm transition-colors flex items-center justify-center gap-2 mx-auto"
                             >
                               <FaVideo />
@@ -1046,49 +1056,50 @@ const TasksOfTheUsers: React.FC = () => {
                       {/* Status Navigation Buttons */}
                       <div className="flex gap-2 mt-3">
                         {/* Previous status button - restricted for users */}
-                        {selectedTask.status !== "todo" && 
-                         selectedTask.status !== "accepted" && 
-                         selectedTask.status !== "completed" && (
-                          <button
-                            onClick={() => {
-                              const prevStatus =
-                                selectedTask.status === "review"
-                                  ? "in-progress"
-                                  : "todo";
-                              updateTaskStatus(selectedTask._id, prevStatus);
-                            }}
-                            className="flex items-center gap-2 px-3 py-2 bg-orange-600/20 hover:bg-orange-600/30 border border-orange-500/30 rounded-lg text-orange-300 text-sm transition-colors"
-                          >
-                            <IoChevronForward /> مرحله قبل
-                          </button>
-                        )}
+                        {selectedTask.status !== "todo" &&
+                          selectedTask.status !== "accepted" &&
+                          selectedTask.status !== "completed" && (
+                            <button
+                              onClick={() => {
+                                const prevStatus =
+                                  selectedTask.status === "review"
+                                    ? "in-progress"
+                                    : "todo";
+                                updateTaskStatus(selectedTask._id, prevStatus);
+                              }}
+                              className="flex items-center gap-2 px-3 py-2 bg-orange-600/20 hover:bg-orange-600/30 border border-orange-500/30 rounded-lg text-orange-300 text-sm transition-colors"
+                            >
+                              <IoChevronForward /> مرحله قبل
+                            </button>
+                          )}
 
                         {/* Next status button - users can only go up to 'review' */}
-                        {selectedTask.status !== "review" && 
-                         selectedTask.status !== "completed" && 
-                         selectedTask.status !== "accepted" && (
-                          <button
-                            onClick={() => {
-                              const nextStatus =
-                                selectedTask.status === "todo"
-                                  ? "in-progress"
-                                  : "review"; // Users can only go up to 'review'
-                              updateTaskStatus(selectedTask._id, nextStatus);
-                            }}
-                            className="flex items-center gap-2 px-3 py-2 bg-green-600/20 hover:bg-green-600/30 border border-green-500/30 rounded-lg text-green-300 text-sm transition-colors"
-                          >
-                            مرحله بعد
-                            <IoChevronBack />
-                          </button>
-                        )}
-                        
+                        {selectedTask.status !== "review" &&
+                          selectedTask.status !== "completed" &&
+                          selectedTask.status !== "accepted" && (
+                            <button
+                              onClick={() => {
+                                const nextStatus =
+                                  selectedTask.status === "todo"
+                                    ? "in-progress"
+                                    : "review"; // Users can only go up to 'review'
+                                updateTaskStatus(selectedTask._id, nextStatus);
+                              }}
+                              className="flex items-center gap-2 px-3 py-2 bg-green-600/20 hover:bg-green-600/30 border border-green-500/30 rounded-lg text-green-300 text-sm transition-colors"
+                            >
+                              مرحله بعد
+                              <IoChevronBack />
+                            </button>
+                          )}
+
                         {/* Show restriction message for protected statuses */}
-                        {(selectedTask.status === "accepted" || selectedTask.status === "completed") && (
+                        {(selectedTask.status === "accepted" ||
+                          selectedTask.status === "completed") && (
                           <div className="flex items-center gap-2 px-3 py-2 bg-gray-600/20 border border-gray-500/30 rounded-lg text-gray-300 text-sm">
                             🔒 این وضعیت فقط توسط مدیر قابل تغییر است
                           </div>
                         )}
-                        
+
                         {selectedTask.status === "review" && (
                           <div className="flex items-center gap-2 px-3 py-2 bg-yellow-600/20 border border-yellow-500/30 rounded-lg text-yellow-300 text-sm">
                             ⏳ منتظر تایید مدیر
@@ -1176,7 +1187,7 @@ const TasksOfTheUsers: React.FC = () => {
                       <label className="block text-white/70 text-sm mb-3">
                         ویدیوی ضمیمه
                       </label>
-                      
+
                       {selectedTask.attachedVideo ? (
                         <div className="space-y-4">
                           {/* Video Display */}
@@ -1188,19 +1199,26 @@ const TasksOfTheUsers: React.FC = () => {
                               allowFullScreen
                             />
                           </div>
-                          
+
                           {/* Video Actions */}
                           <div className="flex gap-3">
                             <button
-                              onClick={() => window.open(selectedTask.attachedVideo, '_blank')}
+                              onClick={() =>
+                                window.open(
+                                  selectedTask.attachedVideo,
+                                  "_blank"
+                                )
+                              }
                               className="flex items-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors"
                             >
                               <FaPlay />
                               بازکردن در تب جدید
                             </button>
-                            
+
                             <button
-                              onClick={() => handleVideoUpload(selectedTask._id)}
+                              onClick={() =>
+                                handleVideoUpload(selectedTask._id)
+                              }
                               className="flex items-center gap-2 px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg text-blue-300 text-sm transition-colors"
                             >
                               <FaVideo />

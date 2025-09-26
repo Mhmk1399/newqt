@@ -3,13 +3,19 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { FiPhone, FiMail, FiExternalLink, FiArrowLeft } from "react-icons/fi";
-import { FaInstagram, FaTelegramPlane, FaWhatsapp, FaUser, FaUserTie, FaImages } from "react-icons/fa";
+import {
+  FaInstagram,
+  FaTelegramPlane,
+  FaWhatsapp,
+  FaUser,
+  FaUserTie,
+  FaImages,
+} from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
-import { IoSparkles, IoPersonCircle } from "react-icons/io5";
+import { IoPersonCircle } from "react-icons/io5";
 import Link from "next/link";
-import HeroImage from "@/components/pages/heromodels";
 
 interface CoWorker {
   _id: string;
@@ -36,7 +42,7 @@ export default function CoworkerDetails() {
   const params = useParams();
   const [coworker, setCoworker] = useState<CoWorker | null>(null);
   const [isLoading, setIsLoading] = useState(true);
- 
+
   useEffect(() => {
     const fetchCoworker = async () => {
       try {
@@ -44,7 +50,7 @@ export default function CoworkerDetails() {
           method: "GET",
         });
         const result = await response.json();
-        
+
         if (result.success) {
           setCoworker(result.data);
         } else {
@@ -88,7 +94,9 @@ export default function CoworkerDetails() {
           >
             <IoPersonCircle className="text-6xl text-white/60 mx-auto mb-4" />
             <h1 className="text-2xl font-bold mb-2">همکار یافت نشد</h1>
-            <p className="text-white/70 mb-6">اطلاعات این همکار در دسترس نیست</p>
+            <p className="text-white/70 mb-6">
+              اطلاعات این همکار در دسترس نیست
+            </p>
             <Link
               href="/models"
               className="inline-flex items-center gap-2 px-6 py-3 bg-purple-500/20 text-purple-300 border border-purple-400/30 rounded-xl hover:bg-purple-500/30 transition-all"
@@ -104,20 +112,40 @@ export default function CoworkerDetails() {
 
   // Get expertise display info
   const getExpertiseInfo = (expertise: string) => {
-    const expertiseMap: { [key: string]: { label: string; icon: string; desc: string } } = {
+    const expertiseMap: {
+      [key: string]: { label: string; icon: string; desc: string };
+    } = {
       model: { label: "مدل", icon: "👤", desc: "مدل عکاسی و تصویربرداری" },
-      makeUpArtist: { label: "آرایشگر", icon: "💄", desc: "متخصص آرایش و زیبایی" },
-      stylist: { label: "استایلیست", icon: "👗", desc: "متخصص طراحی لباس و استایل" },
+      makeUpArtist: {
+        label: "آرایشگر",
+        icon: "💄",
+        desc: "متخصص آرایش و زیبایی",
+      },
+      stylist: {
+        label: "استایلیست",
+        icon: "👗",
+        desc: "متخصص طراحی لباس و استایل",
+      },
       location: { label: "لوکیشن", icon: "📍", desc: "تأمین کننده مکان عکاسی" },
-      photoGrapher: { label: "عکاس", icon: "📷", desc: "عکاس حرفه‌ای و تصویربردار" }
+      photoGrapher: {
+        label: "عکاس",
+        icon: "📷",
+        desc: "عکاس حرفه‌ای و تصویربردار",
+      },
     };
-    return expertiseMap[expertise] || { label: expertise, icon: "🎯", desc: "متخصص حرفه‌ای" };
+    return (
+      expertiseMap[expertise] || {
+        label: expertise,
+        icon: "🎯",
+        desc: "متخصص حرفه‌ای",
+      }
+    );
   };
 
   const expertiseInfo = getExpertiseInfo(coworker.experties);
 
   return (
-    <div 
+    <div
       className="min-h-screen pt-4 bg-gradient-to-br from-[#030014] via-[#0A0A2E] to-[#030014] relative overflow-hidden"
       dir="rtl"
     >
@@ -153,7 +181,7 @@ export default function CoworkerDetails() {
           <div className="bg-gradient-to-r from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl p-8 border border-white/20 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-purple-500/20 to-transparent rounded-tr-3xl"></div>
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-pink-500/20 to-transparent rounded-bl-3xl"></div>
-            
+
             <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
               {/* Profile Image */}
               <div className="lg:col-span-1">
@@ -168,7 +196,9 @@ export default function CoworkerDetails() {
                             alt={coworker.name}
                             fill
                             className="object-cover"
-                            onError={(e) => console.error("Main image load error:", e)}
+                            onError={(e) =>
+                              console.error("Main image load error:", e)
+                            }
                           />
                         );
                       } else {
@@ -186,10 +216,13 @@ export default function CoworkerDetails() {
               {/* Info */}
               <div className="lg:col-span-2 text-center lg:text-right">
                 <div className="flex items-center justify-center lg:justify-start gap-3 mb-4">
-               
                   <div>
-                    <h3 className="text-purple-400 text-lg font-semibold">{expertiseInfo.label}</h3>
-                    <p className="text-white/70 text-sm">{expertiseInfo.desc}</p>
+                    <h3 className="text-purple-400 text-lg font-semibold">
+                      {expertiseInfo.label}
+                    </h3>
+                    <p className="text-white/70 text-sm">
+                      {expertiseInfo.desc}
+                    </p>
                   </div>
                 </div>
 
@@ -207,18 +240,25 @@ export default function CoworkerDetails() {
                 <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 mb-6">
                   <div className="flex items-center gap-2 px-3 py-2 bg-white/10 rounded-lg">
                     <FiPhone className="text-green-400" />
-                    <span className="text-white text-sm">{coworker.phoneNumber}</span>
+                    <span className="text-white text-sm">
+                      {coworker.phoneNumber}
+                    </span>
                   </div>
                   {coworker.email && (
                     <div className="flex items-center gap-2 px-3 py-2 bg-white/10 rounded-lg">
                       <FiMail className="text-blue-400" />
-                      <span className="text-white text-sm">{coworker.email}</span>
+                      <span className="text-white text-sm">
+                        {coworker.email}
+                      </span>
                     </div>
                   )}
                 </div>
 
                 {/* Social Links */}
-                {(coworker.socialLinks?.instagram || coworker.socialLinks?.x || coworker.socialLinks?.telegram || coworker.socialLinks?.whatsapp) && (
+                {(coworker.socialLinks?.instagram ||
+                  coworker.socialLinks?.x ||
+                  coworker.socialLinks?.telegram ||
+                  coworker.socialLinks?.whatsapp) && (
                   <div className="flex items-center justify-center lg:justify-start gap-3">
                     {coworker.socialLinks?.instagram && (
                       <motion.a
@@ -294,7 +334,9 @@ export default function CoworkerDetails() {
 
         {/* Portfolio Gallery */}
         {(() => {
-          return (coworker.images?.thumbnails && coworker.images.thumbnails.length > 0);
+          return (
+            coworker.images?.thumbnails && coworker.images.thumbnails.length > 0
+          );
         })() && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -307,7 +349,7 @@ export default function CoworkerDetails() {
                 <FaImages className="text-purple-400" />
                 گالری تصاویر
               </h3>
-              
+
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 ">
                 {coworker.images?.thumbnails?.map((image, index) => (
                   <motion.div
@@ -346,10 +388,10 @@ export default function CoworkerDetails() {
               درباره من
             </h3>
             <p className="text-white/80 leading-relaxed mb-4">
-              {coworker.description || 
+              {coworker.description ||
                 `سلام! من ${coworker.name} هستم. ${expertiseInfo.label} با سالها تجربه در این زمینه. آماده همکاری در پروژه‌های جدید و خلاقانه هستم.`}
             </p>
-            
+
             <div className="space-y-3">
               <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
                 <div className="w-8 h-8 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-lg flex items-center justify-center">
@@ -357,7 +399,7 @@ export default function CoworkerDetails() {
                 </div>
                 <span className="text-white">{coworker.phoneNumber}</span>
               </div>
-              
+
               {coworker.email && (
                 <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
                   <div className="w-8 h-8 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-lg flex items-center justify-center">
@@ -375,32 +417,42 @@ export default function CoworkerDetails() {
               <FaUserTie className="text-purple-400" />
               تخصص و مهارت‌ها
             </h3>
-            
+
             <div className="space-y-4">
               <div className="bg-white/5 rounded-lg p-4">
                 <div className="flex items-center gap-3 mb-2">
-                  <h4 className="text-white font-semibold">{expertiseInfo.label}</h4>
+                  <h4 className="text-white font-semibold">
+                    {expertiseInfo.label}
+                  </h4>
                 </div>
                 <p className="text-white/70 text-sm">{expertiseInfo.desc}</p>
               </div>
-              
+
               {coworker.projects && coworker.projects.length > 0 && (
                 <div className="bg-white/5 rounded-lg p-4">
-                  <h4 className="text-white font-semibold mb-2">پروژه‌های انجام شده</h4>
+                  <h4 className="text-white font-semibold mb-2">
+                    پروژه‌های انجام شده
+                  </h4>
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-sm font-bold">{coworker.projects.length}</span>
+                      <span className="text-white text-sm font-bold">
+                        {coworker.projects.length}
+                      </span>
                     </div>
-                    <span className="text-white/70 text-sm">پروژه تکمیل شده</span>
+                    <span className="text-white/70 text-sm">
+                      پروژه تکمیل شده
+                    </span>
                   </div>
                 </div>
               )}
-              
+
               <div className="bg-white/5 rounded-lg p-4">
                 <h4 className="text-white font-semibold mb-2">وضعیت همکاری</h4>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-green-400 text-sm">آماده پذیرش پروژه جدید</span>
+                  <span className="text-green-400 text-sm">
+                    آماده پذیرش پروژه جدید
+                  </span>
                 </div>
               </div>
             </div>
@@ -408,7 +460,11 @@ export default function CoworkerDetails() {
         </motion.div>
 
         {/* Contact Card */}
-        {(coworker.socialLinks?.instagram || coworker.socialLinks?.x || coworker.socialLinks?.telegram || coworker.socialLinks?.whatsapp || coworker.resomeLink) && (
+        {(coworker.socialLinks?.instagram ||
+          coworker.socialLinks?.x ||
+          coworker.socialLinks?.telegram ||
+          coworker.socialLinks?.whatsapp ||
+          coworker.resomeLink) && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -416,8 +472,10 @@ export default function CoworkerDetails() {
             className="mt-8"
           >
             <div className="bg-gradient-to-r from-white/15 to-white/5 backdrop-blur-2xl rounded-2xl p-6 border border-white/20 text-center">
-              <h3 className="text-xl font-bold text-white mb-6">ارتباط با {coworker.name}</h3>
-              
+              <h3 className="text-xl font-bold text-white mb-6">
+                ارتباط با {coworker.name}
+              </h3>
+
               <div className="flex flex-wrap items-center justify-center gap-4">
                 {coworker.socialLinks?.instagram && (
                   <motion.a
@@ -432,7 +490,7 @@ export default function CoworkerDetails() {
                     <span className="text-sm">اینستاگرام</span>
                   </motion.a>
                 )}
-                
+
                 {coworker.socialLinks?.telegram && (
                   <motion.a
                     href={coworker.socialLinks.telegram}
@@ -446,7 +504,7 @@ export default function CoworkerDetails() {
                     <span className="text-sm">تلگرام</span>
                   </motion.a>
                 )}
-                
+
                 {coworker.socialLinks?.whatsapp && (
                   <motion.a
                     href={coworker.socialLinks.whatsapp}
@@ -460,7 +518,7 @@ export default function CoworkerDetails() {
                     <span className="text-sm">واتساپ</span>
                   </motion.a>
                 )}
-                
+
                 {coworker.resomeLink && (
                   <motion.a
                     href={coworker.resomeLink}

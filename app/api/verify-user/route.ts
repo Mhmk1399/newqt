@@ -32,24 +32,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Check user exists in appropriate model based on userType
-    let userExists: any = null;
+    let userExists: { role?: string } | null = null;
     let userRole: string | null = null;
 
     if (decoded.userType === "user") {
       userExists = await User.findById(userId);
       if (userExists) {
-        userRole = userExists.role; // Get the actual role from User model
+        userRole = userExists.role ?? null; // Get the actual role from User model
       }
     } else if (decoded.userType === "customer") {
       userExists = await Customer.findById(userId);
     } else if (decoded.userType === "coworker") {
       userExists = await CoWorker.findById(userId);
     }
-    
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       exists: !!userExists,
-      role: userRole // Include role for User model users
+      role: userRole, // Include role for User model users
     });
   } catch (error: unknown) {
     console.log(error);

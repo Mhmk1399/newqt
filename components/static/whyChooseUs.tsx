@@ -34,6 +34,8 @@ const WhyChooseUs = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [windowWidth, setWindowWidth] = useState(0);
 
+  console.log(windowWidth);
+
   useEffect(() => {
     const checkMobile = () => {
       const width = window.innerWidth;

@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { FiUpload, FiImage, FiCheck, FiX } from 'react-icons/fi';
+import Image from "next/image";
+import { useState } from "react";
+import { FiUpload, FiImage, FiCheck, FiX } from "react-icons/fi";
 
 interface UploadResult {
   success: boolean;
@@ -15,20 +16,19 @@ export default function ImageUpload() {
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       // Validate file type
-      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
       if (!validTypes.includes(selectedFile.type)) {
-        setError('Please select a valid image file (JPEG, PNG, GIF, WebP)');
+        setError("Please select a valid image file (JPEG, PNG, GIF, WebP)");
         return;
       }
-      
+
       // Validate file size (max 10MB)
       if (selectedFile.size > 10 * 1024 * 1024) {
-        setError('File size must be less than 10MB');
+        setError("File size must be less than 10MB");
         return;
       }
 
@@ -39,13 +39,14 @@ export default function ImageUpload() {
 
   const handleUpload = async (): Promise<void> => {
     if (!file) {
-      setError('لطفا ابتدا فایل را انتخاب کنید');
+      setError("لطفا ابتدا فایل را انتخاب کنید");
       return;
     }
 
-    const userToken = localStorage.getItem('userToken') || localStorage.getItem('token');
+    const userToken =
+      localStorage.getItem("userToken") || localStorage.getItem("token");
     if (!userToken) {
-      setError('لطفا ابتدا وارد حساب کاربری خود شوید');
+      setError("لطفا ابتدا وارد حساب کاربری خود شوید");
       return;
     }
 
@@ -54,12 +55,12 @@ export default function ImageUpload() {
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append("file", file);
 
-      const response = await fetch('/api/upload', {
-        method: 'POST',
+      const response = await fetch("/api/upload", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${userToken}`
+          Authorization: `Bearer ${userToken}`,
         },
         body: formData,
       });
@@ -69,17 +70,21 @@ export default function ImageUpload() {
       if (result.success) {
         setUploadResult(result);
       } else {
-        setError(result.error || 'آپلود ناموفق');
+        setError(result.error || "آپلود ناموفق");
       }
     } catch (error) {
-      setError('خطا در ارتباط با سرور. لطفا دوباره تلاش کنید.');
+      console.log(error);
+      setError("خطا در ارتباط با سرور. لطفا دوباره تلاش کنید.");
     } finally {
       setUploading(false);
     }
   };
 
   return (
-    <div dir="rtl" className="max-w-md mx-auto bg-gradient-to-br from-[#0A0A2E]/95 to-[#1A1A4A]/95 backdrop-blur-2xl rounded-3xl p-8 border border-white/20">
+    <div
+      dir="rtl"
+      className="max-w-md mx-auto bg-gradient-to-br from-[#0A0A2E]/95 to-[#1A1A4A]/95 backdrop-blur-2xl rounded-3xl p-8 border border-white/20"
+    >
       <div className="text-center mb-8">
         <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500/30 to-pink-500/30 rounded-2xl flex items-center justify-center">
           <FiImage className="text-2xl text-white" />
@@ -154,11 +159,11 @@ export default function ImageUpload() {
           </div>
           {uploadResult.url && (
             <div className="mt-4">
-              <img
+              <Image
                 src={uploadResult.url}
                 alt="Uploaded preview"
                 className="max-w-full h-auto rounded-2xl shadow-lg"
-                style={{ maxHeight: '200px' }}
+                style={{ maxHeight: "200px" }}
               />
             </div>
           )}

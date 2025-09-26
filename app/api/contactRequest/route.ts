@@ -3,7 +3,16 @@ import contactRequest from "@/models/contactRequest";
 import connect from "@/lib/data";
 import mongoose from "mongoose";
 
-// GET - Retrieve contact requests
+// MongoDB query filter interface for contact requests
+interface ContactRequestQueryFilter {
+  status?: string;
+  type?: string;
+  $or?: Array<{
+    name?: { $regex: string; $options: string };
+    email?: { $regex: string; $options: string };
+    message?: { $regex: string; $options: string };
+  }>;
+} // GET - Retrieve contact requests
 export async function GET(request: NextRequest) {
   try {
     await connect();
@@ -11,6 +20,7 @@ export async function GET(request: NextRequest) {
     const id = searchParams.get("id");
     const status = searchParams.get("status");
     const type = searchParams.get("type");
+    const search = searchParams.get("search");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
 
@@ -21,7 +31,7 @@ export async function GET(request: NextRequest) {
           { status: 400 }
         );
       }
-      
+
       const contact = await contactRequest.findById(id);
       if (!contact) {
         return NextResponse.json(
@@ -29,14 +39,21 @@ export async function GET(request: NextRequest) {
           { status: 404 }
         );
       }
-      
+
       return NextResponse.json({ success: true, data: contact });
     }
 
     // Build query filters
-    const query: any = {};
+    const query: ContactRequestQueryFilter = {};
     if (status) query.status = status;
     if (type) query.type = type;
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { message: { $regex: search, $options: 'i' } }
+      ];
+    }
 
     const skip = (page - 1) * limit;
     const contacts = await contactRequest
@@ -44,9 +61,9 @@ export async function GET(request: NextRequest) {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
-    
+
     const total = await contactRequest.countDocuments(query);
-    
+
     return NextResponse.json({
       success: true,
       data: contacts,
@@ -54,8 +71,8 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     console.error("GET Error:", error);
@@ -86,13 +103,17 @@ export async function POST(request: NextRequest) {
       phoneNumber,
       title,
       message,
-      type: type || 'content'
+      type: type || "content",
     });
 
     const savedContact = await newContact.save();
-    
+
     return NextResponse.json(
-      { success: true, message: "Contact request created successfully", data: savedContact },
+      {
+        success: true,
+        message: "Contact request created successfully",
+        data: savedContact,
+      },
       { status: 201 }
     );
   } catch (error) {
@@ -147,7 +168,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Contact request updated successfully",
-      data: updatedContact
+      data: updatedContact,
     });
   } catch (error) {
     console.error("PUT Error:", error);
@@ -170,7 +191,7 @@ export async function DELETE(request: NextRequest) {
     await connect();
     const { searchParams } = new URL(request.url);
     let id = searchParams.get("id");
-    
+
     // If no ID in query params, try to get it from request body
     if (!id) {
       try {
@@ -207,7 +228,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Contact request deleted successfully",
-      data: deletedContact
+      data: deletedContact,
     });
   } catch (error) {
     console.error("DELETE Error:", error);

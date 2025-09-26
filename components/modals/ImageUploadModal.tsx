@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from "react";
 import { HiX, HiUpload, HiTrash } from "react-icons/hi";
 import toast from "react-hot-toast";
+import Image from "next/image";
 
 interface ImageUploadModalProps {
   isOpen: boolean;
@@ -43,7 +44,9 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
     return result.url;
   }, []);
 
-  const handleMainImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMainImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -53,13 +56,16 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
       setMainImage(url);
       toast.success("تصویر اصلی آپلود شد");
     } catch (error) {
+      console.log(error);
       toast.error("خطا در آپلود تصویر اصلی");
     } finally {
       setUploading(false);
     }
   };
 
-  const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleThumbnailUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
@@ -67,10 +73,10 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
       setUploading(true);
       const uploadPromises = files.map(uploadImage);
       const urls = await Promise.all(uploadPromises);
-      setThumbnails(prev => [...prev, ...urls]);
+      setThumbnails((prev) => [...prev, ...urls]);
       toast.success(`${files.length} تصویر کوچک آپلود شد`);
     } catch (error) {
-      console.log(error)
+      console.log(error);
       toast.error("خطا در آپلود تصاویر کوچک");
     } finally {
       setUploading(false);
@@ -78,7 +84,7 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
   };
 
   const removeThumbnail = (index: number) => {
-    setThumbnails(prev => prev.filter((_, i) => i !== index));
+    setThumbnails((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSave = () => {
@@ -114,7 +120,7 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
               {mainImage ? (
                 <div className="relative">
-                  <img
+                  <Image
                     src={mainImage}
                     alt="Main"
                     className="w-full h-64 object-cover rounded-lg"
@@ -129,7 +135,9 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
               ) : (
                 <label className="cursor-pointer block text-center">
                   <HiUpload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-2">کلیک کنید تا تصویر اصلی را انتخاب کنید</p>
+                  <p className="text-gray-600 mb-2">
+                    کلیک کنید تا تصویر اصلی را انتخاب کنید
+                  </p>
                   <p className="text-sm text-gray-500">JPG, PNG, GIF تا 10MB</p>
                   <input
                     type="file"
@@ -149,8 +157,12 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 mb-4">
               <label className="cursor-pointer block text-center">
                 <HiUpload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-600 mb-2">انتخاب تصاویر کوچک (چندتایی)</p>
-                <p className="text-sm text-gray-500">JPG, PNG, GIF تا 10MB هر کدام</p>
+                <p className="text-gray-600 mb-2">
+                  انتخاب تصاویر کوچک (چندتایی)
+                </p>
+                <p className="text-sm text-gray-500">
+                  JPG, PNG, GIF تا 10MB هر کدام
+                </p>
                 <input
                   type="file"
                   accept="image/*"
@@ -167,7 +179,7 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {thumbnails.map((thumb, index) => (
                   <div key={index} className="relative">
-                    <img
+                    <Image
                       src={thumb}
                       alt={`Thumbnail ${index + 1}`}
                       className="w-full h-32 object-cover rounded-lg"

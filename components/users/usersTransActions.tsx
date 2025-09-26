@@ -2,9 +2,21 @@
 
 import React, { useState, useEffect } from "react";
 import DynamicTable from "@/components/global/newdynamics/dynamicTable";
-import { TableColumn, FilterField } from "@/types/dynamicTypes/types";
+import {
+  TableColumn,
+  FilterField,
+  TableData,
+} from "@/types/dynamicTypes/types";
 import { motion } from "framer-motion";
-import { FaReceipt, FaArrowUp, FaArrowDown, FaCalendar, FaTasks, FaMoneyBillWave, FaCheckCircle } from "react-icons/fa";
+import {
+  FaReceipt,
+  FaArrowUp,
+  FaArrowDown,
+  FaCalendar,
+  FaTasks,
+  FaMoneyBillWave,
+  FaCheckCircle,
+} from "react-icons/fa";
 import { IoWallet } from "react-icons/io5";
 import DatePicker, { DateObject } from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
@@ -27,6 +39,7 @@ interface TransactionSummary {
   transactionCount: number;
 }
 
+
 const UsersTransActions: React.FC = () => {
   const router = useRouter();
   const [userInfo, setUserInfo] = useState<DecodedToken | null>(null);
@@ -39,16 +52,19 @@ const UsersTransActions: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // State for transactions data
-  const [transactionsData, setTransactionsData] = useState<any[]>([]);
+  const [transactionsData, setTransactionsData] = useState<TableData[]>([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
 
   // State for salary calculation
-  const [salaryDateRange, setSalaryDateRange] = useState<[string, string]>(["", ""]);
+  const [salaryDateRange, setSalaryDateRange] = useState<[string, string]>([
+    "",
+    "",
+  ]);
   const [completedTasksCount, setCompletedTasksCount] = useState(0);
   const [taskAmount, setTaskAmount] = useState(0); // Will be loaded from user's team
   const [totalSalary, setTotalSalary] = useState(0);
   const [salaryLoading, setSalaryLoading] = useState(false);
-  const [teamInfo, setTeamInfo] = useState<any>(null);
+  const [teamInfo, setTeamInfo] = useState<TableData | null>(null);
   const [teamLoading, setTeamLoading] = useState(false);
 
   // Extract user info from token
@@ -151,7 +167,6 @@ const UsersTransActions: React.FC = () => {
   // Calculate summary from client-side data as fallback
   useEffect(() => {
     if (transactionsData && transactionsData.length > 0) {
-
       const calculatedSummary = {
         totalIncome: 0,
         totalExpense: 0,
@@ -159,28 +174,22 @@ const UsersTransActions: React.FC = () => {
         transactionCount: transactionsData.length,
       };
 
-      transactionsData.forEach((transaction: any, index: number) => {
-
-
+      transactionsData.forEach((transaction: TableData) => {
         if (transaction.type === "income") {
           const amount = Number(transaction.received) || 0;
           calculatedSummary.totalIncome += amount;
-    
         } else if (transaction.type === "expense") {
           const amount = Number(transaction.paid) || 0;
           calculatedSummary.totalExpense += amount;
-        
         }
       });
 
       calculatedSummary.balance =
         calculatedSummary.totalIncome - calculatedSummary.totalExpense;
 
-
       // Always update with client-side calculation if we have transactions
       setSummary(calculatedSummary);
     } else if (transactionsData && transactionsData.length === 0) {
-
       // Reset summary if no transactions
       setSummary({
         totalIncome: 0,
@@ -199,7 +208,7 @@ const UsersTransActions: React.FC = () => {
     try {
       const token =
         localStorage.getItem("userToken") || localStorage.getItem("token");
-      
+
       // Get user details with team information populated
       const userResponse = await fetch(`/api/users?id=${userInfo.userId}`, {
         headers: {
@@ -215,7 +224,6 @@ const UsersTransActions: React.FC = () => {
         setTeamInfo(userResult.data.teamId);
         setTaskAmount(Number(userResult.data.teamId.amount) || 0);
       } else {
-
         setTaskAmount(0);
         setTeamInfo(null);
       }
@@ -238,7 +246,7 @@ const UsersTransActions: React.FC = () => {
     try {
       const token =
         localStorage.getItem("userToken") || localStorage.getItem("token");
-      
+
       const response = await fetch(
         `/api/tasks?assignedUserId=${userInfo.userId}&status=completed&completedDateFrom=${salaryDateRange[0]}&completedDateTo=${salaryDateRange[1]}&limit=1000`,
         {
@@ -324,7 +332,8 @@ const UsersTransActions: React.FC = () => {
       key: "amount",
       header: "مبلغ",
       sortable: true,
-      render: (value, row: any) => {
+      render: (value: string | number | boolean, row?: TableData | undefined) => {
+        if (!row) return "-";
         const amount = row.type === "income" ? row.received : row.paid;
         const isIncome = row.type === "income";
         return (
@@ -426,7 +435,9 @@ const UsersTransActions: React.FC = () => {
             <h2 className="text-2xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-2">
               محاسبه حقوق
             </h2>
-            <p className="text-white/70">محاسبه حقوق بر اساس تسک‌های تکمیل شده</p>
+            <p className="text-white/70">
+              محاسبه حقوق بر اساس تسک‌های تکمیل شده
+            </p>
           </div>
 
           {/* Date Range Picker */}
@@ -439,13 +450,18 @@ const UsersTransActions: React.FC = () => {
                 <div className="relative flex-1">
                   <DatePicker
                     value={
-                      salaryDateRange[0] ? new DateObject(new Date(salaryDateRange[0])) : null
+                      salaryDateRange[0]
+                        ? new DateObject(new Date(salaryDateRange[0]))
+                        : null
                     }
                     onChange={(val) => {
                       const fromDate = val
                         ? val.toDate().toISOString().split("T")[0]
                         : "";
-                      const newRange: [string, string] = [fromDate, salaryDateRange[1]];
+                      const newRange: [string, string] = [
+                        fromDate,
+                        salaryDateRange[1],
+                      ];
                       setSalaryDateRange(newRange);
                     }}
                     calendar={persian}
@@ -466,13 +482,18 @@ const UsersTransActions: React.FC = () => {
                 <div className="relative flex-1">
                   <DatePicker
                     value={
-                      salaryDateRange[1] ? new DateObject(new Date(salaryDateRange[1])) : null
+                      salaryDateRange[1]
+                        ? new DateObject(new Date(salaryDateRange[1]))
+                        : null
                     }
                     onChange={(val) => {
                       const toDate = val
                         ? val.toDate().toISOString().split("T")[0]
                         : "";
-                      const newRange: [string, string] = [salaryDateRange[0], toDate];
+                      const newRange: [string, string] = [
+                        salaryDateRange[0],
+                        toDate,
+                      ];
                       setSalaryDateRange(newRange);
                     }}
                     calendar={persian}
@@ -513,13 +534,15 @@ const UsersTransActions: React.FC = () => {
                 ) : salaryDateRange[0] && salaryDateRange[1] ? (
                   `${completedTasksCount} عدد`
                 ) : (
-                  <span className="text-white/50 text-lg">بازه زمانی را انتخاب کنید</span>
+                  <span className="text-white/50 text-lg">
+                    بازه زمانی را انتخاب کنید
+                  </span>
                 )}
               </p>
               {salaryDateRange[0] && salaryDateRange[1] && (
                 <p className="text-blue-300/70 text-xs mt-2">
-                  از {new Date(salaryDateRange[0]).toLocaleDateString("fa-IR")} تا{" "}
-                  {new Date(salaryDateRange[1]).toLocaleDateString("fa-IR")}
+                  از {new Date(salaryDateRange[0]).toLocaleDateString("fa-IR")}{" "}
+                  تا {new Date(salaryDateRange[1]).toLocaleDateString("fa-IR")}
                 </p>
               )}
             </motion.div>
@@ -538,10 +561,12 @@ const UsersTransActions: React.FC = () => {
               <h3 className="text-green-400 text-sm font-medium mb-2">
                 مبلغ هر تسک (از تیم)
               </h3>
-              
+
               {teamLoading ? (
                 <div className="text-center">
-                  <span className="text-white/50 animate-pulse">در حال بارگذاری...</span>
+                  <span className="text-white/50 animate-pulse">
+                    در حال بارگذاری...
+                  </span>
                 </div>
               ) : teamInfo ? (
                 <div>

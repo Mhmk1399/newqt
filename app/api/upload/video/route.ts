@@ -16,13 +16,13 @@ interface VideoUploadResponse {
 const VIDEO_CONFIG = {
   maxSize: 300 * 1024 * 1024, // 300MB max file size
   allowedTypes: [
-    'video/mp4',
-    'video/webm', 
-    'video/ogg',
-    'video/avi',
-    'video/mov',
-    'video/quicktime',
-    'video/x-msvideo'
+    "video/mp4",
+    "video/webm",
+    "video/ogg",
+    "video/avi",
+    "video/mov",
+    "video/quicktime",
+    "video/x-msvideo",
   ],
   chunkSize: 1024 * 1024 * 5, // 5MB chunks for large file upload
 };
@@ -52,9 +52,11 @@ export async function POST(
     // Validate file type
     if (!VIDEO_CONFIG.allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: `فرمت ویدیو پشتیبانی نمی‌شود. فرمت‌های مجاز: ${VIDEO_CONFIG.allowedTypes.join(', ')}` 
+        {
+          success: false,
+          error: `فرمت ویدیو پشتیبانی نمی‌شود. فرمت‌های مجاز: ${VIDEO_CONFIG.allowedTypes.join(
+            ", "
+          )}`,
         },
         { status: 400 }
       );
@@ -64,9 +66,9 @@ export async function POST(
     if (file.size > VIDEO_CONFIG.maxSize) {
       const maxSizeMB = VIDEO_CONFIG.maxSize / (1024 * 1024);
       return NextResponse.json(
-        { 
-          success: false, 
-          error: `حجم ویدیو نباید بیشتر از ${maxSizeMB}MB باشد` 
+        {
+          success: false,
+          error: `حجم ویدیو نباید بیشتر از ${maxSizeMB}MB باشد`,
         },
         { status: 400 }
       );
@@ -90,7 +92,7 @@ export async function POST(
 
     // Read file content with progress tracking
     const fileContent = await file.arrayBuffer();
-    
+
     // Generate upload signature
     const dateValue = new Date().toUTCString();
     const contentType = file.type || "video/mp4";
@@ -122,18 +124,18 @@ export async function POST(
 
     if (response.ok) {
       const videoUrl = `https://${bucketName}.s3.ir-thr-at1.arvanstorage.ir/${objectName}`;
-      
+
       // Update the task with the video URL directly in the database
       try {
         await connect();
-        await Task.findByIdAndUpdate(taskId, { 
-          attachedVideo: videoUrl 
+        await Task.findByIdAndUpdate(taskId, {
+          attachedVideo: videoUrl,
         });
       } catch (dbError) {
         console.error("Error updating task in database:", dbError);
         // Continue anyway - the frontend will still get the video URL
       }
-      
+
       return NextResponse.json({
         success: true,
         videoUrl,
@@ -142,7 +144,7 @@ export async function POST(
     } else {
       const errorText = await response.text();
       console.error("ArvanCloud upload error:", response.status, errorText);
-      
+
       return NextResponse.json(
         {
           success: false,
@@ -155,9 +157,9 @@ export async function POST(
   } catch (error) {
     console.error("Video upload error:", error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : "خطای داخلی سرور" 
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "خطای داخلی سرور",
       },
       { status: 500 }
     );
@@ -167,7 +169,7 @@ export async function POST(
 // GET endpoint to check upload progress or video info
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const taskId = searchParams.get('taskId');
+  const taskId = searchParams.get("taskId");
 
   if (!taskId) {
     return NextResponse.json(
@@ -184,6 +186,7 @@ export async function GET(request: NextRequest) {
       taskId,
     });
   } catch (error) {
+    console.log(error);
     return NextResponse.json(
       { success: false, error: "خطا در دریافت اطلاعات ویدیو" },
       { status: 500 }

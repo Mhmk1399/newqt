@@ -7,6 +7,18 @@ import Task from "@/models/tasks";
 import connect from "@/lib/data";
 import mongoose from "mongoose";
 
+interface filterquery {
+  isActive?: boolean;
+  isVip?: boolean;
+  priority?: string;
+  status?: string;
+  type?: string;
+  $or?: Array<{
+    title?: { $regex: string; $options: string };
+    requirements?: { $regex: string; $options: string };
+    notes?: { $regex: string; $options: string };
+  }>;
+}
 // GET - Retrieve service requests with filters and pagination
 export async function GET(request: NextRequest) {
   try {
@@ -26,7 +38,7 @@ export async function GET(request: NextRequest) {
           { status: 400 }
         );
       }
-      
+
       const serviceRequest = await ServiceRequest.findById(id)
         .populate({
           path: "serviceId",
@@ -48,19 +60,19 @@ export async function GET(request: NextRequest) {
           select: "name email",
           model: User,
         });
-        
+
       if (!serviceRequest) {
         return NextResponse.json(
           { success: false, message: "Service request not found" },
           { status: 404 }
         );
       }
-      
+
       return NextResponse.json({ success: true, data: serviceRequest });
     }
 
     // Build query filters
-    const query: any = {};
+    const query: filterquery = {};
     if (status) {
       query.status = status;
     }
@@ -69,15 +81,14 @@ export async function GET(request: NextRequest) {
     }
     if (search) {
       query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { requirements: { $regex: search, $options: 'i' } },
-        { notes: { $regex: search, $options: 'i' } }
+        { title: { $regex: search, $options: "i" } },
+        { requirements: { $regex: search, $options: "i" } },
+        { notes: { $regex: search, $options: "i" } },
       ];
     }
 
     const skip = (page - 1) * limit;
-    const serviceRequests = await ServiceRequest
-      .find(query)
+    const serviceRequests = await ServiceRequest.find(query)
       .populate({
         path: "serviceId",
         select: "name basePrice",
@@ -101,9 +112,9 @@ export async function GET(request: NextRequest) {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
-    
+
     const total = await ServiceRequest.countDocuments(query);
-    
+
     return NextResponse.json({
       success: true,
       data: serviceRequests,
@@ -111,8 +122,8 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     console.error("GET Error:", error);
@@ -133,16 +144,24 @@ export async function POST(request: NextRequest) {
     // Validation
     if (!title || !serviceId || !requestedDate || !requirements) {
       return NextResponse.json(
-        { success: false, message: "Title, service ID, requested date, and requirements are required" },
+        {
+          success: false,
+          message:
+            "Title, service ID, requested date, and requirements are required",
+        },
         { status: 400 }
       );
     }
-    
+
     const serviceRequest = new ServiceRequest(body);
     await serviceRequest.save();
 
     return NextResponse.json(
-      { success: true, message: "Service request created successfully", data: serviceRequest },
+      {
+        success: true,
+        message: "Service request created successfully",
+        data: serviceRequest,
+      },
       { status: 201 }
     );
   } catch (error) {
@@ -197,7 +216,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Service request updated successfully",
-      data: updatedServiceRequest
+      data: updatedServiceRequest,
     });
   } catch (error) {
     console.error("PUT Error:", error);
@@ -256,9 +275,12 @@ export async function PATCH(request: NextRequest) {
 
     // Create tasks for newly assigned users
     if (updateData.asiginedto && Array.isArray(updateData.asiginedto)) {
-      const currentAssigned: string[] = currentServiceRequest.asiginedto?.map((id: mongoose.Types.ObjectId) => id.toString()) || [];
-      const newAssigned = updateData.asiginedto.filter((userId: string) => 
-        !currentAssigned.includes(userId)
+      const currentAssigned: string[] =
+        currentServiceRequest.asiginedto?.map((id: mongoose.Types.ObjectId) =>
+          id.toString()
+        ) || [];
+      const newAssigned = updateData.asiginedto.filter(
+        (userId: string) => !currentAssigned.includes(userId)
       );
 
       // Create tasks for new assignments
@@ -266,13 +288,13 @@ export async function PATCH(request: NextRequest) {
         await Task.create({
           serviceRequestId: id,
           assignedUserId: userId,
-          title: ` ${updatedServiceRequest?.title || 'Service Request'}`,
+          title: ` ${updatedServiceRequest?.title || "Service Request"}`,
           description: ` ${updatedServiceRequest?.title}`,
-          status: 'todo',
-          priority: updatedServiceRequest?.priority || 'medium',
+          status: "todo",
+          priority: updatedServiceRequest?.priority || "medium",
           dueDate: updatedServiceRequest?.scheduledDate,
-          notes: '',
-          deliverables: ''
+          notes: "",
+          deliverables: "",
         });
       }
     }
@@ -280,7 +302,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Service request updated successfully",
-      data: updatedServiceRequest
+      data: updatedServiceRequest,
     });
   } catch (error) {
     console.error("PATCH Error:", error);
@@ -295,11 +317,11 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     await connect();
-    
+
     // Try to get ID from query params first
     const { searchParams } = new URL(request.url);
     let id = searchParams.get("id");
-    
+
     // If not in query params, try to get from request body
     if (!id) {
       try {
@@ -336,7 +358,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Service request deleted successfully",
-      data: deletedServiceRequest
+      data: deletedServiceRequest,
     });
   } catch (error) {
     console.error("DELETE Error:", error);

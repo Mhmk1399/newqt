@@ -21,6 +21,8 @@ const AboutUs = () => {
 
   const [isMobile, setIsMobile] = useState(false);
 
+  console.log(isMobile)
+
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);

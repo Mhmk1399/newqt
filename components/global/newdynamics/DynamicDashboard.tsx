@@ -17,12 +17,9 @@ import {
   IoDocumentText,
   IoCard,
   IoWallet,
-  IoStarOutline,
   IoPerson,
   IoHeadset,
   IoCreateOutline,
-  IoCamera,
-  IoImageOutline,
 } from "react-icons/io5";
 
 // Import all admin components
@@ -279,7 +276,7 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
       case "user":
         // Users from User model - they already passed admin check above
         // Other user roles (manager, editor, designer, video-shooter) get user config
-    
+
         return defaultUserConfig;
 
       case "customer":
@@ -289,7 +286,6 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
         return defaultCoWorkerConfig;
 
       default:
-    
         return null;
     }
   };

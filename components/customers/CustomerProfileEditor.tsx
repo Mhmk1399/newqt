@@ -4,21 +4,15 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaUser,
-  FaPhone,
   FaBuilding,
-  FaIndustry,
-  FaMapMarkerAlt,
-  FaGlobe,
+  FaCheck,
+  FaShieldAlt,
   FaStar,
+  FaTimes,
   FaEdit,
   FaSave,
-  FaTimes,
-  FaCheck,
-  FaExclamationTriangle,
-  FaShieldAlt,
 } from "react-icons/fa";
-import { IoSparkles, IoClose } from "react-icons/io5";
-import { BiBuilding, BiMap } from "react-icons/bi";
+
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
@@ -66,11 +60,36 @@ const CustomerProfileEditor: React.FC = () => {
   const [profileExists, setProfileExists] = useState(false);
 
   const businessScaleOptions = [
-    { value: "startup", label: "استارت‌آپ", icon: "🚀", desc: "شرکت نوپا با ایده‌های خلاقانه" },
-    { value: "small", label: "کوچک", icon: "🏪", desc: "کسب‌وکار محلی با تیم کوچک" },
-    { value: "medium", label: "متوسط", icon: "🏢", desc: "شرکت در حال رشد با حضور منطقه‌ای" },
-    { value: "large", label: "بزرگ", icon: "🏬", desc: "سازمان بزرگ با حضور ملی" },
-    { value: "enterprise", label: "سازمانی", icon: "🏭", desc: "شرکت بین‌المللی با حضور جهانی" }
+    {
+      value: "startup",
+      label: "استارت‌آپ",
+      icon: "🚀",
+      desc: "شرکت نوپا با ایده‌های خلاقانه",
+    },
+    {
+      value: "small",
+      label: "کوچک",
+      icon: "🏪",
+      desc: "کسب‌وکار محلی با تیم کوچک",
+    },
+    {
+      value: "medium",
+      label: "متوسط",
+      icon: "🏢",
+      desc: "شرکت در حال رشد با حضور منطقه‌ای",
+    },
+    {
+      value: "large",
+      label: "بزرگ",
+      icon: "🏬",
+      desc: "سازمان بزرگ با حضور ملی",
+    },
+    {
+      value: "enterprise",
+      label: "سازمانی",
+      icon: "🏭",
+      desc: "شرکت بین‌المللی با حضور جهانی",
+    },
   ];
 
   // Extract user info from token
@@ -136,7 +155,7 @@ const CustomerProfileEditor: React.FC = () => {
           setProfileExists(true);
         } else {
           // Profile doesn't exist, initialize with token data
-          setProfile(prev => ({
+          setProfile((prev) => ({
             ...prev,
             name: userInfo.name || "",
             phoneNumber: userInfo.phoneNumber || "",
@@ -184,7 +203,9 @@ const CustomerProfileEditor: React.FC = () => {
         localStorage.getItem("userToken") || localStorage.getItem("token");
 
       const method = profileExists ? "PUT" : "POST";
-      const url = profileExists ? `/api/customers?id=${profile._id}` : "/api/customers";
+      const url = profileExists
+        ? `/api/customers?id=${profile._id}`
+        : "/api/customers";
 
       const response = await fetch(url, {
         method,
@@ -218,10 +239,10 @@ const CustomerProfileEditor: React.FC = () => {
   };
 
   // Handle input change
-  const handleInputChange = (field: keyof CustomerProfile, value: any) => {
-    setProfile(prev => ({ ...prev, [field]: value }));
+  const handleInputChange = (field: keyof CustomerProfile, value: string | boolean) => {
+    setProfile((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: "" }));
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
@@ -284,13 +305,31 @@ const CustomerProfileEditor: React.FC = () => {
           <div className="bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-xl rounded-2xl p-4 border border-white/20">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${profile.isVip ? 'bg-gradient-to-r from-yellow-400 to-orange-400' : 'bg-gradient-to-r from-purple-500 to-pink-500'}`}>
-                  {profile.isVip ? <FaStar className="text-white text-lg" /> : <FaUser className="text-white text-lg" />}
+                <div
+                  className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                    profile.isVip
+                      ? "bg-gradient-to-r from-yellow-400 to-orange-400"
+                      : "bg-gradient-to-r from-purple-500 to-pink-500"
+                  }`}
+                >
+                  {profile.isVip ? (
+                    <FaStar className="text-white text-lg" />
+                  ) : (
+                    <FaUser className="text-white text-lg" />
+                  )}
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white">{profile.name || "نام کاربری"}</h2>
+                  <h2 className="text-xl font-bold text-white">
+                    {profile.name || "نام کاربری"}
+                  </h2>
                   <div className="flex items-center gap-4">
-                    <span className={`px-3 py-1 rounded-full text-sm ${profile.isVip ? 'bg-yellow-400/20 text-yellow-300' : 'bg-blue-400/20 text-blue-300'}`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm ${
+                        profile.isVip
+                          ? "bg-yellow-400/20 text-yellow-300"
+                          : "bg-blue-400/20 text-blue-300"
+                      }`}
+                    >
                       {profile.isVip ? "VIP مشتری" : "مشتری عادی"}
                     </span>
                     {profile.verifiedAt && (
@@ -394,7 +433,9 @@ const CustomerProfileEditor: React.FC = () => {
                   <input
                     type="text"
                     value={profile.businessName}
-                    onChange={(e) => handleInputChange("businessName", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("businessName", e.target.value)
+                    }
                     disabled={!isEditing}
                     className={`w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 transition-all ${
                       !isEditing ? "opacity-60 cursor-not-allowed" : ""
@@ -402,7 +443,9 @@ const CustomerProfileEditor: React.FC = () => {
                     placeholder="نام شرکت یا کسب‌وکار خود را وارد کنید"
                   />
                   {errors.businessName && (
-                    <p className="text-red-400 text-xs mt-1">{errors.businessName}</p>
+                    <p className="text-red-400 text-xs mt-1">
+                      {errors.businessName}
+                    </p>
                   )}
                 </div>
 
@@ -421,13 +464,18 @@ const CustomerProfileEditor: React.FC = () => {
                             ? "bg-purple-500/20 border-purple-400/50 text-white"
                             : "bg-white/5 border-white/20 text-white/70 hover:bg-white/10"
                         } ${!isEditing ? "opacity-60 cursor-not-allowed" : ""}`}
-                        onClick={() => isEditing && handleInputChange("businessScale", option.value)}
+                        onClick={() =>
+                          isEditing &&
+                          handleInputChange("businessScale", option.value)
+                        }
                       >
                         <div className="flex items-center gap-3">
                           <span className="text-2xl">{option.icon}</span>
                           <div>
                             <div className="font-medium">{option.label}</div>
-                            <div className="text-xs opacity-70">{option.desc}</div>
+                            <div className="text-xs opacity-70">
+                              {option.desc}
+                            </div>
                           </div>
                         </div>
                       </motion.div>
@@ -441,7 +489,9 @@ const CustomerProfileEditor: React.FC = () => {
                   </label>
                   <textarea
                     value={profile.address}
-                    onChange={(e) => handleInputChange("address", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("address", e.target.value)
+                    }
                     disabled={!isEditing}
                     rows={3}
                     className={`w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 transition-all resize-none ${
@@ -458,7 +508,9 @@ const CustomerProfileEditor: React.FC = () => {
                   <input
                     type="url"
                     value={profile.website}
-                    onChange={(e) => handleInputChange("website", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("website", e.target.value)
+                    }
                     disabled={!isEditing}
                     className={`w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 transition-all ${
                       !isEditing ? "opacity-60 cursor-not-allowed" : ""
@@ -466,7 +518,9 @@ const CustomerProfileEditor: React.FC = () => {
                     placeholder="https://example.com"
                   />
                   {errors.website && (
-                    <p className="text-red-400 text-xs mt-1">{errors.website}</p>
+                    <p className="text-red-400 text-xs mt-1">
+                      {errors.website}
+                    </p>
                   )}
                 </div>
               </div>
@@ -486,13 +540,21 @@ const CustomerProfileEditor: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-white/70">نوع حساب:</span>
-                  <span className={profile.isVip ? "text-yellow-400" : "text-blue-400"}>
+                  <span
+                    className={
+                      profile.isVip ? "text-yellow-400" : "text-blue-400"
+                    }
+                  >
                     {profile.isVip ? "VIP" : "عادی"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-white/70">وضعیت:</span>
-                  <span className={profile.isActive ? "text-green-400" : "text-red-400"}>
+                  <span
+                    className={
+                      profile.isActive ? "text-green-400" : "text-red-400"
+                    }
+                  >
                     {profile.isActive ? "فعال" : "غیرفعال"}
                   </span>
                 </div>
@@ -513,36 +575,44 @@ const CustomerProfileEditor: React.FC = () => {
               <h3 className="text-lg font-bold text-white mb-4">آمار سریع</h3>
               <div className="space-y-3">
                 <div className="bg-white/5 rounded-lg p-3">
-                  <div className="text-purple-400 text-sm">کامل بودن پروفایل</div>
+                  <div className="text-purple-400 text-sm">
+                    کامل بودن پروفایل
+                  </div>
                   <div className="flex items-center gap-2 mt-1">
                     <div className="flex-1 bg-white/10 rounded-full h-2">
-                      <div 
+                      <div
                         className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-500"
-                        style={{ 
+                        style={{
                           width: `${Math.round(
-                            ((profile.name ? 1 : 0) +
-                            (profile.businessName ? 1 : 0) +
-                            (profile.businessScale ? 1 : 0) +
-                            (profile.address ? 1 : 0) +
-                            (profile.website ? 1 : 0)) / 5 * 100
-                          )}%`
+                            (((profile.name ? 1 : 0) +
+                              (profile.businessName ? 1 : 0) +
+                              (profile.businessScale ? 1 : 0) +
+                              (profile.address ? 1 : 0) +
+                              (profile.website ? 1 : 0)) /
+                              5) *
+                              100
+                          )}%`,
                         }}
                       />
                     </div>
                     <span className="text-white text-sm">
                       {Math.round(
-                        ((profile.name ? 1 : 0) +
-                        (profile.businessName ? 1 : 0) +
-                        (profile.businessScale ? 1 : 0) +
-                        (profile.address ? 1 : 0) +
-                        (profile.website ? 1 : 0)) / 5 * 100
-                      )}%
+                        (((profile.name ? 1 : 0) +
+                          (profile.businessName ? 1 : 0) +
+                          (profile.businessScale ? 1 : 0) +
+                          (profile.address ? 1 : 0) +
+                          (profile.website ? 1 : 0)) /
+                          5) *
+                          100
+                      )}
+                      %
                     </span>
                   </div>
                 </div>
                 {profile.createdAt && (
                   <div className="text-center text-white/60 text-sm">
-                    عضو از {new Date(profile.createdAt).toLocaleDateString("fa-IR")}
+                    عضو از{" "}
+                    {new Date(profile.createdAt).toLocaleDateString("fa-IR")}
                   </div>
                 )}
               </div>
@@ -563,7 +633,11 @@ const CustomerProfileEditor: React.FC = () => {
                   <div className="flex items-center justify-center gap-2">
                     <motion.div
                       animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      transition={{
+                        duration: 1,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
                       className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full"
                     />
                     در حال ذخیره...
@@ -606,8 +680,12 @@ const CustomerProfileEditor: React.FC = () => {
                 >
                   <FaCheck className="text-white text-2xl" />
                 </motion.div>
-                <h3 className="text-2xl font-bold text-white mb-2">موفقیت آمیز!</h3>
-                <p className="text-white/70 mb-6">اطلاعات شما با موفقیت ذخیره شد</p>
+                <h3 className="text-2xl font-bold text-white mb-2">
+                  موفقیت آمیز!
+                </h3>
+                <p className="text-white/70 mb-6">
+                  اطلاعات شما با موفقیت ذخیره شد
+                </p>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}

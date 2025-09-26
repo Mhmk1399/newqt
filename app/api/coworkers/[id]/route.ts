@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
       data: coworker,
     });
   } catch (error) {
+    console.log(error);
     return NextResponse.json(
       {
         success: false,

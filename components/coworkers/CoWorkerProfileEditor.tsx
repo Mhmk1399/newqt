@@ -17,13 +17,17 @@ import {
   FaImage,
   FaUpload,
 } from "react-icons/fa";
-import { IoSparkles, IoPersonCircle } from "react-icons/io5";
+import { IoSparkles } from "react-icons/io5";
 import { FaXTwitter } from "react-icons/fa6";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { DecodedToken, getUserFromToken, getAuthHeader } from "@/utilities/jwtUtils";
+import {
+  DecodedToken,
+  getUserFromToken,
+  getAuthHeader,
+} from "@/utilities/jwtUtils";
 import ImageUploadModal from "@/components/modals/ImageUploadModal";
+import Image from "next/image";
 
 interface CoWorkerProfile {
   _id?: string;
@@ -49,10 +53,11 @@ interface CoWorkerProfile {
     telegram: string;
     whatsapp: string;
   };
-  aprovedBy?: any;
+  aprovedBy?: {
+    name: string;
+  };
   isApprove: boolean;
   isActive: boolean;
-  projects?: any[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -79,7 +84,6 @@ const CoWorkerProfileEditor: React.FC = () => {
     },
     isApprove: false,
     isActive: true,
-    projects: [],
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -296,7 +300,7 @@ const CoWorkerProfileEditor: React.FC = () => {
   };
 
   // Handle input change
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: string, value: string) => {
     if (field.startsWith("socialLinks.")) {
       const socialKey = field.replace("socialLinks.", "");
       setProfile((prev) => ({
@@ -321,31 +325,6 @@ const CoWorkerProfileEditor: React.FC = () => {
   };
 
   // Handle thumbnail add
-  const handleAddThumbnail = () => {
-    const url = prompt("لطفا لینک تصویر را وارد کنید:");
-    if (url && url.trim()) {
-      setProfile((prev) => ({
-        ...prev,
-        images: {
-          ...(prev.images || { main: "", thumbnails: [] }),
-          thumbnails: [...(prev.images?.thumbnails || []), url.trim()],
-        },
-      }));
-    }
-  };
-
-  // Handle thumbnail remove
-  const handleRemoveThumbnail = (index: number) => {
-    setProfile((prev) => ({
-      ...prev,
-      images: {
-        ...(prev.images || { main: "", thumbnails: [] }),
-        thumbnails: (prev.images?.thumbnails || []).filter(
-          (_, i) => i !== index
-        ),
-      },
-    }));
-  };
 
   // Handle images selected from upload modal
   const handleImagesSelected = (mainImage: string, thumbnails: string[]) => {
@@ -640,11 +619,13 @@ const CoWorkerProfileEditor: React.FC = () => {
                   </label>
                   <div className="space-y-4">
                     {/* Image Preview */}
-                    {(profile.images?.main || (profile.images?.thumbnails && profile.images.thumbnails.length > 0)) && (
+                    {(profile.images?.main ||
+                      (profile.images?.thumbnails &&
+                        profile.images.thumbnails.length > 0)) && (
                       <div className="grid grid-cols-1 gap-4">
                         {profile.images?.main && (
                           <div className="relative">
-                            <img
+                            <Image
                               src={profile.images.main}
                               alt="تصویر اصلی"
                               className="w-full h-32 object-cover rounded-lg"
@@ -654,22 +635,23 @@ const CoWorkerProfileEditor: React.FC = () => {
                             </div>
                           </div>
                         )}
-                        {profile.images?.thumbnails && profile.images.thumbnails.length > 0 && (
-                          <div className="grid grid-cols-3 gap-2">
-                            {profile.images.thumbnails.map((thumb, index) => (
-                              <div key={index} className="relative">
-                                <img
-                                  src={thumb}
-                                  alt={`تصویر ${index + 1}`}
-                                  className="w-full h-20 object-cover rounded-lg"
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        {profile.images?.thumbnails &&
+                          profile.images.thumbnails.length > 0 && (
+                            <div className="grid grid-cols-3 gap-2">
+                              {profile.images.thumbnails.map((thumb, index) => (
+                                <div key={index} className="relative">
+                                  <Image
+                                    src={thumb}
+                                    alt={`تصویر ${index + 1}`}
+                                    className="w-full h-20 object-cover rounded-lg"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          )}
                       </div>
                     )}
-                    
+
                     {/* Upload Button */}
                     {isEditing && (
                       <motion.button
@@ -680,21 +662,25 @@ const CoWorkerProfileEditor: React.FC = () => {
                         className="w-full py-3 px-4 bg-white/10 border border-white/20 rounded-lg text-white/70 hover:bg-white/20 hover:text-white transition-all flex items-center justify-center gap-2"
                       >
                         <FaUpload className="text-sm" />
-                        {profile.images?.main || (profile.images?.thumbnails && profile.images.thumbnails.length > 0)
+                        {profile.images?.main ||
+                        (profile.images?.thumbnails &&
+                          profile.images.thumbnails.length > 0)
                           ? "ویرایش تصاویر"
                           : "آپلود تصاویر"}
                       </motion.button>
                     )}
-                    
-                    {!isEditing && !profile.images?.main && (!profile.images?.thumbnails || profile.images.thumbnails.length === 0) && (
-                      <div className="text-center py-8 text-white/50 bg-white/5 rounded-lg border border-white/10">
-                        <FaImage className="mx-auto mb-2 text-2xl" />
-                        <p>هنوز تصویری آپلود نشده</p>
-                      </div>
-                    )}
+
+                    {!isEditing &&
+                      !profile.images?.main &&
+                      (!profile.images?.thumbnails ||
+                        profile.images.thumbnails.length === 0) && (
+                        <div className="text-center py-8 text-white/50 bg-white/5 rounded-lg border border-white/10">
+                          <FaImage className="mx-auto mb-2 text-2xl" />
+                          <p>هنوز تصویری آپلود نشده</p>
+                        </div>
+                      )}
                   </div>
                 </div>
-
               </div>
             </div>
 
@@ -864,7 +850,6 @@ const CoWorkerProfileEditor: React.FC = () => {
             <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20">
               <h3 className="text-lg font-bold text-white mb-4">آمار سریع</h3>
               <div className="space-y-3">
-               
                 {profile.experties && (
                   <div className="bg-white/5 rounded-lg p-3">
                     <div className="flex items-center gap-2">

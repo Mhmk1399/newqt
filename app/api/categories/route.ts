@@ -3,6 +3,15 @@ import Category from "@/models/category";
 import connect from "@/lib/data";
 import mongoose from "mongoose";
 
+// Type for MongoDB query filters
+interface CategoryQueryFilter {
+  isActive?: boolean;
+  $or?: Array<{
+    name?: { $regex: string; $options: string };
+    description?: { $regex: string; $options: string };
+  }>;
+}
+
 // GET - Retrieve categories with filters and pagination
 export async function GET(request: NextRequest) {
   try {
@@ -21,7 +30,7 @@ export async function GET(request: NextRequest) {
           { status: 400 }
         );
       }
-      
+
       const category = await Category.findById(id);
       if (!category) {
         return NextResponse.json(
@@ -29,31 +38,30 @@ export async function GET(request: NextRequest) {
           { status: 404 }
         );
       }
-      
+
       return NextResponse.json({ success: true, data: category });
     }
 
     // Build query filters
-    const query: any = {};
+    const query: CategoryQueryFilter = {};
     if (isActive !== null && isActive !== undefined) {
-      query.isActive = isActive === 'true';
+      query.isActive = isActive === "true";
     }
     if (search) {
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
+        { name: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
       ];
     }
 
     const skip = (page - 1) * limit;
-    const categories = await Category
-      .find(query)
+    const categories = await Category.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
-    
+
     const total = await Category.countDocuments(query);
-    
+
     return NextResponse.json({
       success: true,
       data: categories,
@@ -61,8 +69,8 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     console.error("GET Error:", error);
@@ -78,7 +86,7 @@ export async function POST(request: NextRequest) {
   try {
     await connect();
     const body = await request.json();
-    const { name, description, icon } = body;
+    const { name } = body;
 
     // Validation
     if (!name) {
@@ -87,12 +95,16 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     const category = new Category(body);
     await category.save();
 
     return NextResponse.json(
-      { success: true, message: "Category created successfully", data: category },
+      {
+        success: true,
+        message: "Category created successfully",
+        data: category,
+      },
       { status: 201 }
     );
   } catch (error) {
@@ -103,7 +115,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    if ((error as any)?.code === 11000) {
+    if ((error as { code?: number })?.code === 11000) {
       return NextResponse.json(
         { success: false, message: "Category name already exists" },
         { status: 400 }
@@ -153,7 +165,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Category updated successfully",
-      data: updatedCategory
+      data: updatedCategory,
     });
   } catch (error) {
     console.error("PUT Error:", error);
@@ -207,7 +219,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Category updated successfully",
-      data: updatedCategory
+      data: updatedCategory,
     });
   } catch (error) {
     console.error("PATCH Error:", error);
@@ -222,11 +234,11 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     await connect();
-    
+
     // Try to get ID from query params first
     const { searchParams } = new URL(request.url);
     let id = searchParams.get("id");
-    
+
     // If not in query params, try to get from request body
     if (!id) {
       try {
@@ -263,7 +275,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Category deleted successfully",
-      data: deletedCategory
+      data: deletedCategory,
     });
   } catch (error) {
     console.error("DELETE Error:", error);

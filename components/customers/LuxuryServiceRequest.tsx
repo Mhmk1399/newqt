@@ -3,9 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  FaVideo,
-  FaImage,
-  FaPaintBrush,
   FaStar,
   FaCalendarAlt,
   FaStickyNote,
@@ -52,12 +49,15 @@ interface Service {
   updatedAt: string;
 }
 
+// Type for dynamic field values that can be stored in dynamicFields
+type DynamicFieldValue = string | Date | null | undefined;
+
 interface ServiceRequestData {
   serviceId: string;
   quantity: number;
   scheduledDate?: Date;
   notes: string;
-  dynamicFields: { [key: string]: any };
+  dynamicFields: Record<string, DynamicFieldValue>;
 }
 
 const LuxuryServiceRequest: React.FC = () => {
@@ -167,11 +167,13 @@ const LuxuryServiceRequest: React.FC = () => {
 
     // Validate required fields
     const missingFields =
-      selectedService.requieredFileds?.filter(
-        (field) =>
-          !formData.dynamicFields[field] ||
-          formData.dynamicFields[field].trim() === ""
-      ) || [];
+      selectedService.requieredFileds?.filter((field) => {
+        const fieldValue = formData.dynamicFields[field];
+        return (
+          !fieldValue ||
+          (typeof fieldValue === "string" && fieldValue.trim() === "")
+        );
+      }) || [];
 
     if (missingFields.length > 0) {
       toast.error(`لطفا فیلدهای زیر را پر کنید: ${missingFields.join(", ")}`);
@@ -232,20 +234,13 @@ const LuxuryServiceRequest: React.FC = () => {
   };
 
   // Get service icon
-  const getServiceIcon = (serviceName: string) => {
-    const name = serviceName.toLowerCase();
-    if (name.includes("video")) return FaVideo;
-    if (name.includes("edit")) return FaEdit;
-    if (name.includes("graphic") || name.includes("design"))
-      return FaPaintBrush;
-    return FaImage;
-  };
+
 
   // Render dynamic field input
   const renderDynamicField = (fieldName: string) => {
-    const fieldValue = formData.dynamicFields[fieldName] || "";
+    const fieldValue = formData.dynamicFields[fieldName];
 
-    const updateField = (value: any) => {
+    const updateField = (value: DynamicFieldValue) => {
       setFormData((prev) => ({
         ...prev,
         dynamicFields: {
@@ -285,7 +280,7 @@ const LuxuryServiceRequest: React.FC = () => {
             {fieldName.replace("_", " ")} *
           </label>
           <textarea
-            value={fieldValue}
+            value={typeof fieldValue === "string" ? fieldValue : ""}
             onChange={(e) => updateField(e.target.value)}
             placeholder={`توضیح ${fieldName.replace(
               "_",
@@ -307,7 +302,7 @@ const LuxuryServiceRequest: React.FC = () => {
         </label>
         <input
           type="text"
-          value={fieldValue}
+          value={typeof fieldValue === "string" ? fieldValue : ""}
           onChange={(e) => updateField(e.target.value)}
           placeholder={`${fieldName.replace("_", " ")} را وارد کنید...`}
           className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50"
@@ -358,7 +353,6 @@ const LuxuryServiceRequest: React.FC = () => {
         {/* Services Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
           {services.map((service, index) => {
-            const IconComponent = getServiceIcon(service.name);
             return (
               <motion.div
                 key={service._id}
@@ -606,7 +600,6 @@ const LuxuryServiceRequest: React.FC = () => {
 
                   {/* Sidebar */}
                   <div className="space-y-4">
-                   
                     {/* مجموع درخواست  */}
                     <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                       <label className="block text-white/70 text-sm mb-2">
@@ -631,15 +624,22 @@ const LuxuryServiceRequest: React.FC = () => {
                           <div className="flex items-center justify-between">
                             <span className="text-white/60">محاسبه:</span>
                             <span className="text-white/70 text-xs">
-                              {selectedService?.basePrice.toLocaleString()} × {formData.quantity}
+                              {selectedService?.basePrice.toLocaleString()} ×{" "}
+                              {formData.quantity}
                             </span>
                           </div>
                         </div>
                         <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg p-3 border border-purple-400/30">
                           <div className="flex items-center justify-between">
-                            <span className="text-white font-semibold">مجموع کل:</span>
+                            <span className="text-white font-semibold">
+                              مجموع کل:
+                            </span>
                             <span className="text-yellow-400 font-bold text-lg">
-                              {((selectedService?.basePrice || 0) * formData.quantity).toLocaleString()} تومان
+                              {(
+                                (selectedService?.basePrice || 0) *
+                                formData.quantity
+                              ).toLocaleString()}{" "}
+                              تومان
                             </span>
                           </div>
                           {formData.quantity >= 3 && (

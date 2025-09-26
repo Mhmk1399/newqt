@@ -4,6 +4,20 @@ import Video from "@/models/video";
 import Category from "@/models/category";
 import mongoose from "mongoose";
 
+interface filterquery {
+  isActive?: boolean;
+  isVip?: boolean;
+  categoryId?: string;
+  status?: string;
+  type?: string;
+  $or?: Array<{
+    name?: { $regex: string; $options: string };
+    email?: { $regex: string; $options: string };
+    message?: { $regex: string; $options: string };
+    phoneNumber?: { $regex: string; $options: string };
+    description?: { $regex: string; $options: string };
+  }>;
+}
 // GET - Retrieve videos with filters and pagination
 export async function GET(request: NextRequest) {
   try {
@@ -41,7 +55,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build query filters
-    const query: any = {};
+    const query: filterquery = {};
     if (isActive !== null && isActive !== undefined) {
       query.isActive = isActive === "true";
     }
@@ -92,7 +106,7 @@ export async function POST(request: NextRequest) {
   try {
     await connect();
     const body = await request.json();
-    const { name, description, link, categoryId } = body;
+    const { name, link, categoryId } = body;
 
     // Validation
     if (!name || !link || !categoryId) {
@@ -232,7 +246,7 @@ export async function DELETE(request: NextRequest) {
     await connect();
     const { searchParams } = new URL(request.url);
     let id = searchParams.get("id");
-    
+
     // If no ID in query params, try to get it from request body
     if (!id) {
       try {

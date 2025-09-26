@@ -6,9 +6,7 @@ import {
   IoClose, 
   IoVideocam, 
   IoCloudUpload, 
-  IoCheckmark,
-  IoWarning,
-  IoPlay
+
 } from "react-icons/io5";
 import { FaVideo, FaPlay, FaUpload, FaTimes } from "react-icons/fa";
 import toast from "react-hot-toast";

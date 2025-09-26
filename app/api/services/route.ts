@@ -4,6 +4,21 @@ import connect from "@/lib/data";
 import mongoose from "mongoose";
 import Team from "@/models/teams";
 
+interface filterquery {
+  isActive?: boolean;
+  isVip?: boolean;
+  businessScale?: string;
+  status?: string;
+  type?: string;
+  $or?: Array<{
+    name?: { $regex: string; $options: string };
+    email?: { $regex: string; $options: string };
+    message?: { $regex: string; $options: string };
+    phoneNumber?: { $regex: string; $options: string };
+    description?: { $regex: string; $options: string };
+  }>;
+}
+
 // GET - Retrieve services with filters and pagination
 export async function GET(request: NextRequest) {
   try {
@@ -36,7 +51,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build query filters
-    const query: any = {};
+    const query: filterquery = {};
     if (isActive !== null && isActive !== undefined) {
       query.isActive = isActive === "true";
     }
@@ -228,11 +243,11 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     await connect();
-    
+
     // Try to get ID from query params first
     const { searchParams } = new URL(request.url);
     let id = searchParams.get("id");
-    
+
     // If not in query params, try to get from request body
     if (!id) {
       try {

@@ -5,6 +5,20 @@ import connect from "@/lib/data";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
+interface filterquery {
+  isActive?: boolean;
+  isApprove?: boolean;
+  status?: string;
+  type?: string;
+  experties?: string;
+  $or?: Array<{
+    name?: { $regex: string; $options: string };
+    email?: { $regex: string; $options: string };
+    message?: { $regex: string; $options: string };
+    description?: { $regex: string; $options: string };
+    phoneNumber?: { $regex: string; $options: string };
+  }>;
+}
 // GET - Retrieve coworkers with filters and pagination
 export async function GET(request: NextRequest) {
   try {
@@ -32,8 +46,8 @@ export async function GET(request: NextRequest) {
           select: "name email",
           model: User,
         })
-        .select('-password');
-      
+        .select("-password");
+
       if (!coworker) {
         return NextResponse.json(
           { success: false, message: "Coworker not found" },
@@ -45,7 +59,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build query filters
-    const query: any = {};
+    const query: filterquery = {};
     if (isActive !== null && isActive !== undefined) {
       query.isActive = isActive === "true";
     }
@@ -71,7 +85,7 @@ export async function GET(request: NextRequest) {
         select: "name email",
         model: User,
       })
-      .select('-password')
+      .select("-password")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -102,22 +116,25 @@ export async function POST(request: NextRequest) {
   try {
     await connect();
     const body = await request.json();
-    const { name, phoneNumber, password, experties } = body;
+    const { name, phoneNumber, password } = body;
 
     // Validation
     if (!name || !phoneNumber || !password) {
       return NextResponse.json(
-        { success: false, message: "Name, phone number, and password are required" },
+        {
+          success: false,
+          message: "Name, phone number, and password are required",
+        },
         { status: 400 }
       );
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
-    
+
     const coworker = new CoWorker({
       ...body,
-      password: hashedPassword
+      password: hashedPassword,
     });
     await coworker.save();
 
@@ -125,7 +142,11 @@ export async function POST(request: NextRequest) {
     const { password: _, ...coworkerWithoutPassword } = coworker.toObject();
 
     return NextResponse.json(
-      { success: true, message: "Coworker created successfully", data: coworkerWithoutPassword },
+      {
+        success: true,
+        message: "Coworker created successfully",
+        data: coworkerWithoutPassword,
+      },
       { status: 201 }
     );
   } catch (error) {
@@ -172,21 +193,21 @@ export async function PUT(request: NextRequest) {
     // Handle socialLinks nested object properly
     const processedUpdateData = { ...updateData };
     const socialLinksFields: { [key: string]: string } = {};
-    
+
     // Extract socialLinks dot-notation fields
-    Object.keys(processedUpdateData).forEach(key => {
-      if (key.startsWith('socialLinks.')) {
-        const socialKey = key.replace('socialLinks.', '');
+    Object.keys(processedUpdateData).forEach((key) => {
+      if (key.startsWith("socialLinks.")) {
+        const socialKey = key.replace("socialLinks.", "");
         socialLinksFields[socialKey] = processedUpdateData[key];
         delete processedUpdateData[key];
       }
     });
-    
+
     // If we have socialLinks fields, merge them properly
     if (Object.keys(socialLinksFields).length > 0) {
       processedUpdateData.socialLinks = {
         ...processedUpdateData.socialLinks,
-        ...socialLinksFields
+        ...socialLinksFields,
       };
     }
 
@@ -194,7 +215,7 @@ export async function PUT(request: NextRequest) {
       id,
       { ...processedUpdateData, updatedAt: new Date() },
       { new: true, runValidators: true }
-    ).select('-password');
+    ).select("-password");
 
     if (!updatedCoworker) {
       return NextResponse.json(
@@ -248,7 +269,7 @@ export async function PATCH(request: NextRequest) {
       id,
       { ...updateData, updatedAt: new Date() },
       { new: true, runValidators: true }
-    ).select('-password');
+    ).select("-password");
 
     if (!updatedCoworker) {
       return NextResponse.json(
@@ -277,7 +298,7 @@ export async function DELETE(request: NextRequest) {
     await connect();
     const { searchParams } = new URL(request.url);
     let id = searchParams.get("id");
-    
+
     // If no ID in query params, try to get it from request body
     if (!id) {
       try {
@@ -302,7 +323,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const deletedCoworker = await CoWorker.findByIdAndDelete(id).select('-password');
+    const deletedCoworker = await CoWorker.findByIdAndDelete(id).select(
+      "-password"
+    );
 
     if (!deletedCoworker) {
       return NextResponse.json(

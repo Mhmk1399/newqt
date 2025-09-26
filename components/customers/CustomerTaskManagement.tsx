@@ -3,20 +3,21 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  FaClock,
   FaEdit,
   FaExclamationTriangle,
   FaCheckCircle,
-  FaTimes,
-  FaEye,
   FaThumbsUp,
   FaThumbsDown,
 } from "react-icons/fa";
-import { IoSparkles, IoClose } from "react-icons/io5";
+import { IoClose } from "react-icons/io5";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
-import { getUserFromToken, getAuthHeader, DecodedToken } from "@/utilities/jwtUtils";
+import {
+  getUserFromToken,
+  getAuthHeader,
+  DecodedToken,
+} from "@/utilities/jwtUtils";
 
 interface Task {
   _id: string;
@@ -65,7 +66,7 @@ const fetcher = async (url: string) => {
   });
 
   const result = await response.json();
-  
+
   if (!response.ok) {
     throw new Error(result.message || "Failed to fetch data");
   }
@@ -138,7 +139,10 @@ const CustomerTaskManagement: React.FC = () => {
   ];
 
   // Priority colors and labels
-  const priorityConfig: Record<string, { label: string; color: string; textColor: string }> = {
+  const priorityConfig: Record<
+    string,
+    { label: string; color: string; textColor: string }
+  > = {
     low: { label: "کم", color: "bg-gray-500", textColor: "text-gray-400" },
     medium: {
       label: "متوسط",
@@ -182,15 +186,18 @@ const CustomerTaskManagement: React.FC = () => {
     extractUserFromToken();
   }, [router]);
 
-
-
   // Filter tasks by status
   const getTasksByStatus = (status: string): Task[] => {
     return tasks
       .filter((task: Task) => task.status === status)
       .sort((a: Task, b: Task) => {
         // Sort by priority first
-        const priorityOrder: Record<string, number> = { urgent: 4, high: 3, medium: 2, low: 1 };
+        const priorityOrder: Record<string, number> = {
+          urgent: 4,
+          high: 3,
+          medium: 2,
+          low: 1,
+        };
         const priorityDiff =
           (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
         if (priorityDiff !== 0) return priorityDiff;
@@ -209,7 +216,7 @@ const CustomerTaskManagement: React.FC = () => {
   ) => {
     try {
       const authHeader = getAuthHeader();
-      
+
       if (!authHeader) {
         toast.error("خطا در تشخیص هویت. لطفا مجدداً وارد شوید");
         router.push("/auth");

@@ -255,9 +255,8 @@ const AuthPage = () => {
           window.open("/dashboard", "_blank");
         }
       } catch (error) {
-
+        console.log(error);
         toast.error("خطا در ورود به سیستم");
-
       }
     }
   };
@@ -316,8 +315,10 @@ const AuthPage = () => {
 
       toast.success("کد بازیابی به شماره شما ارسال شد");
       setShowForgotPassword(false);
-    } catch (error: any) {
-      toast.error(error.message || "خطا در ارسال کد بازیابی");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "خطا در ارسال کد بازیابی"
+      );
     }
   };
 
@@ -609,7 +610,9 @@ const AuthPage = () => {
                 <div className="w-16 h-16 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <BiLock className="text-purple-400 text-2xl" />
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-2">بازیابی رمز عبور</h3>
+                <h3 className="text-2xl font-bold text-white mb-2">
+                  بازیابی رمز عبور
+                </h3>
                 <p className="text-white/70 text-sm">
                   شماره تلفن خود را وارد کنید تا کد بازیابی برای شما ارسال شود
                 </p>

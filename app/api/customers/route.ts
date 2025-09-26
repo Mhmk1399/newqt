@@ -4,6 +4,20 @@ import connect from "@/lib/data";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 
+interface filterquery {
+  isActive?: boolean;
+  isVip?: boolean;
+  businessScale?: string;
+  status?: string;
+  type?: string;
+  $or?: Array<{
+    name?: { $regex: string; $options: string };
+    email?: { $regex: string; $options: string };
+    message?: { $regex: string; $options: string };
+    phoneNumber?: { $regex: string; $options: string };
+    businessName?: { $regex: string; $options: string };
+  }>;
+}
 // GET - Retrieve customers with filters and pagination
 export async function GET(request: NextRequest) {
   try {
@@ -24,7 +38,7 @@ export async function GET(request: NextRequest) {
           { status: 400 }
         );
       }
-      
+
       const customer = await Customer.findById(id);
       if (!customer) {
         return NextResponse.json(
@@ -32,37 +46,36 @@ export async function GET(request: NextRequest) {
           { status: 404 }
         );
       }
-      
+
       return NextResponse.json({ success: true, data: customer });
     }
 
     // Build query filters
-    const query: any = {};
+    const query: filterquery = {};
     if (isActive !== null && isActive !== undefined) {
-      query.isActive = isActive === 'true';
+      query.isActive = isActive === "true";
     }
     if (businessScale) query.businessScale = businessScale;
     if (isVip !== null && isVip !== undefined) {
-      query.isVip = isVip === 'true';
+      query.isVip = isVip === "true";
     }
     if (search) {
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { businessName: { $regex: search, $options: 'i' } },
-        { phoneNumber: { $regex: search, $options: 'i' } }
+        { name: { $regex: search, $options: "i" } },
+        { businessName: { $regex: search, $options: "i" } },
+        { phoneNumber: { $regex: search, $options: "i" } },
       ];
     }
 
     const skip = (page - 1) * limit;
-    const customers = await Customer
-      .find(query)
-      .select('-password')
+    const customers = await Customer.find(query)
+      .select("-password")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
-    
+
     const total = await Customer.countDocuments(query);
-    
+
     return NextResponse.json({
       success: true,
       data: customers,
@@ -70,8 +83,8 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     console.error("GET Error:", error);
@@ -98,14 +111,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate default password if not provided
-    const password = body.password || '123456';
+    const password = body.password || "123456";
     const hashedPassword = await bcrypt.hash(password, 10);
-    
+
     const customer = new Customer({
       ...body,
-      password: hashedPassword
+      password: hashedPassword,
     });
-    
+
     await customer.save();
 
     // Remove password from response
@@ -113,7 +126,11 @@ export async function POST(request: NextRequest) {
     delete customerResponse.password;
 
     return NextResponse.json(
-      { success: true, message: "Customer created successfully", data: customerResponse },
+      {
+        success: true,
+        message: "Customer created successfully",
+        data: customerResponse,
+      },
       { status: 201 }
     );
   } catch (error) {
@@ -160,7 +177,7 @@ export async function PUT(request: NextRequest) {
     const updatedCustomer = await Customer.findByIdAndUpdate(
       id,
       { ...updateData, updatedAt: new Date() },
-      { new: true, runValidators: true, select: '-password' }
+      { new: true, runValidators: true, select: "-password" }
     );
 
     if (!updatedCustomer) {
@@ -173,7 +190,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Customer updated successfully",
-      data: updatedCustomer
+      data: updatedCustomer,
     });
   } catch (error) {
     console.error("PUT Error:", error);
@@ -214,7 +231,7 @@ export async function PATCH(request: NextRequest) {
     const updatedCustomer = await Customer.findByIdAndUpdate(
       id,
       { ...updateData, updatedAt: new Date() },
-      { new: true, runValidators: true, select: '-password' }
+      { new: true, runValidators: true, select: "-password" }
     );
 
     if (!updatedCustomer) {
@@ -227,7 +244,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Customer updated successfully",
-      data: updatedCustomer
+      data: updatedCustomer,
     });
   } catch (error) {
     console.error("PATCH Error:", error);
@@ -242,11 +259,11 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     await connect();
-    
+
     // Try to get ID from query params first
     const { searchParams } = new URL(request.url);
     let id = searchParams.get("id");
-    
+
     // If not in query params, try to get from request body
     if (!id) {
       try {
@@ -283,7 +300,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Customer deleted successfully",
-      data: deletedCustomer
+      data: deletedCustomer,
     });
   } catch (error) {
     console.error("DELETE Error:", error);

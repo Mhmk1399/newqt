@@ -3,6 +3,20 @@ import Team from "@/models/teams";
 import connect from "@/lib/data";
 import mongoose from "mongoose";
 
+interface filterquery {
+  isActive?: boolean;
+  isVip?: boolean;
+  businessScale?: string;
+  status?: string;
+  type?: string;
+  $or?: Array<{
+    name?: { $regex: string; $options: string };
+    email?: { $regex: string; $options: string };
+    specialization?: { $regex: string; $options: string };
+    phoneNumber?: { $regex: string; $options: string };
+    description?: { $regex: string; $options: string };
+  }>;
+}
 // GET - Retrieve teams with filters and pagination
 export async function GET(request: NextRequest) {
   try {
@@ -16,7 +30,9 @@ export async function GET(request: NextRequest) {
 
     // Simple dropdown request
     if (searchParams.get("dropdown") === "true") {
-      const teams = await Team.find({ isActive: true }).select('_id name').sort({ name: 1 });
+      const teams = await Team.find({ isActive: true })
+        .select("_id name")
+        .sort({ name: 1 });
       return NextResponse.json({ success: true, data: teams });
     }
 
@@ -29,7 +45,7 @@ export async function GET(request: NextRequest) {
       }
 
       const team = await Team.findById(id);
-      
+
       if (!team) {
         return NextResponse.json(
           { success: false, message: "Team not found" },
@@ -41,7 +57,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build query filters
-    const query: any = {};
+    const query: filterquery = {};
     if (isActive !== null && isActive !== undefined) {
       query.isActive = isActive === "true";
     }
@@ -90,7 +106,10 @@ export async function POST(request: NextRequest) {
     // Validation
     if (!name || !specialization || !description) {
       return NextResponse.json(
-        { success: false, message: "Name, specialization, and description are required" },
+        {
+          success: false,
+          message: "Name, specialization, and description are required",
+        },
         { status: 400 }
       );
     }
@@ -225,7 +244,7 @@ export async function DELETE(request: NextRequest) {
     await connect();
     const { searchParams } = new URL(request.url);
     let id = searchParams.get("id");
-    
+
     // If no ID in query params, try to get it from request body
     if (!id) {
       try {

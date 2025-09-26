@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import Task from "@/models/tasks";
 import User from "@/models/users";
 import ServiceRequest from "@/models/customersData/serviceRequests";
-import Customer from "@/models/customersData/customers";
 import connect from "@/lib/data";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 
+interface udatedData {
+  status?: string;
+  completedDate?: Date;
+  notes?: string;
+}
 // GET - Retrieve customer tasks with full population
 export async function GET(request: NextRequest) {
   try {
@@ -54,6 +58,7 @@ export async function GET(request: NextRequest) {
         );
       }
     } catch (tokenError) {
+      console.log(tokenError)
       return NextResponse.json(
         { success: false, message: "Invalid token" },
         { status: 401 }
@@ -204,6 +209,7 @@ export async function PUT(request: NextRequest) {
         );
       }
     } catch (tokenError) {
+      console.log(tokenError)
       return NextResponse.json(
         { success: false, message: "Invalid token" },
         { status: 401 }
@@ -253,7 +259,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    let updateData: any = {};
+    const updateData: udatedData = {};
 
     if (action === "approve") {
       updateData.status = "completed";

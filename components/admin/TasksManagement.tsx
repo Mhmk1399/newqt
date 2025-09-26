@@ -82,10 +82,12 @@ const TasksManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
   const [isVideoUploadModalOpen, setIsVideoUploadModalOpen] = useState(false);
-  const [videoUploadTaskId, setVideoUploadTaskId] = useState<string | null>(null);
+  const [videoUploadTaskId, setVideoUploadTaskId] = useState<string | null>(
+    null
+  );
 
+  console.log(loading, serviceRequests);
   // Task status columns configuration
   const statusColumns = [
     {
@@ -284,7 +286,7 @@ const TasksManagement: React.FC = () => {
             task._id === taskId
               ? {
                   ...task,
-                  status: newStatus as any,
+                  status: newStatus,
                   ...(newStatus === "completed"
                     ? { completedDate: new Date().toISOString() }
                     : {}),
@@ -932,19 +934,26 @@ const TasksManagement: React.FC = () => {
                                   allowFullScreen
                                 />
                               </div>
-                              
+
                               {/* Video Actions */}
                               <div className="flex gap-3">
                                 <button
-                                  onClick={() => window.open(selectedTask.attachedVideo, '_blank')}
+                                  onClick={() =>
+                                    window.open(
+                                      selectedTask.attachedVideo,
+                                      "_blank"
+                                    )
+                                  }
                                   className="flex items-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors"
                                 >
                                   <FaPlay />
                                   بازکردن در تب جدید
                                 </button>
-                                
+
                                 <button
-                                  onClick={() => handleVideoUpload(selectedTask._id)}
+                                  onClick={() =>
+                                    handleVideoUpload(selectedTask._id)
+                                  }
                                   className="flex items-center gap-2 px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg text-blue-300 text-sm transition-colors"
                                 >
                                   <FaVideo />
@@ -959,7 +968,9 @@ const TasksManagement: React.FC = () => {
                                 هنوز ویدیویی آپلود نشده است
                               </p>
                               <button
-                                onClick={() => handleVideoUpload(selectedTask._id)}
+                                onClick={() =>
+                                  handleVideoUpload(selectedTask._id)
+                                }
                                 className="px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-purple-300 text-sm transition-colors flex items-center justify-center gap-2 mx-auto"
                               >
                                 <FaVideo />
@@ -1296,7 +1307,7 @@ const TasksManagement: React.FC = () => {
                         <label className="block text-white/70 text-sm mb-3">
                           ویدیوی ضمیمه
                         </label>
-                        
+
                         {selectedTask.attachedVideo ? (
                           <div className="space-y-4">
                             {/* Video Display */}
@@ -1308,19 +1319,26 @@ const TasksManagement: React.FC = () => {
                                 allowFullScreen
                               />
                             </div>
-                            
+
                             {/* Video Actions */}
                             <div className="flex gap-3">
                               <button
-                                onClick={() => window.open(selectedTask.attachedVideo, '_blank')}
+                                onClick={() =>
+                                  window.open(
+                                    selectedTask.attachedVideo,
+                                    "_blank"
+                                  )
+                                }
                                 className="flex items-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors"
                               >
                                 <FaPlay />
                                 بازکردن در تب جدید
                               </button>
-                              
+
                               <button
-                                onClick={() => handleVideoUpload(selectedTask._id)}
+                                onClick={() =>
+                                  handleVideoUpload(selectedTask._id)
+                                }
                                 className="flex items-center gap-2 px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg text-blue-300 text-sm transition-colors"
                               >
                                 <FaVideo />
@@ -1335,7 +1353,9 @@ const TasksManagement: React.FC = () => {
                               هنوز ویدیویی آپلود نشده است
                             </p>
                             <button
-                              onClick={() => handleVideoUpload(selectedTask._id)}
+                              onClick={() =>
+                                handleVideoUpload(selectedTask._id)
+                              }
                               className="px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-purple-300 text-sm transition-colors flex items-center justify-center gap-2 mx-auto"
                             >
                               <FaVideo />
