@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import DynamicSidebar from "./DynamicSidebar";
 import { getUserFromToken, DecodedToken } from "@/utilities/jwtUtils";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import {
   IoPeople,
@@ -20,6 +20,9 @@ import {
   IoPerson,
   IoHeadset,
   IoCreateOutline,
+  IoHome,
+  IoChevronBack,
+  IoSpeedometer,
 } from "react-icons/io5";
 
 // Import all admin components
@@ -70,6 +73,7 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
   configs,
 }) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeComponent, setActiveComponent] =
     useState<React.ComponentType | null>(null);
   const [activeKey, setActiveKey] = useState<string>("");
@@ -292,18 +296,151 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
 
   const currentConfig = getCurrentConfig();
 
+  // Handle browser back/forward navigation
   useEffect(() => {
-    // Set first item as default active
-    if (currentConfig && currentConfig.items.length > 0 && !activeComponent) {
-      const firstItem = currentConfig.items[0];
-      setActiveComponent(() => firstItem.component);
-      setActiveKey(firstItem.key);
+    const handlePopState = () => {
+      const tabFromUrl = new URLSearchParams(window.location.search).get("tab");
+      
+      if (currentConfig && tabFromUrl) {
+        const foundItem = currentConfig.items.find(item => item.key === tabFromUrl);
+        if (foundItem && foundItem.key !== activeKey) {
+          setActiveComponent(() => foundItem.component);
+          setActiveKey(foundItem.key);
+        }
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [currentConfig, activeKey]);
+
+  useEffect(() => {
+    // Check URL for active tab parameter
+    const tabFromUrl = searchParams.get("tab");
+    
+    if (currentConfig && currentConfig.items.length > 0) {
+      if (tabFromUrl) {
+        // Find item from URL parameter
+        const foundItem = currentConfig.items.find(item => item.key === tabFromUrl);
+        if (foundItem && foundItem.key !== activeKey) {
+          setActiveComponent(() => foundItem.component);
+          setActiveKey(foundItem.key);
+          return;
+        }
+      }
+      
+      // Set first item as default if no URL parameter or not found
+      if (!activeComponent) {
+        const firstItem = currentConfig.items[0];
+        setActiveComponent(() => firstItem.component);
+        setActiveKey(firstItem.key);
+        
+        // Update URL to reflect the default selection
+        const currentPath = window.location.pathname;
+        router.replace(`${currentPath}?tab=${firstItem.key}`, { scroll: false });
+      }
     }
-  }, [currentConfig, activeComponent]);
+  }, [currentConfig, activeComponent, searchParams, activeKey, router]);
 
   const handleItemSelect = (key: string, component: React.ComponentType) => {
     setActiveComponent(() => component);
     setActiveKey(key);
+  };
+
+  // Get current active item info for breadcrumbs
+  const getCurrentItem = () => {
+    if (!currentConfig || !activeKey) return null;
+    return currentConfig.items.find(item => item.key === activeKey);
+  };
+
+  // Breadcrumb component
+  const Breadcrumbs = () => {
+    const currentItem = getCurrentItem();
+    const isAdmin = userInfo?.role === "admin" || userInfo?.userType === "admin";
+    
+    return (
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm text-white/70">
+          {/* Home Button */}
+          <button
+            onClick={() => router.push('/')}
+            className="flex items-center gap-2 px-3 py-2 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300 group"
+            title="بازگشت به صفحه اصلی"
+          >
+            <IoHome className="text-blue-400 group-hover:text-blue-300" />
+            <span className="group-hover:text-white/90">خانه</span>
+          </button>
+
+          {/* Separator */}
+          <IoChevronBack className="text-white/40 text-xs" />
+          
+          <div className="flex items-center gap-2 px-3 py-2 bg-white/5 rounded-lg border border-white/10">
+            <IoSpeedometer className="text-purple-400" />
+            <span>داشبورد</span>
+          </div>
+          
+          {/* User Type */}
+          <IoChevronBack className="text-white/40 text-xs" />
+          <div className="px-3 py-2 bg-white/5 rounded-lg border border-white/10">
+            <span className="text-white/90">
+              {isAdmin ? "مدیریت" : 
+               userType === "customer" ? "مشتری" : 
+               userType === "coworker" ? "همکار" : 
+               "کاربر"}
+            </span>
+          </div>
+          
+          {/* Current Section */}
+          {currentItem && (
+            <>
+              <IoChevronBack className="text-white/40 text-xs" />
+              <div className="flex items-center gap-2 px-3 py-2 bg-purple-500/20 rounded-lg border border-purple-400/30">
+                <span className="text-lg text-purple-400">{currentItem.icon}</span>
+                <span className="text-purple-300 font-medium">{currentItem.label}</span>
+              </div>
+            </>
+          )}
+        </div>
+        
+        {/* User Info */}
+        <div className="flex items-center gap-3 text-sm">
+          <div className="px-3 py-2 bg-white/5 rounded-lg border border-white/10">
+            <span className="text-white/70">خوش آمدید</span>
+            <span className="text-white font-medium mr-2">{userInfo?.name}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Mobile breadcrumb - simpler version
+  const MobileBreadcrumb = () => {
+    const currentItem = getCurrentItem();
+    
+    return (
+      <div className="px-4 py-2 bg-white/5 border-b border-white/10">
+        <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center gap-2">
+            {currentItem && (
+              <>
+                <span className="text-lg text-purple-400">{currentItem.icon}</span>
+                <span className="text-white font-medium">{currentItem.label}</span>
+              </>
+            )}
+          </div>
+          
+          {/* Mobile Home Button */}
+          <button
+            onClick={() => router.push('/')}
+            className="flex items-center gap-1 px-2 py-1 bg-white/10 rounded-lg border border-white/20 hover:bg-white/15 transition-all duration-300"
+            title="بازگشت به صفحه اصلی"
+          >
+            <IoHome className="text-blue-400 text-sm" />
+            <span className="text-white/90 text-xs">خانه</span>
+          </button>
+        </div>
+      </div>
+    );
   };
 
   // Loading state
@@ -354,9 +491,23 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
             : "pr-20" // Desktop: account for collapsed sidebar
         }`}
       >
-        {activeComponent && (
-          <div className="w-full">{React.createElement(activeComponent)}</div>
-        )}
+        <div className="w-full">
+          {/* Breadcrumbs */}
+          {!isMobile ? (
+            <div className="sticky top-0 z-30 bg-gradient-to-r from-[#030014]/95 via-[#0A0A2E]/95 to-[#030014]/95 backdrop-blur-xl border-b border-white/10 px-6 py-4">
+              <Breadcrumbs />
+            </div>
+          ) : (
+            <MobileBreadcrumb />
+          )}
+          
+          {/* Active Component Content */}
+          {activeComponent && (
+            <div className="w-full">
+              {React.createElement(activeComponent)}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

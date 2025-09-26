@@ -419,9 +419,7 @@ const UsersTransActions: React.FC = () => {
           <h1 className="text-4xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-3">
             تراکنش‌های من
           </h1>
-          <p className="text-white/70 text-lg">
-            خوش آمدید {userInfo.name} - مشاهده تراکنش‌های مالی شما
-          </p>
+
         </div>
 
         {/* Salary Calculation Section */}

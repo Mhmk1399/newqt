@@ -345,9 +345,7 @@ const LuxuryServiceRequest: React.FC = () => {
           <h1 className="text-4xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-3">
             سرویس‌های لوکس
           </h1>
-          <p className="text-white/70 text-lg">
-            خوش آمدید {userInfo.name} - انتخاب از مجموعه سرویس‌های خلاقانه ما
-          </p>
+      
         </div>
 
         {/* Services Grid */}

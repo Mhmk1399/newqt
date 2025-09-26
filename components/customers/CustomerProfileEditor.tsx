@@ -291,9 +291,7 @@ const CustomerProfileEditor: React.FC = () => {
           <h1 className="text-4xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-3">
             پروفایل کسب‌وکار
           </h1>
-          <p className="text-white/70 text-lg">
-            خوش آمدید {userInfo.name} - مدیریت اطلاعات کسب‌وکار شما
-          </p>
+      
         </motion.div>
 
         {/* Profile Status Card */}

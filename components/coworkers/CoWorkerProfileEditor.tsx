@@ -382,9 +382,7 @@ const CoWorkerProfileEditor: React.FC = () => {
           <h1 className="text-4xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-3">
             پروفایل همکار
           </h1>
-          <p className="text-white/70 text-lg">
-            خوش آمدید {userInfo.name} - مدیریت اطلاعات حرفه‌ای شما
-          </p>
+       
         </motion.div>
 
         {/* Profile Status Card */}
@@ -628,6 +626,8 @@ const CoWorkerProfileEditor: React.FC = () => {
                             <Image
                               src={profile.images.main}
                               alt="تصویر اصلی"
+                              width={400}
+                              height={128}
                               className="w-full h-32 object-cover rounded-lg"
                             />
                             <div className="absolute top-2 left-2 bg-purple-500/80 text-white text-xs px-2 py-1 rounded">
@@ -643,6 +643,8 @@ const CoWorkerProfileEditor: React.FC = () => {
                                   <Image
                                     src={thumb}
                                     alt={`تصویر ${index + 1}`}
+                                    width={120}
+                                    height={80}
                                     className="w-full h-20 object-cover rounded-lg"
                                   />
                                 </div>

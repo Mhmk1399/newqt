@@ -94,7 +94,7 @@ const VideosManagement: React.FC = () => {
     {
       name: "link",
       label: "لینک ویدیو",
-      type: "url",
+      type: "text",
       placeholder: "لینک ویدیو را وارد کنید",
       validation: [{ type: "required", message: "لینک ویدیو الزامی است" }],
     },

@@ -286,7 +286,7 @@ const TasksManagement: React.FC = () => {
             task._id === taskId
               ? {
                   ...task,
-                  status: newStatus,
+                  status: newStatus as Task['status'],
                   ...(newStatus === "completed"
                     ? { completedDate: new Date().toISOString() }
                     : {}),

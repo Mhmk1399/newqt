@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { gsap } from "gsap";
+import { useRouter, useSearchParams } from "next/navigation";
 import { 
   IoMenu, 
 
@@ -29,6 +30,8 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
   onItemSelect,
   activeItem
 }) => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -91,7 +94,14 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
   };
 
   const handleItemClick = (item: SidebarItem) => {
+    // Update URL with the selected item key
+    const currentPath = window.location.pathname;
+    const newUrl = `${currentPath}?tab=${item.key}`;
+    router.push(newUrl, { scroll: false });
+    
+    // Call the parent handler
     onItemSelect(item.key, item.component);
+    
     if (isMobile) {
       setIsDropdownOpen(false);
     }
