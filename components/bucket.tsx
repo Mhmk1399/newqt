@@ -72,7 +72,6 @@ export default function ImageUpload() {
         setError(result.error || 'آپلود ناموفق');
       }
     } catch (error) {
-      console.log(error)
       setError('خطا در ارتباط با سرور. لطفا دوباره تلاش کنید.');
     } finally {
       setUploading(false);

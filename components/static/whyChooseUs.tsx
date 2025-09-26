@@ -33,7 +33,6 @@ const WhyChooseUs = () => {
   // Handle window resize for responsive adjustments
   const [isMobile, setIsMobile] = useState(false);
   const [windowWidth, setWindowWidth] = useState(0);
-  console.log(windowWidth);
 
   useEffect(() => {
     const checkMobile = () => {

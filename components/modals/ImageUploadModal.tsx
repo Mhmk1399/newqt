@@ -53,7 +53,6 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
       setMainImage(url);
       toast.success("تصویر اصلی آپلود شد");
     } catch (error) {
-      console.log(error)
       toast.error("خطا در آپلود تصویر اصلی");
     } finally {
       setUploading(false);

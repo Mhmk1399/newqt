@@ -255,11 +255,9 @@ const AuthPage = () => {
           window.open("/dashboard", "_blank");
         }
       } catch (error) {
-        console.log("Authentication error:", error);
 
         toast.error("خطا در ورود به سیستم");
 
-        console.log("Authentication error:", error);
       }
     }
   };

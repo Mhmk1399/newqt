@@ -297,7 +297,6 @@ export function useDynamicForm(
       if (response.ok) {
       }
     } catch (error) {
-      console.log("Submission error:", error);
     } finally {
       setIsSubmitting(false);
     }

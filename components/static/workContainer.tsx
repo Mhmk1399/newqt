@@ -5,7 +5,7 @@ export default function WorksContainer() {
   return (
     <section>
       <GalleryGrid />
-      {/* <ProjectSlider /> */}
+
     </section>
   );
 }

@@ -40,16 +40,12 @@ export default function CoworkerDetails() {
   useEffect(() => {
     const fetchCoworker = async () => {
       try {
-        console.log("Fetching coworker with ID:", params.id);
         const response = await fetch(`/api/coworkers?id=${params.id}`, {
           method: "GET",
         });
         const result = await response.json();
-        console.log("API Response:", result);
         
         if (result.success) {
-          console.log("Coworker data:", result.data);
-          console.log("Images:", result.data?.images);
           setCoworker(result.data);
         } else {
           console.error("API Error:", result.message);
@@ -166,7 +162,6 @@ export default function CoworkerDetails() {
                   <div className="relative w-full h-full bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 overflow-hidden">
                     {(() => {
                       if (coworker.images?.main) {
-                        console.log("Rendering main image:", coworker.images.main);
                         return (
                           <Image
                             src={coworker.images.main}
@@ -174,11 +169,9 @@ export default function CoworkerDetails() {
                             fill
                             className="object-cover"
                             onError={(e) => console.error("Main image load error:", e)}
-                            onLoad={() => console.log("Main image loaded successfully")}
                           />
                         );
                       } else {
-                        console.log("No main image available, coworker.images:", coworker.images);
                         return (
                           <div className="w-full h-full flex items-center justify-center">
                             <IoPersonCircle className="text-6xl text-white/60" />
@@ -301,8 +294,6 @@ export default function CoworkerDetails() {
 
         {/* Portfolio Gallery */}
         {(() => {
-          console.log("Checking thumbnails:", coworker.images?.thumbnails);
-          console.log("Thumbnails length:", coworker.images?.thumbnails?.length);
           return (coworker.images?.thumbnails && coworker.images.thumbnails.length > 0);
         })() && (
           <motion.div

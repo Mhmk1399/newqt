@@ -98,7 +98,6 @@ const UsersTransActions: React.FC = () => {
       try {
         const token =
           localStorage.getItem("userToken") || localStorage.getItem("token");
-        console.log("Fetching transactions for user:", userInfo.userId);
 
         // Fetch transactions
         const transactionsResponse = await fetch(
@@ -112,7 +111,6 @@ const UsersTransActions: React.FC = () => {
         );
 
         const transactionsResult = await transactionsResponse.json();
-        console.log("Transactions API response:", transactionsResult);
 
         if (transactionsResult.success) {
           setTransactionsData(transactionsResult.data || []);
@@ -133,10 +131,8 @@ const UsersTransActions: React.FC = () => {
         );
 
         const summaryResult = await summaryResponse.json();
-        console.log("Summary API response:", summaryResult);
 
         if (summaryResult.success && summaryResult.summary) {
-          console.log("Setting summary:", summaryResult.summary);
           setSummary(summaryResult.summary);
         } else {
           console.error("Summary API error:", summaryResult);
@@ -155,7 +151,6 @@ const UsersTransActions: React.FC = () => {
   // Calculate summary from client-side data as fallback
   useEffect(() => {
     if (transactionsData && transactionsData.length > 0) {
-      console.log("Transactions data for calculation:", transactionsData);
 
       const calculatedSummary = {
         totalIncome: 0,
@@ -165,38 +160,27 @@ const UsersTransActions: React.FC = () => {
       };
 
       transactionsData.forEach((transaction: any, index: number) => {
-        console.log(`Transaction ${index}:`, {
-          type: transaction.type,
-          received: transaction.received,
-          paid: transaction.paid,
-          subject: transaction.subject,
-        });
+
 
         if (transaction.type === "income") {
           const amount = Number(transaction.received) || 0;
           calculatedSummary.totalIncome += amount;
-          console.log(
-            `Added income: ${amount}, total now: ${calculatedSummary.totalIncome}`
-          );
+    
         } else if (transaction.type === "expense") {
           const amount = Number(transaction.paid) || 0;
           calculatedSummary.totalExpense += amount;
-          console.log(
-            `Added expense: ${amount}, total now: ${calculatedSummary.totalExpense}`
-          );
+        
         }
       });
 
       calculatedSummary.balance =
         calculatedSummary.totalIncome - calculatedSummary.totalExpense;
 
-      console.log("Client-side calculated summary:", calculatedSummary);
-      console.log("Current summary state:", summary);
 
       // Always update with client-side calculation if we have transactions
       setSummary(calculatedSummary);
     } else if (transactionsData && transactionsData.length === 0) {
-      console.log("No transactions found for user");
+
       // Reset summary if no transactions
       setSummary({
         totalIncome: 0,
@@ -231,7 +215,7 @@ const UsersTransActions: React.FC = () => {
         setTeamInfo(userResult.data.teamId);
         setTaskAmount(Number(userResult.data.teamId.amount) || 0);
       } else {
-        console.log("User has no team assigned");
+
         setTaskAmount(0);
         setTeamInfo(null);
       }

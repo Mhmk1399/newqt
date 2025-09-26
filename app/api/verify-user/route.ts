@@ -46,7 +46,6 @@ export async function POST(request: NextRequest) {
       userExists = await CoWorker.findById(userId);
     }
     
-    console.log(userExists, "User verification result");
 
     return NextResponse.json({ 
       exists: !!userExists,

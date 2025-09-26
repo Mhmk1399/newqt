@@ -508,7 +508,6 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
         onRefresh();
       }
     } catch (error) {
-      console.log("Error deleting item:", error);
       toast.error("خطا در حذف آیتم");
     }
   };
@@ -1028,7 +1027,6 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                       itemId={selectedRow._id as string}
                       initialValues={selectedRow}
                       onSuccess={(data) => {
-                        console.log(data, "data from edit modal");
                         setIsEditModalOpen(false);
                         if (endpoint) {
                           mutate();
@@ -1038,7 +1036,6 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                         toast.success("آیتم با موفقیت بروزرسانی شد");
                       }}
                       onError={(error) => {
-                        console.log("Error updating item:", error);
                         toast.error("خطا در بروزرسانی آیتم");
                       }}
                       onCancel={() => setIsEditModalOpen(false)}

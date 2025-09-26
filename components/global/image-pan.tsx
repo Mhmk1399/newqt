@@ -31,7 +31,6 @@ function Card(props: CardProps) {
   const rotate = useTransform(x, [-150, 0, 150], [-45, 0, 45], {
     clamp: false,
   });
-  console.log(exitX);
 
   useEffect(() => {
     const getImageColor = () => {

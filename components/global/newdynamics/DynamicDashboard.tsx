@@ -106,7 +106,8 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
 
   // Get user role and type from token or props
   // For User model, we need to check the 'role' field for admin status
-  const actualUserRole = propUserRole || userInfo?.role || userInfo?.userType || "user";
+  const actualUserRole =
+    propUserRole || userInfo?.role || userInfo?.userType || "user";
   const userType = propUserType || userInfo?.userType || "user";
   const userRole = actualUserRole;
 
@@ -260,24 +261,15 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
   const getCurrentConfig = (): DashboardConfig | null => {
     if (!userInfo) return null;
 
-    console.log("=== Dashboard Configuration Debug ===");
-    console.log("UserType (model):", userType);
-    console.log("UserRole (computed):", userRole);
-    console.log("JWT Role field:", userInfo?.role);
-    console.log("JWT UserType field:", userInfo?.userType);
-    console.log("Is Admin:", userInfo?.role === "admin" || userInfo?.userType === "admin");
-    console.log("Full UserInfo:", userInfo);
-
     if (configs) {
       return configs.find((config) => config.userType === userType) || null;
     }
 
     // Check for admin privileges first (can come from User model role or direct userType)
-    const isAdmin = userInfo?.role === "admin" || userInfo?.userType === "admin";
-    
+    const isAdmin =
+      userInfo?.role === "admin" || userInfo?.userType === "admin";
+
     if (isAdmin) {
-      console.log("✅ Admin Access Granted!");
-      console.log("Admin detected via:", userInfo?.role === "admin" ? "role field" : "userType field");
       return defaultAdminConfig;
     }
 
@@ -287,29 +279,17 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
       case "user":
         // Users from User model - they already passed admin check above
         // Other user roles (manager, editor, designer, video-shooter) get user config
-        console.log(
-          "Loading user configuration for User model role:",
-          userInfo?.role || userRole
-        );
+    
         return defaultUserConfig;
 
       case "customer":
-        console.log("Loading customer configuration for Customer model");
         return defaultCustomerConfig;
 
       case "coworker":
-        console.log("Loading coworker configuration for CoWorker model");
         return defaultCoWorkerConfig;
 
       default:
-        console.log(
-          "No configuration found for userType:",
-          userType,
-          "userRole:",
-          userRole,
-          "role:",
-          userInfo?.role
-        );
+    
         return null;
     }
   };

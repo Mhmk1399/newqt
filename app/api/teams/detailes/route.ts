@@ -25,7 +25,6 @@ export async function GET(
       data: team
     });
   } catch (error) {
-        console.log(error);
 
     return NextResponse.json({
       success: false,
@@ -41,7 +40,6 @@ export async function PATCH(
   try {
     await connect();
     const id =request.headers.get('id');
-    console.log(id);
     const body = await request.json();
     const team = await Team.findByIdAndUpdate(
       id,
@@ -61,7 +59,6 @@ export async function PATCH(
       data: team
     });
   } catch (error) {
-        console.log(error);
 
     return NextResponse.json({
       success: false,
@@ -91,7 +88,6 @@ export async function DELETE(
       message: 'Team deleted successfully'
     });
   } catch (error) {
-        console.log(error);
 
     return NextResponse.json({
       success: false,

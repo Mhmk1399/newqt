@@ -20,7 +20,6 @@ const AboutUs = () => {
   const backgroundRef = useRef<HTMLDivElement>(null);
 
   const [isMobile, setIsMobile] = useState(false);
-  console.log(isMobile)
 
   useEffect(() => {
     const checkMobile = () => {

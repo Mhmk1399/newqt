@@ -129,7 +129,6 @@ export async function POST(
         await Task.findByIdAndUpdate(taskId, { 
           attachedVideo: videoUrl 
         });
-        console.log(`Task ${taskId} updated with video URL: ${videoUrl}`);
       } catch (dbError) {
         console.error("Error updating task in database:", dbError);
         // Continue anyway - the frontend will still get the video URL
