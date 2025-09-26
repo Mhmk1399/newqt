@@ -11,11 +11,16 @@ import {
   BiUserPlus,
   BiShield,
   BiStar,
+  BiShow,
+  BiHide,
 } from "react-icons/bi";
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -281,8 +286,41 @@ const AuthPage = () => {
       stagger: 0.05,
       onComplete: () => {
         setIsLogin(!isLogin);
+        setShowPassword(false);
+        setShowConfirmPassword(false);
+        setShowForgotPassword(false);
       },
     });
+  };
+
+  const handleForgotPassword = async () => {
+    if (!formData.phone) {
+      setErrors({ phone: "لطفاً شماره تلفن خود را وارد کنید" });
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          phoneNumber: formData.phone,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "خطا در ارسال کد بازیابی");
+      }
+
+      toast.success("کد بازیابی به شماره شما ارسال شد");
+      setShowForgotPassword(false);
+    } catch (error: any) {
+      toast.error(error.message || "خطا در ارسال کد بازیابی");
+    }
   };
 
   return (
@@ -400,12 +438,23 @@ const AuthPage = () => {
             </div>
             <input
               name="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={formData.password}
               onChange={handleChange}
-              className="w-full px-6 py-4 pr-12 rounded-2xl bg-white/10 border-2 border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-4 focus:ring-purple-500/20 transition-all duration-300 backdrop-blur-sm text-lg"
+              className="w-full px-6 py-4 pr-12 pl-12 rounded-2xl bg-white/10 border-2 border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-4 focus:ring-purple-500/20 transition-all duration-300 backdrop-blur-sm text-lg"
               placeholder="رمز عبور"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-purple-400 hover:text-purple-300 transition-colors"
+            >
+              {showPassword ? (
+                <BiHide className="text-xl" />
+              ) : (
+                <BiShow className="text-xl" />
+              )}
+            </button>
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
 
             {errors.password && (
@@ -423,12 +472,23 @@ const AuthPage = () => {
                 </div>
                 <input
                   name="confirmPassword"
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="w-full px-6 py-4 pr-12 rounded-2xl bg-white/10 border-2 border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-4 focus:ring-purple-500/20 transition-all duration-300 backdrop-blur-sm text-lg"
+                  className="w-full px-6 py-4 pr-12 pl-12 rounded-2xl bg-white/10 border-2 border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-4 focus:ring-purple-500/20 transition-all duration-300 backdrop-blur-sm text-lg"
                   placeholder="تکرار رمز عبور"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-purple-400 hover:text-purple-300 transition-colors"
+                >
+                  {showConfirmPassword ? (
+                    <BiHide className="text-xl" />
+                  ) : (
+                    <BiShow className="text-xl" />
+                  )}
+                </button>
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
 
                 {errors.confirmPassword && (
@@ -528,7 +588,81 @@ const AuthPage = () => {
               </>
             )}
           </button>
+
+          {/* Forgot Password Link - Only show in login mode */}
+          {isLogin && (
+            <div className="text-center mt-4">
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
+                className="text-purple-400 hover:text-purple-300 text-sm transition-colors duration-300 hover:underline"
+              >
+                رمز عبور خود را فراموش کرده‌اید؟
+              </button>
+            </div>
+          )}
         </form>
+
+        {/* Forgot Password Modal */}
+        {showForgotPassword && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl p-8 max-w-md w-full shadow-2xl border border-white/20">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <BiLock className="text-purple-400 text-2xl" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-2">بازیابی رمز عبور</h3>
+                <p className="text-white/70 text-sm">
+                  شماره تلفن خود را وارد کنید تا کد بازیابی برای شما ارسال شود
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="relative group">
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10">
+                    <BiPhone className="text-purple-400 text-xl group-focus-within:text-purple-300 transition-colors" />
+                  </div>
+                  <input
+                    name="phone"
+                    type="number"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="w-full px-6 py-4 pr-12 rounded-2xl bg-white/10 border-2 border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-4 focus:ring-purple-500/20 transition-all duration-300 backdrop-blur-sm text-lg"
+                    placeholder="شماره موبایل"
+                    dir="ltr"
+                  />
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                </div>
+
+                {errors.phone && (
+                  <span className="text-red-400 text-sm block font-medium">
+                    {errors.phone}
+                  </span>
+                )}
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForgotPassword(false);
+                      setErrors({});
+                    }}
+                    className="flex-1 py-3 px-6 rounded-2xl border border-white/20 text-white/70 hover:text-white hover:bg-white/10 transition-all duration-300"
+                  >
+                    انصراف
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="flex-1 py-3 px-6 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300"
+                  >
+                    ارسال کد
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Switch Mode Button */}
         <div className="text-center mt-8 relative z-10">

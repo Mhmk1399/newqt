@@ -15,14 +15,8 @@ import {
 import { IoSparkles, IoClose } from "react-icons/io5";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
-
-interface DecodedToken {
-  userId: string;
-  phoneNumber: string;
-  name: string;
-  userType: "user" | "customer" | "coworker" | "admin";
-  exp: number;
-}
+import useSWR from "swr";
+import { getUserFromToken, getAuthHeader, DecodedToken } from "@/utilities/jwtUtils";
 
 interface Task {
   _id: string;
@@ -56,15 +50,56 @@ interface Task {
   updatedAt: string;
 }
 
+// SWR fetcher function with authentication
+const fetcher = async (url: string) => {
+  const authHeader = getAuthHeader();
+  if (!authHeader) {
+    throw new Error("No authentication token");
+  }
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: authHeader,
+      "Content-Type": "application/json",
+    },
+  });
+
+  const result = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(result.message || "Failed to fetch data");
+  }
+
+  if (!result.success) {
+    throw new Error(result.message || "API returned error");
+  }
+
+  return result.data;
+};
+
 const CustomerTaskManagement: React.FC = () => {
   const router = useRouter();
   const [userInfo, setUserInfo] = useState<DecodedToken | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+
+  // SWR hook for fetching tasks
+  const {
+    data: tasks = [],
+    error,
+    isLoading,
+    mutate: refreshTasks,
+  } = useSWR<Task[]>(
+    userInfo?.userId ? `/api/customer-tasks?customer=${userInfo.userId}` : null,
+    fetcher,
+    {
+      refreshInterval: 30000, // Refresh every 30 seconds
+      revalidateOnFocus: true,
+      dedupingInterval: 5000,
+    }
+  );
 
   // Task status columns configuration (customer view)
   const statusColumns = [
@@ -103,7 +138,7 @@ const CustomerTaskManagement: React.FC = () => {
   ];
 
   // Priority colors and labels
-  const priorityConfig = {
+  const priorityConfig: Record<string, { label: string; color: string; textColor: string }> = {
     low: { label: "کم", color: "bg-gray-500", textColor: "text-gray-400" },
     medium: {
       label: "متوسط",
@@ -118,26 +153,14 @@ const CustomerTaskManagement: React.FC = () => {
     urgent: { label: "فوری", color: "bg-red-500", textColor: "text-red-400" },
   };
 
-  // Extract user info from token
+  // Extract user info from token using JWT utilities
   useEffect(() => {
     const extractUserFromToken = () => {
       try {
-        const token =
-          localStorage.getItem("userToken") || localStorage.getItem("token");
+        const decoded = getUserFromToken();
 
-        if (!token) {
+        if (!decoded) {
           toast.error("لطفا ابتدا وارد حساب کاربری خود شوید");
-          router.push("/auth");
-          return;
-        }
-
-        const decoded = JSON.parse(atob(token.split(".")[1])) as DecodedToken;
-        console.log(decoded);
-
-        if (decoded.exp && decoded.exp < Date.now() / 1000) {
-          toast.error("جلسه شما منقضی شده است. لطفا مجدداً وارد شوید");
-          localStorage.removeItem("userToken");
-          localStorage.removeItem("token");
           router.push("/auth");
           return;
         }
@@ -150,56 +173,24 @@ const CustomerTaskManagement: React.FC = () => {
 
         setUserInfo(decoded);
       } catch (error) {
-        console.error("Error decoding token:", error);
+        console.error("Error extracting user from token:", error);
         toast.error("خطا در تشخیص هویت. لطفا مجدداً وارد شوید");
         router.push("/auth");
-      } finally {
-        setLoading(false);
       }
     };
 
     extractUserFromToken();
   }, [router]);
 
-  // Fetch customer tasks
-  const fetchCustomerTasks = async () => {
-    if (!userInfo?.userId) return;
 
-    try {
-      const token =
-        localStorage.getItem("userToken") || localStorage.getItem("token");
-      const response = await fetch(
-        `/api/customer-tasks?customer=${userInfo.userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      const result = await response.json();
-      console.log(result);
-
-      if (result.success) {
-        setTasks(result.data || []);
-      } else {
-        console.error("Customer Tasks API error:", result);
-        toast.error("خطا در دریافت تسک‌ها");
-      }
-    } catch (error) {
-      console.error("Error fetching customer tasks:", error);
-      toast.error("خطا در دریافت اطلاعات");
-    }
-  };
 
   // Filter tasks by status
-  const getTasksByStatus = (status: string) => {
+  const getTasksByStatus = (status: string): Task[] => {
     return tasks
-      .filter((task) => task.status === status)
-      .sort((a, b) => {
+      .filter((task: Task) => task.status === status)
+      .sort((a: Task, b: Task) => {
         // Sort by priority first
-        const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
+        const priorityOrder: Record<string, number> = { urgent: 4, high: 3, medium: 2, low: 1 };
         const priorityDiff =
           (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
         if (priorityDiff !== 0) return priorityDiff;
@@ -217,12 +208,18 @@ const CustomerTaskManagement: React.FC = () => {
     action: "approve" | "reject"
   ) => {
     try {
-      const token =
-        localStorage.getItem("userToken") || localStorage.getItem("token");
+      const authHeader = getAuthHeader();
+      
+      if (!authHeader) {
+        toast.error("خطا در تشخیص هویت. لطفا مجدداً وارد شوید");
+        router.push("/auth");
+        return;
+      }
+
       const response = await fetch("/api/customer-tasks", {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: authHeader,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -241,8 +238,8 @@ const CustomerTaskManagement: React.FC = () => {
             : "تسک رد شد و به مرحله بررسی بازگشت"
         );
 
-        // Update local state
-        fetchCustomerTasks();
+        // Refresh tasks using SWR
+        refreshTasks();
 
         // Close modals
         setIsTaskModalOpen(false);
@@ -270,11 +267,14 @@ const CustomerTaskManagement: React.FC = () => {
     setIsRejectionModalOpen(true);
   };
 
+  // Handle SWR error states
   useEffect(() => {
-    fetchCustomerTasks();
-  }, [userInfo]);
+    if (error) {
+      toast.error("خطا در دریافت اطلاعات تسک‌ها");
+    }
+  }, [error]);
 
-  if (loading) {
+  if (isLoading && !userInfo) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#030014] via-[#0A0A2E] to-[#030014] flex items-center justify-center">
         <div className="text-white text-xl flex items-center gap-3">
@@ -312,12 +312,27 @@ const CustomerTaskManagement: React.FC = () => {
       <div className="relative z-10 p-6">
         {/* Header */}
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-3">
-            پیگیری پروژه‌ها
-          </h1>
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <h1 className="text-4xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text">
+              پیگیری پروژه‌ها
+            </h1>
+            {isLoading && userInfo && (
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full"
+                title="در حال به‌روزرسانی..."
+              />
+            )}
+          </div>
           <p className="text-white/70 text-lg">
             مشاهده وضعیت و پیشرفت پروژه‌های شما
           </p>
+          {error && (
+            <div className="mt-3 p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-200 text-sm">
+              خطا در دریافت اطلاعات. تلاش مجدد...
+            </div>
+          )}
         </div>
 
         {/* Task Statistics */}
@@ -389,7 +404,7 @@ const CustomerTaskManagement: React.FC = () => {
 
                 <div className="space-y-4">
                   <AnimatePresence>
-                    {columnTasks.map((task) => (
+                    {columnTasks.map((task: Task) => (
                       <motion.div
                         key={task._id}
                         layout

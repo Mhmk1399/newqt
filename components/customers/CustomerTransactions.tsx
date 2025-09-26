@@ -1,30 +1,15 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import DynamicTable from "@/components/global/newdynamics/dynamicTable";
 import { TableColumn, FilterField } from "@/types/dynamicTypes/types";
 import { motion } from "framer-motion";
-import {
-  FaMoneyBillWave,
-  FaArrowUp,
-  FaArrowDown,
-  FaCalendarAlt,
-  FaUser,
-  FaExclamationTriangle,
-  FaChartLine,
-} from "react-icons/fa";
-import { IoSparkles, IoTrendingUp, IoTrendingDown } from "react-icons/io5";
+import { FaMoneyBillWave, FaArrowUp, FaArrowDown } from "react-icons/fa";
+import { IoTrendingDown } from "react-icons/io5";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
-import { decode } from "punycode";
-
-interface DecodedToken {
-  userId: string;
-  phoneNumber: string;
-  name: string;
-  userType: "user" | "customer" | "coworker" | "admin";
-  exp: number;
-}
+import useSWR from "swr";
+import { getUserFromToken, getAuthHeader } from "@/utilities/jwtUtils";
 
 interface TransactionStats {
   totalIncome: number;
@@ -35,14 +20,78 @@ interface TransactionStats {
 
 const CustomerTransactions: React.FC = () => {
   const router = useRouter();
-  const [userInfo, setUserInfo] = useState<DecodedToken | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<TransactionStats>({
+
+  // Get user info from JWT token
+  const userInfo = getUserFromToken();
+
+  // Redirect if no valid token or not a customer
+  if (!userInfo) {
+    toast.error("لطفاً ابتدا وارد حساب کاربری خود شوید");
+    router.push("/auth");
+    return null;
+  }
+
+  if (userInfo.userType !== "customer") {
+    toast.error("دسترسی محدود به مشتریان");
+    router.push("/");
+    return null;
+  }
+
+  // SWR fetcher function
+  const fetcher = async (url: string) => {
+    const authHeader = getAuthHeader();
+    if (!authHeader) {
+      throw new Error("No authentication token");
+    }
+
+    const response = await fetch(url, {
+      headers: {
+        Authorization: authHeader,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch data");
+    }
+
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.message || "Failed to fetch data");
+    }
+
+    return result;
+  };
+
+  // Fetch transaction statistics using SWR
+  const {
+    data: statsData,
+    error: statsError,
+    isLoading: statsLoading,
+  } = useSWR(
+    userInfo?.userId
+      ? `/api/transactions?customer=${userInfo.userId}&summary=true`
+      : null,
+    fetcher,
+    {
+      refreshInterval: 30000, // Refresh every 30 seconds
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+    }
+  );
+
+  const stats: TransactionStats = statsData?.summary || {
     totalIncome: 0,
     totalExpense: 0,
     balance: 0,
     transactionCount: 0,
-  });
+  };
+
+  // Handle SWR errors
+  if (statsError) {
+    console.error("Error fetching transaction stats:", statsError);
+    toast.error("خطا در دریافت آمار تراکنش‌ها");
+  }
 
   const columns: TableColumn[] = [
     {
@@ -133,103 +182,8 @@ const CustomerTransactions: React.FC = () => {
     },
   ];
 
-  // Extract user info from token
-  useEffect(() => {
-    const extractUserFromToken = () => {
-      try {
-        const token =
-          localStorage.getItem("userToken") || localStorage.getItem("token");
-
-        if (!token) {
-          toast.error("لطفا ابتدا وارد حساب کاربری خود شوید");
-          router.push("/auth");
-          return;
-        }
-
-        const decoded = JSON.parse(atob(token.split(".")[1])) as DecodedToken;
-
-        if (decoded.exp && decoded.exp < Date.now() / 1000) {
-          toast.error("جلسه شما منقضی شده است. لطفا مجدداً وارد شوید");
-          localStorage.removeItem("userToken");
-          localStorage.removeItem("token");
-          router.push("/auth");
-          return;
-        }
-
-        if (decoded.userType !== "customer") {
-          toast.error("دسترسی محدود به مشتریان");
-          router.push("/");
-          return;
-        }
-        console.log(decoded);
-        setUserInfo(decoded);
-      } catch (error) {
-        console.error("Error decoding token:", error);
-        toast.error("خطا در تشخیص هویت. لطفا مجدداً وارد شوید");
-        router.push("/auth");
-      }
-    };
-
-    extractUserFromToken();
-  }, [router]);
-
-  // Fetch transaction statistics
-  useEffect(() => {
-    const fetchStats = async () => {
-      if (!userInfo?.userId) return;
-
-      setLoading(true);
-      try {
-        const token =
-          localStorage.getItem("userToken") || localStorage.getItem("token");
-
-        // Test both summary and regular data calls
-        console.log("Testing customer ID:", userInfo.userId);
-
-        // Fetch summary statistics
-        const summaryResponse = await fetch(
-          `/api/transactions?customer=${userInfo.userId}&summary=true`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        const summaryResult = await summaryResponse.json();
-        console.log("Summary response:", summaryResult);
-
-        if (summaryResult.success && summaryResult.summary) {
-          setStats(summaryResult.summary);
-        }
-
-        // Test regular data call (same as DynamicTable will make)
-        const dataResponse = await fetch(
-          `/api/transactions?customer=${userInfo.userId}&page=1&limit=10`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        const dataResult = await dataResponse.json();
-        console.log("Data response:", dataResult);
-
-      } catch (error) {
-        console.error("Error fetching transaction stats:", error);
-        toast.error("خطا در دریافت آمار");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, [userInfo]);
-
-  if (loading) {
+  // Loading state
+  if (statsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#030014] via-[#0A0A2E] to-[#030014] flex items-center justify-center">
         <div className="text-white text-xl flex items-center gap-3">
@@ -240,14 +194,6 @@ const CustomerTransactions: React.FC = () => {
           />
           در حال بارگذاری...
         </div>
-      </div>
-    );
-  }
-
-  if (!userInfo) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#030014] via-[#0A0A2E] to-[#030014] flex items-center justify-center">
-        <div className="text-white text-xl">خطا در تشخیص هویت</div>
       </div>
     );
   }
@@ -281,13 +227,11 @@ const CustomerTransactions: React.FC = () => {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
-   
-
           {/* Total Expense */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.1 }}
             className="bg-gradient-to-br from-red-500/20 to-pink-500/20 backdrop-blur-xl rounded-2xl p-6 border border-red-400/30"
           >
             <div className="flex items-center justify-between mb-4">
@@ -297,18 +241,16 @@ const CustomerTransactions: React.FC = () => {
               <div className="text-red-400 text-sm">کل هزینه</div>
             </div>
             <div className="text-2xl font-bold text-white mb-1">
-              {stats.totalExpense.toLocaleString()}
+              {statsLoading ? "..." : stats.totalExpense.toLocaleString()}
             </div>
             <div className="text-red-300 text-sm">ریال</div>
           </motion.div>
-
-      
 
           {/* Transaction Count */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.2 }}
             className="bg-gradient-to-br from-purple-500/20 to-violet-500/20 backdrop-blur-xl rounded-2xl p-6 border border-purple-400/30"
           >
             <div className="flex items-center justify-between mb-4">
@@ -318,7 +260,7 @@ const CustomerTransactions: React.FC = () => {
               <div className="text-purple-400 text-sm">تعداد تراکنش</div>
             </div>
             <div className="text-2xl font-bold text-white mb-1">
-              {stats.transactionCount}
+              {statsLoading ? "..." : stats.transactionCount}
             </div>
             <div className="text-purple-300 text-sm">تراکنش</div>
           </motion.div>
@@ -328,12 +270,19 @@ const CustomerTransactions: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.3 }}
+          className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/20"
         >
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-white mb-2">
+              تاریخچه تراکنش‌ها
+            </h2>
+            <p className="text-white/70">مشاهده جزئیات تمام تراکنش‌های مالی</p>
+          </div>
+
           <DynamicTable
             columns={columns}
-            data={[]}
-            loading={false}
+            data={[]} // Empty array since we're using endpoint-based fetching
             endpoint={`/api/transactions?customer=${userInfo.userId}`}
             filterFields={filterFields}
             showActions={false} // Hide actions for customers

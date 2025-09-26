@@ -23,8 +23,6 @@ export async function GET(request: NextRequest) {
     const dateTo = searchParams.get("dateTo"); // Date range filter end
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
-    
-    console.log('Transaction API params:', { users, customer, coworker, summary, page, limit });
 
     // Check if filtering by specific user, customer, or coworker is requested and validate access
     if (users || customer || coworker) {
@@ -35,54 +33,92 @@ export async function GET(request: NextRequest) {
           const decoded = jwt.verify(
             token,
             process.env.JWT_SECRET || "your-secret-key"
-          ) as { userId: string; userType: "user" | "admin" | "customer" | "coworker" };
-          
+          ) as {
+            userId: string;
+            userType: "user" | "admin" | "customer" | "coworker";
+          };
+
           // Admins can access all transactions
           if (decoded.userType === "admin") {
             // Admin has full access, no restrictions
           }
           // Users (staff) can access user transactions
-          else if (users && decoded.userType === "user" && decoded.userId !== users) {
+          else if (
+            users &&
+            decoded.userType === "user" &&
+            decoded.userId !== users
+          ) {
             return NextResponse.json(
-              { success: false, message: "Users can only access their own transactions" },
+              {
+                success: false,
+                message: "Users can only access their own transactions",
+              },
               { status: 403 }
             );
           }
           // Customers can only access their own customer transactions
-          else if (customer && decoded.userType === "customer" && decoded.userId !== customer) {
+          else if (
+            customer &&
+            decoded.userType === "customer" &&
+            decoded.userId !== customer
+          ) {
             return NextResponse.json(
-              { success: false, message: "Customers can only access their own transactions" },
+              {
+                success: false,
+                message: "Customers can only access their own transactions",
+              },
               { status: 403 }
             );
           }
           // CoWorkers can only access their own coworker transactions
-          else if (coworker && decoded.userType === "coworker" && decoded.userId !== coworker) {
+          else if (
+            coworker &&
+            decoded.userType === "coworker" &&
+            decoded.userId !== coworker
+          ) {
             return NextResponse.json(
-              { success: false, message: "CoWorkers can only access their own transactions" },
+              {
+                success: false,
+                message: "CoWorkers can only access their own transactions",
+              },
               { status: 403 }
             );
           }
           // Additional validation for cross-type access attempts
           else if (decoded.userType === "coworker" && (users || customer)) {
             return NextResponse.json(
-              { success: false, message: "CoWorkers cannot access user or customer transactions" },
+              {
+                success: false,
+                message:
+                  "CoWorkers cannot access user or customer transactions",
+              },
               { status: 403 }
             );
-          }
-          else if (decoded.userType === "customer" && (users || coworker)) {
+          } else if (decoded.userType === "customer" && (users || coworker)) {
             return NextResponse.json(
-              { success: false, message: "Customers cannot access user or coworker transactions" },
+              {
+                success: false,
+                message:
+                  "Customers cannot access user or coworker transactions",
+              },
               { status: 403 }
             );
-          }
-          else if (decoded.userType === "user" && (customer || coworker)) {
+          } else if (decoded.userType === "user" && (customer || coworker)) {
             return NextResponse.json(
-              { success: false, message: "Users cannot access customer or coworker transactions without admin privileges" },
+              {
+                success: false,
+                message:
+                  "Users cannot access customer or coworker transactions without admin privileges",
+              },
               { status: 403 }
             );
           }
           // Invalid userType
-          else if (!["user", "admin", "customer", "coworker"].includes(decoded.userType)) {
+          else if (
+            !["user", "admin", "customer", "coworker"].includes(
+              decoded.userType
+            )
+          ) {
             return NextResponse.json(
               { success: false, message: "Invalid user type" },
               { status: 403 }
@@ -150,7 +186,7 @@ export async function GET(request: NextRequest) {
     if (search) {
       query.$or = [{ subject: { $regex: search, $options: "i" } }];
     }
-    
+
     // Date range filtering
     if (dateFrom || dateTo) {
       query.date = {};
@@ -164,21 +200,19 @@ export async function GET(request: NextRequest) {
         query.date.$lt = endDate;
       }
     }
-    
-    console.log('Transaction query:', query);
 
     // If summary is requested, calculate and return summary data
     if (summary === "true") {
       const transactions = await Transaction.find(query);
-      
+
       const summaryData = {
         totalIncome: 0,
         totalExpense: 0,
         balance: 0,
-        transactionCount: transactions.length
+        transactionCount: transactions.length,
       };
 
-      transactions.forEach(transaction => {
+      transactions.forEach((transaction) => {
         if (transaction.type === "income") {
           summaryData.totalIncome += transaction.received || 0;
         } else if (transaction.type === "expense") {
@@ -211,8 +245,6 @@ export async function GET(request: NextRequest) {
       .limit(limit);
 
     const total = await Transaction.countDocuments(query);
-    
-    console.log('Transaction results:', { transactionCount: transactions.length, total });
 
     return NextResponse.json({
       success: true,

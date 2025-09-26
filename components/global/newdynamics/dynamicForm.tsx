@@ -106,14 +106,14 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
 
             {fields.map((field) => {
               const fieldError = errors[field.name];
-              
+
               // Check if field should be visible based on dependencies
               const shouldShowField = () => {
                 if (!field.dependsOn) return true;
-                
+
                 const dependentValue = formValues[field.dependsOn.field];
                 const { operator, value } = field.dependsOn;
-                
+
                 switch (operator) {
                   case "eq":
                     return dependentValue === value;
@@ -129,9 +129,9 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                     return true;
                 }
               };
-              
+
               if (!shouldShowField()) return null;
-              
+
               return (
                 <div key={field.name} className="space-y-1">
                   {field.type !== "checkbox" && (
@@ -198,7 +198,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                                 key={i}
                                 value={option.value}
                                 disabled={option.disabled}
-                                className="bg-gray-800 text-white"
+                                className="bg-transparent text-white"
                               >
                                 {option.label}
                               </option>
@@ -315,12 +315,16 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                           <div className="relative">
                             <DatePicker
                               value={
-                                formValues[field.name] 
-                                  ? new DateObject(new Date(formValues[field.name] as string))
+                                formValues[field.name]
+                                  ? new DateObject(
+                                      new Date(formValues[field.name] as string)
+                                    )
                                   : null
                               }
                               onChange={(val) => {
-                                const dateValue = val ? val.toDate().toISOString() : "";
+                                const dateValue = val
+                                  ? val.toDate().toISOString()
+                                  : "";
                                 handleChange(
                                   {
                                     target: {
@@ -334,7 +338,9 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                               calendar={persian}
                               locale={persian_fa}
                               format="YYYY/MM/DD"
-                              placeholder={field.placeholder || "تاریخ را انتخاب کنید"}
+                              placeholder={
+                                field.placeholder || "تاریخ را انتخاب کنید"
+                              }
                               inputClass="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white/90 placeholder:text-white/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300 text-right"
                               calendarPosition="bottom-right"
                               containerClassName="w-full"
@@ -352,20 +358,32 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                           <div className="space-y-2">
                             <textarea
                               name={field.name}
-                              placeholder={field.placeholder || "Enter items separated by commas"}
-                              value={Array.isArray(formValues[field.name]) 
-                                ? (formValues[field.name] as string[]).join(', ')
-                                : String(formValues[field.name] || "")
+                              placeholder={
+                                field.placeholder ||
+                                "Enter items separated by commas"
+                              }
+                              value={
+                                Array.isArray(formValues[field.name])
+                                  ? (formValues[field.name] as string[]).join(
+                                      ", "
+                                    )
+                                  : String(formValues[field.name] || "")
                               }
                               onChange={(e) => {
                                 const value = e.target.value;
-                                const arrayValue = value.split(',').map(item => item.trim()).filter(item => item);
-                                handleChange({
-                                  target: {
-                                    name: field.name,
-                                    value: arrayValue,
-                                  },
-                                } as unknown as React.ChangeEvent<HTMLInputElement>, field);
+                                const arrayValue = value
+                                  .split(",")
+                                  .map((item) => item.trim())
+                                  .filter((item) => item);
+                                handleChange(
+                                  {
+                                    target: {
+                                      name: field.name,
+                                      value: arrayValue,
+                                    },
+                                  } as unknown as React.ChangeEvent<HTMLInputElement>,
+                                  field
+                                );
                               }}
                               rows={3}
                               className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white/90 placeholder:text-white/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"

@@ -7,6 +7,7 @@ export interface DecodedToken {
   phoneNumber: string;
   name: string;
   userType: "user" | "customer" | "coworker" | "admin";
+  role?: "admin" | "manager" | "editor" | "designer" | "video-shooter"; // Role field for User model
   exp: number;
   [key: string]: any;
 }

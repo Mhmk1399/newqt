@@ -83,12 +83,14 @@ export async function POST(request: NextRequest) {
       await newUser.save();
 
       // Generate JWT token
-      const tokenPayload = {
+      const tokenPayload: any = {
         userId: newUser._id,
         phoneNumber: newUser.phoneNumber,
         name: newUser.name,
         userType,
       };
+
+      // Note: User model signup not allowed here, role field not applicable
 
       const userToken = jwt.sign(
         tokenPayload,
@@ -156,12 +158,17 @@ export async function POST(request: NextRequest) {
       }
 
       // Generate JWT token
-      const tokenPayload = {
+      const tokenPayload: any = {
         userId: foundUser._id,
         phoneNumber: foundUser.phoneNumber,
         name: foundUser.name,
         userType: foundUserType,
       };
+
+      // Add role field for User model users
+      if (foundUserType === "user" && foundUser.role) {
+        tokenPayload.role = foundUser.role;
+      }
 
       const userToken = jwt.sign(
         tokenPayload,

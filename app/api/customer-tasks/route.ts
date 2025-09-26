@@ -67,14 +67,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log("Searching for customer tasks with ID:", customerId);
-
-    // First, let's check what collections exist and get some debug info
-    const sampleTask = await Task.findOne();
-    console.log("Sample task:", sampleTask);
-
-    // Find tasks for this customer by looking up service requests that belong to the customer
-    // Try multiple collection names to see which one works
     const customerTasks = await Task.aggregate([
       {
         $lookup: {
@@ -86,15 +78,19 @@ export async function GET(request: NextRequest) {
       },
       {
         $addFields: {
-          serviceRequestFound: { $size: "$serviceRequest" }
-        }
+          serviceRequestFound: { $size: "$serviceRequest" },
+        },
       },
       {
         $match: {
           $or: [
-            { "serviceRequest.requestedBy": new mongoose.Types.ObjectId(customerId) },
-            { serviceRequestFound: { $eq: 0 } } // Also include tasks where service request lookup failed for debugging
-          ]
+            {
+              "serviceRequest.requestedBy": new mongoose.Types.ObjectId(
+                customerId
+              ),
+            },
+            { serviceRequestFound: { $eq: 0 } }, // Also include tasks where service request lookup failed for debugging
+          ],
         },
       },
       {
@@ -122,16 +118,14 @@ export async function GET(request: NextRequest) {
       },
     ]);
 
-    console.log("Customer tasks found:", customerTasks.length);
-    console.log("First task (if any):", customerTasks[0]);
-
     // Get total count for pagination (simplified for now while debugging)
-    const filteredTasks = customerTasks.filter(task => 
-      task.serviceRequest && 
-      task.serviceRequest.length > 0 && 
-      task.serviceRequest[0].requestedBy
+    const filteredTasks = customerTasks.filter(
+      (task) =>
+        task.serviceRequest &&
+        task.serviceRequest.length > 0 &&
+        task.serviceRequest[0].requestedBy
     );
-    
+
     const totalTasksAggregate = await Task.aggregate([
       {
         $lookup: {
@@ -151,9 +145,8 @@ export async function GET(request: NextRequest) {
       },
     ]);
 
-    console.log("Total tasks aggregate:", totalTasksAggregate);
-
-    const total = totalTasksAggregate.length > 0 ? totalTasksAggregate[0].total : 0;
+    const total =
+      totalTasksAggregate.length > 0 ? totalTasksAggregate[0].total : 0;
 
     return NextResponse.json({
       success: true,

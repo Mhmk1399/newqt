@@ -2,17 +2,27 @@
 
 import React, { useState, useEffect } from "react";
 import DynamicSidebar from "./DynamicSidebar";
-import { 
-  IoPeople, 
-  IoPersonAdd, 
-  IoVideocam, 
-  IoGrid, 
-  IoCall, 
-  IoCheckbox, 
+import { getUserFromToken, DecodedToken } from "@/utilities/jwtUtils";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import {
+  IoPeople,
+  IoPersonAdd,
+  IoVideocam,
+  IoGrid,
+  IoCall,
+  IoCheckbox,
   IoSettings,
   IoBusinessOutline,
   IoDocumentText,
-  IoCard
+  IoCard,
+  IoWallet,
+  IoStarOutline,
+  IoPerson,
+  IoHeadset,
+  IoCreateOutline,
+  IoCamera,
+  IoImageOutline,
 } from "react-icons/io5";
 
 // Import all admin components
@@ -32,6 +42,15 @@ import TransactionsManagement from "@/components/admin/TransactionsManagement";
 import UsersTransActions from "@/components/users/usersTransActions";
 import TasksOfTheUsers from "@/components/users/tasksOftheUsers";
 
+// Import customer components
+import CustomerProfileEditor from "@/components/customers/CustomerProfileEditor";
+import CustomerTaskManagement from "@/components/customers/CustomerTaskManagement";
+import CustomerTransactions from "@/components/customers/CustomerTransactions";
+import LuxuryServiceRequest from "@/components/customers/LuxuryServiceRequest";
+
+// Import coworker components
+import CoWorkerProfileEditor from "@/components/coworkers/CoWorkerProfileEditor";
+
 interface DashboardConfig {
   userType: string;
   items: {
@@ -43,19 +62,53 @@ interface DashboardConfig {
 }
 
 interface DynamicDashboardProps {
-  userRole: string;
-  userType?: string; // Add userType to distinguish between user types
+  userRole?: string; // Optional since we'll get it from token
+  userType?: string; // Optional since we'll get it from token
   configs?: DashboardConfig[];
 }
 
-const DynamicDashboard: React.FC<DynamicDashboardProps> = ({ 
-  userRole, 
-  userType = "user", // Default to user type
-  configs 
+const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
+  userRole: propUserRole,
+  userType: propUserType,
+  configs,
 }) => {
-  const [activeComponent, setActiveComponent] = useState<React.ComponentType | null>(null);
+  const router = useRouter();
+  const [activeComponent, setActiveComponent] =
+    useState<React.ComponentType | null>(null);
   const [activeKey, setActiveKey] = useState<string>("");
   const [isMobile, setIsMobile] = useState(false);
+  const [userInfo, setUserInfo] = useState<DecodedToken | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Extract user info from token
+  useEffect(() => {
+    const extractUserFromToken = () => {
+      try {
+        const decoded = getUserFromToken();
+
+        if (!decoded) {
+          toast.error("لطفاً ابتدا وارد حساب کاربری خود شوید");
+          router.push("/auth");
+          return;
+        }
+
+        setUserInfo(decoded);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error decoding token:", error);
+        toast.error("خطا در تشخیص هویت. لطفاً مجدداً وارد شوید");
+        router.push("/auth");
+      }
+    };
+
+    extractUserFromToken();
+  }, [router]);
+
+  // Get user role and type from token or props
+  // For User model, we need to check the 'role' field for admin status
+  const actualUserRole = propUserRole || userInfo?.role || userInfo?.userType || "user";
+  const userType = propUserType || userInfo?.userType || "user";
+  const userRole = actualUserRole;
 
   // Default user configuration (for regular users from User model)
   const defaultUserConfig: DashboardConfig = {
@@ -65,163 +118,200 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
         key: "tasks",
         label: "تسک‌های من",
         icon: <IoCheckbox />,
-        component: TasksOfTheUsers
+        component: TasksOfTheUsers,
       },
       {
         key: "transactions",
         label: "تراکنش‌های من",
-        icon: <IoCard />,
-        component: UsersTransActions
+        icon: <IoWallet />,
+        component: UsersTransActions,
       },
-    ]
+    ],
   };
 
-  // Customer configuration (for users from Customer model) - placeholder for future
+  // Customer configuration (for users from Customer model)
   const defaultCustomerConfig: DashboardConfig = {
     userType: "customer",
     items: [
       {
+        key: "profile",
+        label: "پروفایل من",
+        icon: <IoPerson />,
+        component: CustomerProfileEditor,
+      },
+      {
+        key: "serviceRequest",
+        label: "درخواست سرویس",
+        icon: <IoHeadset />,
+        component: LuxuryServiceRequest,
+      },
+      {
+        key: "taskManagement",
+        label: "مدیریت پروژه‌ها",
+        icon: <IoCheckbox />,
+        component: CustomerTaskManagement,
+      },
+      {
         key: "transactions",
         label: "تراکنش‌های من",
-        icon: <IoCard />,
-        component: UsersTransActions
+        icon: <IoWallet />,
+        component: CustomerTransactions,
       },
-      // Add customer-specific items here in the future
-    ]
+    ],
   };
 
-  // CoWorker configuration (for users from CoWorker model) - placeholder for future
+  // CoWorker configuration (for users from CoWorker model)
   const defaultCoWorkerConfig: DashboardConfig = {
     userType: "coworker",
     items: [
       {
-        key: "tasks",
-        label: "پروژه‌های من",
-        icon: <IoCheckbox />,
-        component: TasksOfTheUsers
+        key: "profile",
+        label: "پروفایل من",
+        icon: <IoCreateOutline />,
+        component: CoWorkerProfileEditor,
       },
-      // Add coworker-specific items here in the future
-    ]
+    ],
   };
 
   // Default admin configuration
   const defaultAdminConfig: DashboardConfig = {
-    userType: "admin",
+    userType: "Admin",
     items: [
       {
         key: "customers",
         label: "مدیریت مشتریان",
         icon: <IoPeople />,
-        component: CustomersManagement
+        component: CustomersManagement,
       },
       {
         key: "categories",
         label: "مدیریت دستهبندیها",
         icon: <IoGrid />,
-        component: CategoriesManagement
+        component: CategoriesManagement,
       },
       {
         key: "services",
         label: "مدیریت سرویسها",
         icon: <IoBusinessOutline />,
-        component: ServicesManagement
+        component: ServicesManagement,
       },
       {
         key: "serviceRequests",
         label: "درخواستهای سرویس",
         icon: <IoDocumentText />,
-        component: ServiceRequestsManagement
+        component: ServiceRequestsManagement,
       },
       {
         key: "tasks",
         label: "مدیریت تسکها",
         icon: <IoCheckbox />,
-        component: TasksManagement
+        component: TasksManagement,
       },
       {
         key: "users",
         label: "مدیریت کاربران",
         icon: <IoPersonAdd />,
-        component: UsersManagement
+        component: UsersManagement,
       },
       {
         key: "videos",
         label: "مدیریت ویدیوها",
         icon: <IoVideocam />,
-        component: VideosManagement
+        component: VideosManagement,
       },
       {
         key: "teams",
         label: "مدیریت تیمها",
         icon: <IoSettings />,
-        component: TeamsManagement
+        component: TeamsManagement,
       },
       {
         key: "contactRequests",
         label: "درخواستهای تماس",
         icon: <IoCall />,
-        component: ContactRequestsManagement
+        component: ContactRequestsManagement,
       },
       {
         key: "coworkers",
         label: "مدیریت همکاران",
         icon: <IoPersonAdd />,
-        component: CoWorkersManagement
+        component: CoWorkersManagement,
       },
       {
         key: "transactions",
         label: "مدیریت تراکنشها",
         icon: <IoCard />,
-        component: TransactionsManagement
-      }
-    ]
+        component: TransactionsManagement,
+      },
+    ],
   };
 
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-    // Get configuration for current user role and type
+  // Get configuration for current user role and type
   const getCurrentConfig = (): DashboardConfig | null => {
-    console.log('Dashboard Config - UserType:', userType, 'UserRole:', userRole);
-    
+    if (!userInfo) return null;
+
+    console.log("=== Dashboard Configuration Debug ===");
+    console.log("UserType (model):", userType);
+    console.log("UserRole (computed):", userRole);
+    console.log("JWT Role field:", userInfo?.role);
+    console.log("JWT UserType field:", userInfo?.userType);
+    console.log("Is Admin:", userInfo?.role === "admin" || userInfo?.userType === "admin");
+    console.log("Full UserInfo:", userInfo);
+
     if (configs) {
-      return configs.find(config => config.userType === userType) || null;
+      return configs.find((config) => config.userType === userType) || null;
     }
+
+    // Check for admin privileges first (can come from User model role or direct userType)
+    const isAdmin = userInfo?.role === "admin" || userInfo?.userType === "admin";
     
-    // Default configurations based on userType and userRole
-    // For users from the User model, check their role
-    if (userType === 'user') {
-      if (userRole === 'admin') {
-        console.log('Loading admin configuration');
-        return defaultAdminConfig;
-      } else {
+    if (isAdmin) {
+      console.log("✅ Admin Access Granted!");
+      console.log("Admin detected via:", userInfo?.role === "admin" ? "role field" : "userType field");
+      return defaultAdminConfig;
+    }
+
+    // Default configurations based on userType
+    // The userType comes from JWT token and indicates which model the user belongs to
+    switch (userType) {
+      case "user":
+        // Users from User model - they already passed admin check above
         // Other user roles (manager, editor, designer, video-shooter) get user config
-        console.log('Loading user configuration for role:', userRole);
+        console.log(
+          "Loading user configuration for User model role:",
+          userInfo?.role || userRole
+        );
         return defaultUserConfig;
-      }
+
+      case "customer":
+        console.log("Loading customer configuration for Customer model");
+        return defaultCustomerConfig;
+
+      case "coworker":
+        console.log("Loading coworker configuration for CoWorker model");
+        return defaultCoWorkerConfig;
+
+      default:
+        console.log(
+          "No configuration found for userType:",
+          userType,
+          "userRole:",
+          userRole,
+          "role:",
+          userInfo?.role
+        );
+        return null;
     }
-    
-    // For customers, they get customer config
-    if (userType === 'customer') {
-      console.log('Loading customer configuration');
-      return defaultCustomerConfig;
-    }
-    
-    // For coworkers, they get coworker config
-    if (userType === 'coworker') {
-      console.log('Loading coworker configuration');
-      return defaultCoWorkerConfig;
-    }
-    
-    console.log('No configuration found for userType:', userType, 'userRole:', userRole);
-    return null;
   };
 
   const currentConfig = getCurrentConfig();
@@ -240,12 +330,31 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
     setActiveKey(key);
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#030014] via-[#0A0A2E] to-[#030014] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-3 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <h1 className="text-xl font-bold text-white mb-2">
+            در حال بارگذاری...
+          </h1>
+          <p className="text-white/70">لطفاً صبر کنید</p>
+        </div>
+      </div>
+    );
+  }
+
+  // No access state
   if (!currentConfig) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#030014] via-[#0A0A2E] to-[#030014] flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white mb-4">دسترسی محدود</h1>
           <p className="text-white/70">شما دسترسی به این بخش را ندارید</p>
+          <p className="text-white/50 text-sm mt-2">
+            نوع کاربر: {userType} | نقش: {userRole}
+          </p>
         </div>
       </div>
     );
@@ -256,23 +365,21 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
       {/* Sidebar */}
       <DynamicSidebar
         items={currentConfig.items}
-        userRole={userRole}
+        userRole={userInfo?.name || userRole}
         onItemSelect={handleItemSelect}
         activeItem={activeKey}
       />
 
       {/* Main Content */}
-      <div 
+      <div
         className={`transition-all duration-300 ${
-          isMobile 
-            ? 'pt-20' // Mobile: account for fixed header
-            : 'pr-20' // Desktop: account for collapsed sidebar
+          isMobile
+            ? "pt-20" // Mobile: account for fixed header
+            : "pr-20" // Desktop: account for collapsed sidebar
         }`}
       >
         {activeComponent && (
-          <div className="w-full">
-            {React.createElement(activeComponent)}
-          </div>
+          <div className="w-full">{React.createElement(activeComponent)}</div>
         )}
       </div>
     </div>
