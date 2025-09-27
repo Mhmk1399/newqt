@@ -49,7 +49,7 @@ export const fieldTranslations: Record<string, string> = {
   customer: "مشتری",
   totalAmount: "مبلغ کل",
   status: "وضعیت",
-  sideMaterial: "متریال کناری",
+  sideMaterial: "متتومان کناری",
   priority: "اولویت",
   productionDate: "تاریخ تولید",
   seller: "فروشنده",
@@ -76,8 +76,8 @@ export const fieldTranslations: Record<string, string> = {
   providerName: "نام تامین کننده",
   glass: "شیشه",
   glassId: "شناسه شیشه",
-  materialType: "نوع متریال",
-  materialName: "نام متریال",
+  materialType: "نوع متتومان",
+  materialName: "نام متتومان",
   enterDate: "تاریخ ورود",
   totalArea: "مساحت کل",
   usedAmount: "مقدار استفاده شده",
@@ -93,7 +93,7 @@ export const fieldTranslations: Record<string, string> = {
   priorityServiceFee: "کارمزد اولویت",
   layersCount: "تعداد لایه‌ها",
   layersDetails: "جزئیات لایه‌ها",
-  sideMaterialsDetails: "جزئیات متریال‌های کناری",
+  sideMaterialsDetails: "جزئیات متتومان‌های کناری",
   // Treatment fields
   treatment: "پردازش",
   treatments: "پردازش‌ها",
@@ -101,7 +101,7 @@ export const fieldTranslations: Record<string, string> = {
   measurement: "اندازه‌گیری",
 
   // Product fields
-  sideMaterials: "متریال‌های کناری",
+  sideMaterials: "متتومان‌های کناری",
   productLine: "خط تولید",
   productType: "نوع محصول",
   productTypeDisplay: "نمایش نوع محصول",

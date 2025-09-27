@@ -342,7 +342,7 @@ const UsersTransActions: React.FC = () => {
               isIncome ? "text-green-400" : "text-red-400"
             }`}
           >
-            {isIncome ? "+" : "-"} {Number(amount).toLocaleString()} ریال
+            {isIncome ? "+" : "-"} {Number(amount).toLocaleString()} تومان
           </span>
         );
       },
@@ -570,7 +570,7 @@ const UsersTransActions: React.FC = () => {
                 <div>
                   <div className="bg-white/10 rounded-lg px-3 py-2 text-center mb-2">
                     <p className="text-white text-lg font-bold">
-                      {taskAmount.toLocaleString()} ریال
+                      {taskAmount.toLocaleString()} تومان
                     </p>
                   </div>
                   <p className="text-green-300/70 text-xs text-center">
@@ -610,7 +610,7 @@ const UsersTransActions: React.FC = () => {
               </h3>
               <p className="text-white text-2xl font-bold">
                 {salaryDateRange[0] && salaryDateRange[1] ? (
-                  `${totalSalary.toLocaleString()} ریال`
+                  `${totalSalary.toLocaleString()} تومان`
                 ) : (
                   <span className="text-white/50 text-lg">-</span>
                 )}
@@ -641,7 +641,7 @@ const UsersTransActions: React.FC = () => {
               کل درآمد
             </h3>
             <p className="text-white text-2xl font-bold">
-              {summary.totalIncome.toLocaleString()} ریال
+              {summary.totalIncome.toLocaleString()} تومان
             </p>
           </motion.div>
 
@@ -658,7 +658,7 @@ const UsersTransActions: React.FC = () => {
             </div>
             <h3 className="text-red-400 text-sm font-medium mb-1">کل هزینه</h3>
             <p className="text-white text-2xl font-bold">
-              {summary.totalExpense.toLocaleString()} ریال
+              {summary.totalExpense.toLocaleString()} تومان
             </p>
           </motion.div>
 
@@ -695,7 +695,7 @@ const UsersTransActions: React.FC = () => {
               موجودی
             </h3>
             <p className="text-white text-2xl font-bold">
-              {summary.balance.toLocaleString()} ریال
+              {summary.balance.toLocaleString()} تومان
             </p>
           </motion.div>
 

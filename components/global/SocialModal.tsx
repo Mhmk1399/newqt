@@ -22,39 +22,22 @@ interface SocialModalProps {
 
 const socialItems = [
   {
-    icon: FaGithub,
-    title: "Github",
-    link: "https://github.com",
-    color: "#333",
-  },
-  {
-    icon: FaLinkedin,
-    title: "LinkedIn",
-    link: "https://linkedin.com",
-    color: "#0077b5",
-  },
-  {
     icon: FaInstagram,
     title: "Instagram",
-    link: "https://instagram.com",
+    link: "https://www.instagram.com/the.qt.studio?igsh=MXVlajJuN3A1YjQyMQ==",
     color: "#e4405f",
   },
-  {
-    icon: FaTwitter,
-    title: "Twitter",
-    link: "https://twitter.com",
-    color: "#1da1f2",
-  },
+
   {
     icon: FaWhatsapp,
     title: "WhatsApp",
-    link: "https://whatsapp.com",
+    link: "https://wa.me/+989015528576",
     color: "#25D366",
   },
   {
     icon: FaTelegram,
     title: "Telegram",
-    link: "https://telegram.org",
+    link: "https://t.me/Immhmk",
     color: "#0088cc",
   },
 ];
@@ -108,7 +91,6 @@ const SocialModal = ({ isOpen, onClose, modalPosition }: SocialModalProps) => {
             transition={{ duration: 0.2 }}
             className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
             onClick={onClose}
-          
           />
 
           <motion.div
@@ -117,7 +99,6 @@ const SocialModal = ({ isOpen, onClose, modalPosition }: SocialModalProps) => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ type: "spring", damping: 20 }}
-            
             dir="rtl"
             style={{
               position: "fixed",
@@ -132,7 +113,9 @@ const SocialModal = ({ isOpen, onClose, modalPosition }: SocialModalProps) => {
           >
             {/* Header with close button */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700/30">
-              <h3 className="text-white text-sm font-medium">اشتراک گذاری</h3>
+              <h3 className="text-white text-sm font-medium">
+                راه های ارتباطی با ما
+              </h3>
               <motion.button
                 onClick={onClose}
                 whileHover={{ scale: 1.1 }}

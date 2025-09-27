@@ -41,13 +41,13 @@ const TransactionsManagement: React.FC = () => {
       key: "paid",
       header: "پرداختی",
       sortable: true,
-      render: (value) => `${Number(value).toLocaleString()} ریال`,
+      render: (value) => `${Number(value).toLocaleString()} تومان`,
     },
     {
       key: "received",
       header: "دریافتی",
       sortable: true,
-      render: (value) => `${Number(value).toLocaleString()} ریال`,
+      render: (value) => `${Number(value).toLocaleString()} تومان`,
     },
     {
       key: "users",

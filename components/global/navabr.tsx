@@ -4,12 +4,12 @@ import {
   FaHome,
   FaImages,
   FaUserAlt,
-  FaEnvelope,
   FaShareAlt,
   FaBars,
   FaTimes,
   FaSignInAlt,
   FaTachometerAlt,
+  FaUsers,
 } from "react-icons/fa";
 import SocialModal from "./SocialModal";
 import Link from "next/link";
@@ -32,19 +32,20 @@ const baseMenuItems = [
     target: "_self",
   },
   {
+    icon: FaUsers,
+    title: "همکاران ما",
+    color: "#ff6b6b",
+    href: "/models",
+    target: "_self",
+  },
+  {
     icon: FaUserAlt,
     title: "درباره ما",
     color: "#f472b6",
     href: "/about",
     target: "_self",
   },
-  {
-    icon: FaEnvelope,
-    title: "تماس",
-    color: "#a78bfa",
-    href: "/contact",
-    target: "_self",
-  },
+  
   {
     icon: FaShareAlt,
     title: "اشتراک گذاری",
@@ -344,7 +345,10 @@ const Navbar = () => {
                               : undefined,
                         }}
                       >
-                        <item.icon size={18} color={item.color} />
+                        <item.icon 
+                          size={18} 
+                          color={item.color}
+                        />
                       </div>
 
                       {/* Title */}
@@ -383,7 +387,7 @@ const Navbar = () => {
         <div className="relative">
           <div
             ref={mobileNavRef}
-            className="flex items-center justify-center p-1 rounded-3xl border border-white/20"
+            className="relative flex items-center justify-center p-1 rounded-3xl border border-white/20"
             style={{
               background:
                 "linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05))",
@@ -420,13 +424,15 @@ const Navbar = () => {
                   }}
                 >
                   <div
-                    className={`mobile-item-${index} flex items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 ${
+                    className={`mobile-item-${index} relative flex items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 ${
                       activeItem === index ? "bg-white/20" : "bg-white/5"
                     }`}
                     ref={item.hasSocials ? shareButtonRef : null}
                     style={{
                       backgroundColor:
-                        activeItem === index ? `${item.color}30` : undefined,
+                        activeItem === index 
+                          ? `${item.color}30` 
+                          : undefined,
                       border:
                         activeItem === index
                           ? `1px solid ${item.color}50`
@@ -435,7 +441,12 @@ const Navbar = () => {
                   >
                     <item.icon
                       size={20}
-                      color={activeItem === index ? item.color : "#9CA3AF"}
+                      color={
+                        activeItem === index 
+                          ? item.color 
+                          : "#9CA3AF"
+                      }
+                      className="relative z-10"
                     />
                   </div>
 

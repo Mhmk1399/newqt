@@ -32,7 +32,7 @@ const ServicesManagement: React.FC = () => {
       key: "basePrice",
       header: "قیمت پایه",
       sortable: true,
-      render: (value) => `${Number(value).toLocaleString()} ریال`,
+      render: (value) => `${Number(value).toLocaleString()} تومان`,
     },
     {
       key: "teamId",

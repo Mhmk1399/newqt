@@ -659,7 +659,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                             row
                           )
                         : isPriceColumn(col.key, row[col?.key] ?? "")
-                        ? `${Number(row[col.key]).toLocaleString()} ریال`
+                        ? `${Number(row[col.key]).toLocaleString()} تومان`
                         : row[col.key] || ""}
                     </td>
                   ))}
@@ -912,7 +912,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                       }
 
                       if (val !== undefined && isPriceColumn(key, val)) {
-                        return `${Number(val).toLocaleString()} ریال`;
+                        return `${Number(val).toLocaleString()} تومان`;
                       }
 
                       if (Array.isArray(val)) {

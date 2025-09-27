@@ -145,7 +145,7 @@ const CustomerTransactions: React.FC = () => {
         return (
           <div className={`font-bold ${color}`}>
             {sign}
-            {Number(amount).toLocaleString()} ریال
+            {Number(amount).toLocaleString()} تومان
           </div>
         );
       },
@@ -244,7 +244,7 @@ const CustomerTransactions: React.FC = () => {
             <div className="text-2xl font-bold text-white mb-1">
               {statsLoading ? "..." : stats.totalExpense.toLocaleString()}
             </div>
-            <div className="text-red-300 text-sm">ریال</div>
+            <div className="text-red-300 text-sm">تومان</div>
           </motion.div>
 
           {/* Transaction Count */}
