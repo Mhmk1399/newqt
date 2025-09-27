@@ -112,6 +112,26 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
     }
   }, [isDropdownOpen, isMobile]);
 
+  // Click outside handler for dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isMobile &&
+        isDropdownOpen &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        !(event.target as Element).closest('.mobile-header-container')
+      ) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isDropdownOpen, isMobile]);
+
   const toggleSidebar = () => {
     if (isMobile) {
       setIsDropdownOpen(!isDropdownOpen);
@@ -137,23 +157,32 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
   const closeMobileSidebar = () => {
     if (isMobile) {
       setIsOpen(false);
+      setIsDropdownOpen(false);
     }
   };
 
   return (
     <>
-      {/* Mobile Overlay */}
-      {isMobile && (
+      {/* Mobile Overlay (for full sidebar) */}
+      {isMobile && isOpen && (
         <div
           ref={overlayRef}
-          className="fixed inset-0 bg-black/50 z-30 opacity-0 pointer-events-none"
+          className="fixed inset-0 bg-black/50 z-30"
           onClick={closeMobileSidebar}
+        />
+      )}
+
+      {/* Mobile Dropdown Overlay */}
+      {isMobile && isDropdownOpen && (
+        <div 
+          className="fixed top-0 left-0 right-0 bottom-0 bg-black/50 backdrop-blur-sm z-40"
+          onClick={() => setIsDropdownOpen(false)}
         />
       )}
 
       {/* Mobile Header */}
       {isMobile && (
-        <div className="fixed top-0 left-0 right-0 z-10 bg-gradient-to-r from-[#030014] via-[#0A0A2E] to-[#030014] border-b border-white/10 p-4">
+        <div className="mobile-header-container fixed top-0 left-0 right-0 z-[999] bg-gradient-to-r from-[#030014] via-[#0A0A2E] to-[#030014] border-b border-white/10 p-4 shadow-lg backdrop-blur-md">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text">
               داشبورد {userRole === "admin" ? "مدیریت" : userRole}
@@ -182,16 +211,16 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
           </div>
 
           {/* Mobile Dropdown Menu */}
-          <div ref={dropdownRef} className="overflow-hidden">
-            <div className="mt-4 space-y-2">
+          <div ref={dropdownRef} className="overflow-hidden relative z-[60]">
+            <div className="mt-4 space-y-2 bg-gradient-to-b from-[#030014] via-[#0A0A2E] to-[#030014] p-4 rounded-xl border border-white/10 shadow-2xl backdrop-blur-xl relative z-[61]">
               {items.map((item) => (
                 <button
                   key={item.key}
                   onClick={() => handleItemClick(item)}
                   className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-300 ${
                     activeItem === item.key
-                      ? "bg-purple-500/20 text-purple-200 border border-purple-400/30"
-                      : "bg-white/10 text-white/90 border border-white/20 hover:bg-white/20"
+                      ? "bg-purple-500/20 text-purple-200 border border-purple-400/30 shadow-lg shadow-purple-500/20"
+                      : "bg-white/10 text-white/90 border border-white/20 hover:bg-white/20 hover:shadow-lg hover:shadow-white/10"
                   }`}
                 >
                   <span className="text-lg">{item.icon}</span>
