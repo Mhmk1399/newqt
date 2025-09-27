@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useEffect, useRef } from "react";
+import { gsap } from "gsap";
+import { Draggable } from "gsap/Draggable";
 import {
   FaCalendarAlt,
   FaComment,
@@ -16,6 +17,7 @@ import {
   FaBell,
   FaVideo,
   FaPlay,
+  FaSyncAlt,
 } from "react-icons/fa";
 import { IoClose, IoChevronForward, IoChevronBack } from "react-icons/io5";
 import toast from "react-hot-toast";
@@ -80,6 +82,202 @@ const TasksOfTheUsers: React.FC = () => {
   const [videoUploadTaskId, setVideoUploadTaskId] = useState<string | null>(
     null
   );
+  const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+  
+  // Refs for GSAP animations
+  const upcomingTasksRef = useRef<HTMLDivElement | null>(null);
+  const statisticsRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const columnsRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const taskRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const modalRef = useRef<HTMLDivElement | null>(null);
+
+  // GSAP Animation Functions
+  const animateUpcomingTasks = () => {
+    if (upcomingTasksRef.current) {
+      gsap.fromTo(upcomingTasksRef.current, 
+        { opacity: 0, y: -20 },
+        { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }
+      );
+    }
+  };
+
+  const animateStatistics = () => {
+    statisticsRefs.current.forEach((ref, index) => {
+      if (ref) {
+        gsap.fromTo(ref, 
+          { opacity: 0, scale: 0.9 },
+          { 
+            opacity: 1, 
+            scale: 1, 
+            duration: 0.5, 
+            delay: index * 0.1,
+            ease: "back.out(1.7)"
+          }
+        );
+      }
+    });
+  };
+
+  const animateColumns = () => {
+    columnsRefs.current.forEach((ref, index) => {
+      if (ref) {
+        gsap.fromTo(ref, 
+          { opacity: 0, x: -20 },
+          { 
+            opacity: 1, 
+            x: 0, 
+            duration: 0.6, 
+            delay: 0.2 + (index * 0.1),
+            ease: "power2.out"
+          }
+        );
+      }
+    });
+  };
+
+  const animateTaskCard = (element: HTMLElement, delay = 0) => {
+    gsap.fromTo(element, 
+      { opacity: 0, y: 20, scale: 0.9 },
+      { 
+        opacity: 1, 
+        y: 0, 
+        scale: 1, 
+        duration: 0.4, 
+        delay,
+        ease: "power2.out"
+      }
+    );
+  };
+
+  const animateModalIn = (element: HTMLElement) => {
+    gsap.set(element, { opacity: 0, scale: 0.8 });
+    gsap.to(element, { 
+      opacity: 1, 
+      scale: 1, 
+      duration: 0.3, 
+      ease: "power2.out" 
+    });
+  };
+
+  const animateModalOut = (element: HTMLElement): Promise<void> => {
+    return new Promise((resolve) => {
+      gsap.to(element, { 
+        opacity: 0, 
+        scale: 0.8, 
+        duration: 0.2, 
+        ease: "power2.in",
+        onComplete: resolve
+      });
+    });
+  };
+
+  // User-specific drag and drop validation
+  const canUserDragToStatus = (currentStatus: TaskStatus, targetStatus: string): boolean => {
+    // Users cannot drag to or modify "accepted" and "completed" statuses
+    if (targetStatus === "accepted" || targetStatus === "completed") {
+      return false;
+    }
+
+    // Users cannot drag from "accepted" and "completed" statuses
+    if (currentStatus === "accepted" || currentStatus === "completed") {
+      return false;
+    }
+
+    // Users can only move between: todo ↔ in-progress ↔ review
+    const allowedTransitions: { [key: string]: string[] } = {
+      "todo": ["in-progress"],
+      "in-progress": ["todo", "review"], 
+      "review": ["in-progress"]
+    };
+
+    return allowedTransitions[currentStatus]?.includes(targetStatus) || false;
+  };
+
+  // Drag and Drop Functions with User restrictions
+  const handleDragStart = (task: Task) => {
+    // Check if user can drag this task at all
+    if (task.status === "accepted" || task.status === "completed") {
+      toast.error("این تسک فقط توسط مدیر قابل تغییر است");
+      return;
+    }
+
+    setDraggedTask(task);
+    const taskElement = taskRefs.current[task._id];
+    if (taskElement) {
+      gsap.to(taskElement, {
+        scale: 1.1,
+        opacity: 0.8,
+        duration: 0.2,
+        ease: "power2.out"
+      });
+    }
+  };
+
+  const handleDragEnd = () => {
+    if (draggedTask) {
+      const taskElement = taskRefs.current[draggedTask._id];
+      if (taskElement) {
+        gsap.to(taskElement, {
+          scale: 1,
+          opacity: 1,
+          duration: 0.3,
+          ease: "power2.out"
+        });
+      }
+    }
+    setDraggedTask(null);
+    setDragOverColumn(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent, columnId: string) => {
+    e.preventDefault();
+    
+    // Only highlight if user can drop here
+    if (draggedTask && canUserDragToStatus(draggedTask.status, columnId)) {
+      setDragOverColumn(columnId);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverColumn(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, newStatus: string) => {
+    e.preventDefault();
+    
+    if (!draggedTask) return;
+
+    // Validate user permissions
+    if (!canUserDragToStatus(draggedTask.status, newStatus)) {
+      if (newStatus === "accepted" || newStatus === "completed") {
+        toast.error("این وضعیت فقط توسط مدیر قابل تنظیم است");
+      } else {
+        toast.error("شما نمی‌توانید تسک را به این وضعیت منتقل کنید");
+      }
+      handleDragEnd();
+      return;
+    }
+
+    if (draggedTask.status !== newStatus) {
+      // Animate the task out before updating
+      const taskElement = taskRefs.current[draggedTask._id];
+      if (taskElement) {
+        await new Promise<void>((resolve) => {
+          gsap.to(taskElement, {
+            opacity: 0,
+            y: -20,
+            duration: 0.2,
+            ease: "power2.in",
+            onComplete: resolve
+          });
+        });
+      }
+      
+      await updateTaskStatus(draggedTask._id, newStatus as TaskStatus);
+    }
+    handleDragEnd();
+  };
 
   // Task status columns configuration
   const statusColumns = [
@@ -139,6 +337,60 @@ const TasksOfTheUsers: React.FC = () => {
       textColor: "text-orange-400",
     },
     urgent: { label: "فوری", color: "bg-red-500", textColor: "text-red-400" },
+  };
+
+  // GSAP Animation Functions
+  const animateModal = (show: boolean) => {
+    if (modalRef.current) {
+      if (show) {
+        gsap.fromTo(modalRef.current, 
+          { scale: 0.8, opacity: 0 }, 
+          { scale: 1, opacity: 1, duration: 0.3, ease: "power2.out" }
+        );
+      } else {
+        gsap.to(modalRef.current, { 
+          scale: 0.8, 
+          opacity: 0, 
+          duration: 0.2, 
+          ease: "power2.in",
+          onComplete: () => setIsTaskModalOpen(false)
+        });
+      }
+    }
+  };
+
+  const animateTaskCards = () => {
+    Object.values(taskRefs.current).forEach((ref, index) => {
+      if (ref) {
+        gsap.fromTo(ref, 
+          { opacity: 0, y: 30 }, 
+          { 
+            opacity: 1, 
+            y: 0, 
+            duration: 0.5, 
+            delay: index * 0.1,
+            ease: "power2.out" 
+          }
+        );
+      }
+    });
+  };
+
+  const animateColumnCards = () => {
+    columnsRefs.current.forEach((ref: HTMLDivElement | null, index: number) => {
+      if (ref) {
+        gsap.fromTo(ref, 
+          { opacity: 0, scale: 0.95 }, 
+          { 
+            opacity: 1, 
+            scale: 1, 
+            duration: 0.4, 
+            delay: index * 0.1,
+            ease: "back.out(1.7)" 
+          }
+        );
+      }
+    });
   };
 
   // Extract user info from token
@@ -208,10 +460,47 @@ const TasksOfTheUsers: React.FC = () => {
     }
   };
 
-  // Fetch user tasks on component mount
+  // Fetch user tasks on component mount and animate columns
   useEffect(() => {
     fetchUserTasks();
   }, [userInfo]);
+
+  // Animate elements when tasks are loaded
+  useEffect(() => {
+    if (tasks.length > 0) {
+      // Animate all elements after tasks are loaded
+      setTimeout(() => {
+        animateColumnCards();
+        animateStatistics();
+        animateUpcomingTasks();
+        animateTaskCards();
+      }, 300);
+    } else {
+      // Even with no tasks, animate the structure
+      setTimeout(() => {
+        animateColumnCards();
+        animateStatistics();
+      }, 200);
+    }
+  }, [tasks]);
+
+  // Animate on component mount regardless of tasks
+  useEffect(() => {
+    setTimeout(() => {
+      animateColumnCards();
+      animateStatistics();
+      if (getUpcomingTasks().length > 0) {
+        animateUpcomingTasks();
+      }
+    }, 100);
+  }, []);
+
+  // Handle modal animations
+  useEffect(() => {
+    if (isTaskModalOpen && modalRef.current) {
+      animateModal(true);
+    }
+  }, [isTaskModalOpen]);
 
   // Update task status
   const updateTaskStatus = async (taskId: string, newStatus: TaskStatus) => {
@@ -430,11 +719,47 @@ const TasksOfTheUsers: React.FC = () => {
     );
   }
 
+
+
+
   return (
-    <div
-      className="min-h-screen bg-gradient-to-br from-[#030014] via-[#0A0A2E] to-[#030014] relative overflow-hidden"
-      dir="rtl"
-    >
+    <>
+      <style jsx>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes fadeInDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+      `}</style>
+      <div
+        className="min-h-screen bg-gradient-to-br from-[#030014] via-[#0A0A2E] to-[#030014] relative overflow-hidden"
+        dir="rtl"
+      >
       {/* Luxury Background Elements */}
       <div className="absolute inset-0 z-0">
         <div className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-r from-purple-500/20 to-violet-500/20 rounded-full filter blur-3xl"></div>
@@ -444,19 +769,30 @@ const TasksOfTheUsers: React.FC = () => {
 
       <div className="relative z-10 p-6">
         {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-3">
-            تسک‌های من
-          </h1>
-    
+        <div className="mb-8">
+          <div className="text-center mb-6">
+            <h1 className="text-4xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-3">
+              تسک‌های من
+            </h1>
+          </div>
+          
+          {/* Refresh Button */}
+          <div className="flex justify-end">
+            <button
+              onClick={fetchUserTasks}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 flex items-center gap-3 shadow-lg hover:shadow-blue-500/25"
+            >
+              <FaSyncAlt className="text-xl" />
+              بروزرسانی
+            </button>
+          </div>
         </div>
 
         {/* Upcoming Tasks Priority Box */}
         {getUpcomingTasks().length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8 bg-gradient-to-r from-red-500/20 via-orange-500/15 to-yellow-500/20 backdrop-blur-xl rounded-2xl border border-red-400/40 p-6 shadow-2xl shadow-red-500/10"
+          <div
+            ref={upcomingTasksRef}
+            className="mb-8 bg-gradient-to-r from-red-500/20 via-orange-500/15 to-yellow-500/20 backdrop-blur-xl rounded-2xl border border-red-400/40 p-6 shadow-2xl shadow-red-500/10 animate-[fadeInDown_0.6s_ease-out_forwards]"
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="bg-red-500 p-2 rounded-full">
@@ -486,11 +822,10 @@ const TasksOfTheUsers: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {getUpcomingTasks()
                 .slice(0, 6)
-                .map((task) => (
-                  <motion.div
+                .map((task, index) => (
+                  <div
                     key={task._id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    ref={(el) => { taskRefs.current[`upcoming-${task._id}`] = el; }}
                     onClick={() => handleTaskClick(task)}
                     className={`backdrop-blur-sm rounded-xl p-4 border transition-all duration-300 cursor-pointer ${
                       getDaysUntilDue(task.dueDate!) < 0
@@ -564,7 +899,7 @@ const TasksOfTheUsers: React.FC = () => {
                           : "در بررسی"}
                       </span>
                     </div>
-                  </motion.div>
+                  </div>
                 ))}
             </div>
 
@@ -575,21 +910,20 @@ const TasksOfTheUsers: React.FC = () => {
                 </span>
               </div>
             )}
-          </motion.div>
+          </div>
         )}
 
         {/* Task Statistics */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-          {statusColumns.map((column) => {
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8 overflow-x-auto" style={{ minHeight: '120px' }}>
+          {statusColumns.map((column, index) => {
             const columnTasks = getTasksByStatus(column.id);
             const Icon = column.icon;
             return (
-              <motion.div
+              <div
                 key={column.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className={`bg-gradient-to-br ${column.color} backdrop-blur-xl rounded-2xl p-4 border ${column.borderColor}`}
+                ref={(el) => { statisticsRefs.current[index] = el; }}
+                className={`bg-gradient-to-br ${column.color} backdrop-blur-xl rounded-2xl p-4 border ${column.borderColor} min-w-[150px] animate-[fadeInUp_0.6s_ease-out_forwards]`}
+                style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <div className="flex items-center justify-between mb-2">
                   <Icon className={`${column.iconColor} text-xl`} />
@@ -600,24 +934,30 @@ const TasksOfTheUsers: React.FC = () => {
                 <h3 className={`${column.iconColor} text-sm font-medium`}>
                   {column.title}
                 </h3>
-              </motion.div>
+              </div>
             );
           })}
         </div>
 
         {/* Kanban Board */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-5 gap-6">
-          {statusColumns.map((column) => {
+          {statusColumns.map((column, columnIndex) => {
             const columnTasks = getTasksByStatus(column.id);
             const Icon = column.icon;
 
             return (
-              <motion.div
+              <div
                 key={column.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
-                className={`bg-gradient-to-br ${column.color} backdrop-blur-xl h-70 overflow-y-auto scrollbar-luxury rounded-2xl border ${column.borderColor} p-4`}
+                ref={(el) => { columnsRefs.current[columnIndex] = el; }}
+                onDragOver={(e) => handleDragOver(e, column.id)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, column.id)}
+                className={`bg-gradient-to-br ${column.color} backdrop-blur-xl h-70 overflow-y-auto scrollbar-luxury rounded-2xl border ${
+                  dragOverColumn === column.id && draggedTask && canUserDragToStatus(draggedTask.status, column.id)
+                    ? 'border-purple-400 shadow-lg shadow-purple-400/25' 
+                    : column.borderColor
+                } p-4 transition-all duration-300 animate-[fadeIn_0.8s_ease-out_forwards]`}
+                style={{ animationDelay: `${columnIndex * 0.15}s` }}
               >
                 {/* Column Header */}
                 <div className="flex items-center justify-between mb-4">
@@ -634,15 +974,19 @@ const TasksOfTheUsers: React.FC = () => {
 
                 {/* Task Cards */}
                 <div className="space-y-3 max-h-[600px] ">
-                  {columnTasks.map((task) => (
-                    <motion.div
+                  {columnTasks.map((task, taskIndex) => (
+                    <div
                       key={task._id}
-                      layout
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
+                      ref={(el) => { taskRefs.current[task._id] = el; }}
+                      draggable={task.status !== "accepted" && task.status !== "completed"}
+                      onDragStart={() => handleDragStart(task)}
+                      onDragEnd={handleDragEnd}
                       onClick={() => handleTaskClick(task)}
-                      className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:border-white/40 transition-all duration-300 cursor-pointer hover:bg-white/15"
+                      className={`bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:border-white/40 transition-all duration-300 hover:bg-white/15 ${
+                        task.status === "accepted" || task.status === "completed" 
+                          ? "cursor-pointer" 
+                          : "cursor-move"
+                      }`}
                     >
                       {/* Task Header */}
                       <div className="flex items-start justify-between mb-3">
@@ -768,7 +1112,7 @@ const TasksOfTheUsers: React.FC = () => {
                           )}
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   ))}
 
                   {columnTasks.length === 0 && (
@@ -777,29 +1121,23 @@ const TasksOfTheUsers: React.FC = () => {
                     </div>
                   )}
                 </div>
-              </motion.div>
+              </div>
             );
           })}
         </div>
       </div>
 
       {/* Task Detail Modal */}
-      <AnimatePresence>
-        {isTaskModalOpen && selectedTask && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setIsTaskModalOpen(false)}
+      {isTaskModalOpen && selectedTask && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onClick={() => setIsTaskModalOpen(false)}
+        >
+          <div
+            ref={modalRef}
+            className="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-auto shadow-2xl border border-white/20"
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
-            <motion.div
-              className="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-auto shadow-2xl border border-white/20"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-            >
               <div className="p-6">
                 {/* Modal Header */}
                 <div className="flex items-center justify-between mb-6">
@@ -1243,10 +1581,9 @@ const TasksOfTheUsers: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
 
       {/* Video Upload Modal */}
       <VideoUploadModal
@@ -1259,7 +1596,8 @@ const TasksOfTheUsers: React.FC = () => {
         onSuccess={handleVideoUploadSuccess}
         onError={handleVideoUploadError}
       />
-    </div>
+      </div>
+    </>
   );
 };
 
