@@ -79,7 +79,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-500/15 to-cyan-500/15 rounded-full filter blur-3xl"></div>
       </div>
 
-      <div className="relative z-10 p-3 sm:p-6 flex items-center justify-center min-h-screen w-full">
+      <div className="relative z-10 p-3 sm:p-2 flex items-center justify-center md:min-h-screen w-full">
         <form
           onSubmit={onFormSubmit}
           className={`w-full max-w-sm sm:max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-5xl bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-2xl sm:rounded-3xl shadow-2xl border border-white/20 p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 ${className}`}
@@ -135,7 +135,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
               return (
                 <div key={field.name} className="space-y-2 sm:space-y-3">
                   {field.type !== "checkbox" && (
-                    <label className="block text-sm sm:text-base font-medium text-white/90 mb-2 sm:mb-3">
+                    <label className="block text-sm sm:text-base font-medium text-white/90 my-4 sm:mb-3">
                       {field.label}
                     </label>
                   )}
@@ -427,7 +427,10 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base bg-gradient-to-r from-purple-600 to-violet-600 text-white font-medium rounded-lg sm:rounded-xl hover:from-purple-700 hover:to-violet-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:gap-3 shadow-lg hover:shadow-purple-500/25 min-h-[48px] touch-manipulation"
               >
                 {isSubmitting && (
-                  <svg className="animate-spin h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 24 24">
+                  <svg
+                    className="animate-spin h-4 w-4 sm:h-5 sm:w-5"
+                    viewBox="0 0 24 24"
+                  >
                     <circle
                       className="opacity-25"
                       cx="12"
