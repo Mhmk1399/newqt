@@ -286,6 +286,8 @@ const UsersManagement: React.FC = () => {
           formTitle="ویرایش کاربر"
           formSubtitle="اطلاعات کاربر را ویرایش کنید"
           filterFields={filterFields}
+          onAdd={() => setIsAddModalOpen(true)}
+          addButtonText="افزودن کاربر"
         />
 
         <AnimatePresence>

@@ -155,6 +155,8 @@ export interface DynamicTableProps {
   onPageChange?: (page: number) => void;
   filterFields?: FilterField[];
   onFilterChange?: (filters: FilterValues) => void;
+  onAdd?: () => void;
+  addButtonText?: string;
 }
 export interface TableColumn {
   key: string;

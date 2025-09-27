@@ -8,6 +8,8 @@ import {
   IoTrashOutline,
   IoCheckmarkCircleOutline,
   IoCloseCircleOutline,
+  IoAdd,
+  IoRefresh,
 } from "react-icons/io5";
 import DatePicker, { DateObject } from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
@@ -28,6 +30,8 @@ import { useDynamicData } from "@/hooks/useDynamicData";
 interface DynamicTablePropsExtended extends DynamicTableProps {
   onToggleApproval?: (id: string, currentStatus: string) => Promise<void>;
   customActions?: (row: TableData) => React.ReactNode;
+  onAdd?: () => void;
+  addButtonText?: string;
 }
 
 const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
@@ -50,6 +54,8 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
   filterFields = [],
   onFilterChange,
   customActions,
+  onAdd,
+  addButtonText = "افزودن",
 }) => {
   const [sortConfig, setSortConfig] = useState<null | {
     key: string;
@@ -61,6 +67,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [filters, setFilters] = useState<FilterValues>({});
   const [currentPage, setCurrentPage] = useState(1);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   // Use SWR hook when endpoint is provided
   const {
@@ -515,8 +522,69 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
 
   return (
     <div className="w-full">
+      {/* Mobile Action Bar - Only show on small screens */}
       <motion.div
-        className="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 p-8 mb-8"
+        className="flex lg:hidden items-center justify-between gap-3 mb-6 p-4 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-2xl"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="flex items-center gap-3 flex-1">
+          {onAdd && (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onAdd}
+              className="flex items-center gap-2 px-4 py-3 bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 text-blue-200 rounded-xl hover:bg-blue-500/30 transition-all duration-300 font-medium text-sm"
+            >
+              <IoAdd className="text-lg" />
+              <span className="hidden sm:inline">{addButtonText}</span>
+            </motion.button>
+          )}
+          
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleRefresh}
+            className="flex items-center gap-2 px-4 py-3 bg-green-500/20 backdrop-blur-sm border border-green-400/30 text-green-200 rounded-xl hover:bg-green-500/30 transition-all duration-300 font-medium text-sm"
+          >
+            <IoRefresh className="text-lg" />
+            <span className="hidden sm:inline">بروزرسانی</span>
+          </motion.button>
+
+          {filterFields && filterFields.length > 0 && (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsFilterModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-3 bg-purple-500/20 backdrop-blur-sm border border-purple-400/30 text-purple-200 rounded-xl hover:bg-purple-500/30 transition-all duration-300 font-medium text-sm relative"
+            >
+              <BiFilterAlt className="text-lg" />
+              <span className="hidden sm:inline">فیلتر</span>
+              {Object.keys(filters).some((key) => filters[key]) && (
+                <div className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                  <span className="text-xs text-white font-bold">
+                    {Object.keys(filters).filter(key => filters[key]).length}
+                  </span>
+                </div>
+              )}
+            </motion.button>
+          )}
+        </div>
+
+        <motion.div
+          className="flex items-center px-3 py-3 bg-purple-500/20 text-purple-200 rounded-xl text-xs font-medium border border-purple-400/30"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          {filteredData.length}
+        </motion.div>
+      </motion.div>
+
+      {/* Desktop Filter Bar - Only show on large screens */}
+      <motion.div
+        className="hidden lg:block bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 p-8 mb-8"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
@@ -550,6 +618,19 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3, delay: 0.1 }}
           >
+            {onAdd && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                onClick={onAdd}
+                className="px-6 py-3 bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 text-blue-200 rounded-xl hover:bg-blue-500/30 transition-all duration-300 font-medium text-sm flex items-center gap-2"
+              >
+                <IoAdd className="text-lg" />
+                <span>{addButtonText}</span>
+              </motion.button>
+            )}
+
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -557,7 +638,8 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
               onClick={handleRefresh}
               className="px-6 py-3 bg-green-500/20 backdrop-blur-sm border border-green-400/30 text-green-200 rounded-xl hover:bg-green-500/30 transition-all duration-300 font-medium text-sm flex items-center gap-2"
             >
-              <span className="hidden sm:inline">بروزرسانی</span>
+              <IoRefresh className="text-lg" />
+              <span>بروزرسانی</span>
             </motion.button>
 
             <AnimatePresence>
@@ -573,7 +655,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                   className="px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white/90 rounded-xl hover:bg-white/20 transition-all duration-300 font-medium text-sm flex items-center gap-2"
                 >
                   <IoClose className="text-lg" />
-                  <span className="hidden sm:inline">پاک کردن</span>
+                  <span>پاک کردن</span>
                 </motion.button>
               )}
             </AnimatePresence>
@@ -584,10 +666,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3, delay: 0.2 }}
             >
-              <span className="hidden sm:inline">
-                {filteredData.length} نتیجه
-              </span>
-              <span className="sm:hidden">{filteredData.length}</span>
+              {filteredData.length} نتیجه
             </motion.div>
           </motion.div>
         </div>
@@ -728,22 +807,23 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
 
       {pagination && (
         <motion.div
-          className="flex flex-col sm:flex-row items-center justify-between mt-8 px-6 py-4 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl gap-4 sm:gap-0"
+          className="flex items-center justify-between mt-8 px-3 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl gap-2 sm:gap-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <div className="flex items-center text-xs sm:text-sm font-medium text-white/80">
-            <span className="bg-white/10 backdrop-blur-sm px-3 sm:px-4 py-2 rounded-full text-center border border-white/20">
-              <span className="hidden sm:inline">
+          {/* Mobile-optimized info section */}
+          <div className="flex items-center text-xs font-medium text-white/80 min-w-0 flex-shrink">
+            <span className="bg-white/10 backdrop-blur-sm px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-center border border-white/20 truncate">
+              <span className="hidden md:inline">
                 نمایش{" "}
-                <span className="font-bold text-blue-600">
+                <span className="font-bold text-blue-400">
                   {((pagination?.currentPage || 1) - 1) *
                     (pagination?.itemsPerPage || 10) +
                     1}
                 </span>{" "}
                 تا{" "}
-                <span className="font-bold text-blue-600">
+                <span className="font-bold text-blue-400">
                   {Math.min(
                     (pagination?.currentPage || 1) *
                       (pagination?.itemsPerPage || 10),
@@ -751,13 +831,13 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                   )}
                 </span>{" "}
                 از{" "}
-                <span className="font-bold text-green-600">
+                <span className="font-bold text-green-400">
                   {pagination?.totalItems || 0}
                 </span>{" "}
                 نتیجه
               </span>
-              <span className="sm:hidden">
-                <span className="font-bold text-blue-600">
+              <span className="md:hidden text-xs">
+                <span className="font-bold text-blue-400">
                   {((pagination?.currentPage || 1) - 1) *
                     (pagination?.itemsPerPage || 10) +
                     1}
@@ -767,15 +847,17 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                       (pagination?.itemsPerPage || 10),
                     pagination?.totalItems || 0
                   )}
-                </span>{" "}
-                از{" "}
-                <span className="font-bold text-green-600">
+                </span>
+                {" / "}
+                <span className="font-bold text-green-400">
                   {pagination?.totalItems || 0}
                 </span>
               </span>
             </span>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
+
+          {/* Compact pagination controls */}
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <motion.button
               onClick={() => {
                 const newPage = (pagination?.currentPage || 1) - 1;
@@ -788,17 +870,20 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
               disabled={!pagination?.hasPrevPage}
               whileHover={pagination?.hasPrevPage ? { scale: 1.05 } : {}}
               whileTap={pagination?.hasPrevPage ? { scale: 0.95 } : {}}
-              className={`px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium rounded-xl transition-all duration-300 ${
+              className={`px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium rounded-lg transition-all duration-300 ${
                 pagination?.hasPrevPage
-                  ? "bg-gradient-to-r from-purple-500 to-violet-500 text-white hover:from-purple-600 hover:to-violet-600 shadow-lg hover:shadow-purple-500/25"
+                  ? "bg-gradient-to-r from-purple-500 to-violet-500 text-white hover:from-purple-600 hover:to-violet-600 shadow-md"
                   : "bg-white/10 text-white/40 cursor-not-allowed border border-white/20"
               }`}
             >
-              قبلی
+              <span className="hidden sm:inline">قبلی</span>
+              <span className="sm:hidden">‹</span>
             </motion.button>
-            <div className="px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-bold bg-gradient-to-r from-purple-600 to-violet-600 text-white rounded-xl shadow-lg border border-purple-400/30">
+
+            <div className="px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-bold bg-gradient-to-r from-purple-600 to-violet-600 text-white rounded-lg shadow-md border border-purple-400/30 min-w-[50px] sm:min-w-[60px] text-center">
               {pagination?.currentPage || 1} / {pagination?.totalPages || 1}
             </div>
+
             <motion.button
               onClick={() => {
                 const newPage = (pagination?.currentPage || 1) + 1;
@@ -811,13 +896,14 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
               disabled={!pagination?.hasNextPage}
               whileHover={pagination?.hasNextPage ? { scale: 1.05 } : {}}
               whileTap={pagination?.hasNextPage ? { scale: 0.95 } : {}}
-              className={`px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium rounded-xl transition-all duration-300 ${
+              className={`px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium rounded-lg transition-all duration-300 ${
                 pagination?.hasNextPage
-                  ? "bg-gradient-to-r from-purple-500 to-violet-500 text-white hover:from-purple-600 hover:to-violet-600 shadow-lg hover:shadow-purple-500/25"
+                  ? "bg-gradient-to-r from-purple-500 to-violet-500 text-white hover:from-purple-600 hover:to-violet-600 shadow-md"
                   : "bg-white/10 text-white/40 cursor-not-allowed border border-white/20"
               }`}
             >
-              بعدی
+              <span className="hidden sm:inline">بعدی</span>
+              <span className="sm:hidden">›</span>
             </motion.button>
           </div>
         </motion.div>
@@ -1098,6 +1184,118 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                 >
                   حذف
                 </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Filter Modal */}
+      <AnimatePresence>
+        {isFilterModalOpen && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gradient-to-br from-[#030014] via-[#0A0A2E] to-[#030014]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsFilterModalOpen(false)}
+          >
+            {/* Luxury Background Elements */}
+            <div className="absolute inset-0 z-0">
+              <div className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-r from-purple-500/20 to-violet-500/20 rounded-full filter blur-3xl"></div>
+              <div className="absolute bottom-32 right-32 w-80 h-80 bg-gradient-to-r from-pink-500/20 to-rose-500/20 rounded-full filter blur-3xl"></div>
+            </div>
+
+            <motion.div
+              className="relative z-10 bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 w-11/12 max-w-2xl p-8 max-h-[90vh] overflow-y-auto"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                boxShadow:
+                  "0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+              }}
+            >
+              {/* Decorative corner elements */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-purple-500/20 to-transparent rounded-tr-3xl"></div>
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-pink-500/20 to-transparent rounded-bl-3xl"></div>
+
+              <div className="relative z-10">
+                <div className="flex justify-between items-center border-b border-white/20 pb-4 mb-6">
+                  <div className="flex items-center gap-3">
+                    <BiFilterAlt className="text-purple-400 text-2xl" />
+                    <h3 className="text-2xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text">
+                      فیلترها
+                    </h3>
+                  </div>
+                  <button onClick={() => setIsFilterModalOpen(false)}>
+                    <IoClose
+                      size={24}
+                      className="text-white/70 hover:text-white transition-colors"
+                    />
+                  </button>
+                </div>
+
+                <div className="space-y-6 scrollbar-luxury">
+                  {filterFields &&
+                    filterFields.map((field) => (
+                      <motion.div
+                        key={field.key}
+                        className="relative"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <label className="block text-sm font-medium text-white/90 mb-3">
+                          {field.label}
+                        </label>
+                        {renderFilterField(field)}
+                      </motion.div>
+                    ))}
+                </div>
+
+                <div className="flex gap-3 mt-8 pt-6 border-t border-white/20">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setIsFilterModalOpen(false)}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-500 to-violet-500 text-white rounded-xl hover:from-purple-600 hover:to-violet-600 transition-all duration-300 font-medium"
+                  >
+                    اعمال فیلتر
+                  </motion.button>
+                  
+                  <AnimatePresence>
+                    {Object.keys(filters).some((key) => filters[key]) && (
+                      <motion.button
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => {
+                          clearAllFilters();
+                          setIsFilterModalOpen(false);
+                        }}
+                        className="px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white/90 rounded-xl hover:bg-white/20 transition-all duration-300 font-medium flex items-center gap-2"
+                      >
+                        <IoClose className="text-lg" />
+                        پاک کردن
+                      </motion.button>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <motion.div
+                  className="flex items-center justify-center gap-2 mt-4 px-4 py-3 bg-purple-500/20 text-purple-200 rounded-xl text-sm font-medium border border-purple-400/30"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                >
+                  <BiSearch className="text-lg" />
+                  <span>{filteredData.length} نتیجه یافت شد</span>
+                </motion.div>
               </div>
             </motion.div>
           </motion.div>
