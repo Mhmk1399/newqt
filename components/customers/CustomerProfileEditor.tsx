@@ -15,6 +15,7 @@ import {
 
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import { JwtPayload } from "jsonwebtoken";
 
 interface DecodedToken {
   userId: string;
@@ -151,7 +152,19 @@ const CustomerProfileEditor: React.FC = () => {
         const result = await response.json();
 
         if (result.success && result.data) {
-          setProfile(result.data);
+          // Ensure all string fields have default empty string values and preserve _id
+          setProfile({
+            ...result.data,
+            _id: result.data._id, // Preserve the MongoDB _id
+            name: result.data.name || "",
+            phoneNumber: result.data.phoneNumber || "",
+            businessName: result.data.businessName || "",
+            businessScale: result.data.businessScale || "",
+            address: result.data.address || "",
+            website: result.data.website || "",
+            isActive: result.data.isActive ?? true,
+            isVip: result.data.isVip ?? false,
+          });
           setProfileExists(true);
         } else {
           // Profile doesn't exist, initialize with token data
@@ -199,13 +212,53 @@ const CustomerProfileEditor: React.FC = () => {
 
     setSaving(true);
     try {
+      console.log("Profile state before save:", profile); // Debug log
       const token =
         localStorage.getItem("userToken") || localStorage.getItem("token");
 
       const method = profileExists ? "PUT" : "POST";
       const url = profileExists
-        ? `/api/customers?id=${profile._id}`
+        ? `/api/customers`
         : "/api/customers";
+
+      // Prepare the data payload
+      let payload: Record<string, unknown>;
+      
+      if (profileExists) {
+        // Clean up payload for update - only send fields that have values or are boolean
+        const cleanPayload = Object.entries(profile).reduce((acc, [key, value]) => {
+          if (key === '_id') return acc; // Skip _id
+          if (typeof value === 'boolean' || (value && value.toString().trim() !== '')) {
+            acc[key] = value;
+          }
+          return acc;
+        }, {} as Record<string, unknown>);
+        
+        payload = { 
+          ...cleanPayload,
+          id: profile._id || userInfo?.userId // Backend expects 'id', not '_id'
+        };
+        
+        // Validate required fields for update
+        if (!payload.id) {
+          throw new Error("Profile ID is missing for update operation");
+        }
+      } else {
+        payload = { 
+          ...profile, 
+          userId: userInfo?.userId 
+        };
+        
+        // Remove _id from payload for new profiles
+        delete payload._id;
+        
+        // Validate required fields for creation
+        if (!payload.userId) {
+          throw new Error("User ID is missing for new profile creation");
+        }
+      }
+
+      console.log("API Request:", { method, url, payload, profileExists, profileId: profile._id }); // Debug log
 
       const response = await fetch(url, {
         method,
@@ -213,18 +266,58 @@ const CustomerProfileEditor: React.FC = () => {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(profile),
+        body: JSON.stringify(payload),
       });
 
       const result = await response.json();
+      console.log("API Response:", { status: response.status, result }); // Debug log
 
-      if (!result.success) {
-        throw new Error(result.message || "Failed to save profile");
+      if (!response.ok || !result.success) {
+        const errorMessage = result.message || result.error || `HTTP ${response.status}: ${response.statusText}`;
+        
+        // Log detailed error information
+        console.error("API Error Details:", {
+          status: response.status,
+          statusText: response.statusText,
+          result,
+          errorMessage,
+          method,
+          url,
+          payload,
+          validationErrors: result.errors // MongoDB validation errors
+        });
+        
+        // Show more specific error message
+        if (result.errors) {
+          const validationMessages = Object.values(result.errors).map((err: unknown) => {
+            if (typeof err === 'object' && err !== null && 'message' in err) {
+              return (err as { message: string }).message;
+            }
+            return String(err);
+          }).join(', ');
+          throw new Error(`Validation Error: ${validationMessages}`);
+        }
+        
+        throw new Error(errorMessage);
       }
 
-      if (!profileExists) {
-        setProfile(result.data);
-        setProfileExists(true);
+      // Update profile state with the response data
+      if (result.data) {
+        setProfile({
+          ...result.data,
+          name: result.data.name || "",
+          phoneNumber: result.data.phoneNumber || "",
+          businessName: result.data.businessName || "",
+          businessScale: result.data.businessScale || "",
+          address: result.data.address || "",
+          website: result.data.website || "",
+          isActive: result.data.isActive ?? true,
+          isVip: result.data.isVip ?? false,
+        });
+        
+        if (!profileExists) {
+          setProfileExists(true);
+        }
       }
 
       setIsEditing(false);
@@ -387,7 +480,7 @@ const CustomerProfileEditor: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={profile.name}
+                    value={profile.name || ""}
                     onChange={(e) => handleInputChange("name", e.target.value)}
                     disabled={!isEditing}
                     className={`w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 transition-all ${
@@ -405,7 +498,7 @@ const CustomerProfileEditor: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={profile.phoneNumber}
+                    value={profile.phoneNumber || ""}
                     disabled
                     className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white/60 cursor-not-allowed"
                     placeholder="شماره تلفن"
@@ -430,7 +523,7 @@ const CustomerProfileEditor: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={profile.businessName}
+                    value={profile.businessName || ""}
                     onChange={(e) =>
                       handleInputChange("businessName", e.target.value)
                     }
@@ -486,7 +579,7 @@ const CustomerProfileEditor: React.FC = () => {
                     آدرس
                   </label>
                   <textarea
-                    value={profile.address}
+                    value={profile.address || ""}
                     onChange={(e) =>
                       handleInputChange("address", e.target.value)
                     }
@@ -505,7 +598,7 @@ const CustomerProfileEditor: React.FC = () => {
                   </label>
                   <input
                     type="url"
-                    value={profile.website}
+                    value={profile.website || ""}
                     onChange={(e) =>
                       handleInputChange("website", e.target.value)
                     }
