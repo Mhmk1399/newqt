@@ -116,8 +116,8 @@ const CategoriesManagement: React.FC = () => {
       
       <div className="relative z-10 p-6">
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-3">مدیریت دستهبندیها</h1>
-          <p className="text-white/70 text-lg">مدیریت کامل دستهبندیها با امکان جستجو، فیلتر، ویرایش و حذف</p>
+          <h1 className="text-4xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-3">مدیریت دسته بندی ها</h1>
+          <p className="text-white/70 text-lg">مدیریت کامل دسته بندی ها با امکان جستجو، فیلتر، ویرایش و حذف</p>
         </div>
 
         <div className="mb-6 flex justify-end">

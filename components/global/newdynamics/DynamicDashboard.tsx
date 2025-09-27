@@ -188,19 +188,19 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
       },
       {
         key: "categories",
-        label: "مدیریت دستهبندیها",
+        label: "مدیریت دسته بندی ها",
         icon: <IoGrid />,
         component: CategoriesManagement,
       },
       {
         key: "services",
-        label: "مدیریت سرویسها",
+        label: "مدیریت سرویس ها",
         icon: <IoBusinessOutline />,
         component: ServicesManagement,
       },
       {
         key: "serviceRequests",
-        label: "درخواستهای سرویس",
+        label: "درخواست های سرویس",
         icon: <IoDocumentText />,
         component: ServiceRequestsManagement,
       },
@@ -230,7 +230,7 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
       },
       {
         key: "contactRequests",
-        label: "درخواستهای تماس",
+        label: "درخواست های تماس",
         icon: <IoCall />,
         component: ContactRequestsManagement,
       },

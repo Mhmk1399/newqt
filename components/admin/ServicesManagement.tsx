@@ -198,10 +198,10 @@ const ServicesManagement: React.FC = () => {
       <div className="relative z-10 p-6">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-3">
-            مدیریت سرویسها
+            مدیریت سرویس ها
           </h1>
           <p className="text-white/70 text-lg">
-            مدیریت کامل سرویسها با امکان جستجو، فیلتر، ویرایش و حذف
+            مدیریت کامل سرویس ها با امکان جستجو، فیلتر، ویرایش و حذف
           </p>
         </div>
 

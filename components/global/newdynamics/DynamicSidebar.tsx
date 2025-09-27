@@ -231,15 +231,6 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
                     <h1 className="text-lg font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text">
                       داشبورد {userRole === "admin" ? "مدیریت" : userRole}
                     </h1>
-                    {onLogout && (
-                      <button
-                        onClick={onLogout}
-                        className="p-2 rounded-xl bg-red-500/20 backdrop-blur-sm border border-red-400/30 text-red-400 hover:bg-red-500/30 hover:text-red-300 transition-all duration-300"
-                        title="خروج از حساب کاربری"
-                      >
-                        <IoLogOut size={18} />
-                      </button>
-                    )}
                   </div>
                 )}
               </div>
@@ -251,7 +242,7 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
                 <button
                   key={item.key}
                   onClick={() => handleItemClick(item)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-300 ${
+                  className={`w-full flex items-center gap-6 p-3 rounded-xl transition-all duration-300 ${
                     activeItem === item.key
                       ? "bg-purple-500/20 text-purple-200 border border-purple-400/30"
                       : "bg-white/10 text-white/90 border border-white/20 hover:bg-white/20"

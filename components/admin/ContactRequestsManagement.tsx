@@ -184,8 +184,8 @@ const ContactRequestsManagement: React.FC = () => {
       
       <div className="relative z-10 p-6">
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-3">مدیریت درخواستهای تماس</h1>
-          <p className="text-white/70 text-lg">مدیریت کامل درخواستهای تماس با امکان جستجو، فیلتر، ویرایش و حذف</p>
+          <h1 className="text-4xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-3">مدیریت درخواست های تماس</h1>
+          <p className="text-white/70 text-lg">مدیریت کامل درخواست های تماس با امکان جستجو، فیلتر، ویرایش و حذف</p>
         </div>
 
         <div className="mb-6 flex justify-end">
