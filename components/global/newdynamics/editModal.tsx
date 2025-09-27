@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useDynamicForm } from "./forms";
 import { ApiError, ApiResponse, FormField, FormValues } from "@/types/dynamicTypes/types";
 import { formatNumber } from "@/utilities/numberComma";
+import { IoClose } from "react-icons/io5";
 
 export interface DynamicUpdateFormProps {
   title?: string;
@@ -146,11 +147,21 @@ const DynamicUpdateForm: React.FC<DynamicUpdateFormProps> = ({
   return (
     <form
       onSubmit={onFormSubmit}
-      className={`w-full max-w-sm sm:max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto max-h-[70vh] sm:max-h-[80vh] overflow-auto bg-transparent p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 scrollbar-luxury ${className}`}
+      className={`relative w-full max-w-sm sm:max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto max-h-[70vh] sm:max-h-[80vh] overflow-auto bg-transparent p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 scrollbar-luxury ${className}`}
       dir="rtl"
     >
+      {/* Close Button */}
+      <button
+        type="button"
+        onClick={onCancel}
+        className="absolute top-4 left-4 z-10 p-2 sm:p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg sm:rounded-xl text-white/70 hover:text-white hover:bg-red-500/20 hover:border-red-400/30 transition-all duration-300 group"
+        title="بستن"
+      >
+        <IoClose size={20} className="group-hover:text-red-400" />
+      </button>
+
       {title && (
-        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-center mb-2">{title}</h2>
+        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-center mb-2 pt-8 sm:pt-6">{title}</h2>
       )}
       {subtitle && <p className="text-white/70 text-sm sm:text-base text-center mb-4 sm:mb-6 lg:mb-8">{subtitle}</p>}
 

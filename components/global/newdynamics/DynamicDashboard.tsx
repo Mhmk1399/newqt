@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import DynamicSidebar from "./DynamicSidebar";
-import { getUserFromToken, DecodedToken } from "@/utilities/jwtUtils";
+import { getUserFromToken, DecodedToken, logoutUser } from "@/utilities/jwtUtils";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import {
@@ -23,6 +23,7 @@ import {
   IoHome,
   IoChevronBack,
   IoSpeedometer,
+  IoLogOut,
 } from "react-icons/io5";
 
 // Import all admin components
@@ -347,6 +348,17 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
     setActiveKey(key);
   };
 
+  const handleLogout = () => {
+    try {
+      logoutUser();
+      toast.success("با موفقیت خارج شدید");
+      router.push("/auth");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("خطا در خروج از حساب کاربری");
+    }
+  };
+
   // Get current active item info for breadcrumbs
   const getCurrentItem = () => {
     if (!currentConfig || !activeKey) return null;
@@ -408,6 +420,16 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
             <span className="text-white/70">خوش آمدید</span>
             <span className="text-white font-medium mr-2">{userInfo?.name}</span>
           </div>
+          
+          {/* Exit Button */}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-3 py-2 bg-red-500/20 rounded-lg border border-red-400/30 hover:bg-red-500/30 hover:border-red-400/50 transition-all duration-300 group"
+            title="خروج از حساب کاربری"
+          >
+            <IoLogOut className="text-red-400 group-hover:text-red-300" />
+            <span className="text-red-300 group-hover:text-red-200">خروج</span>
+          </button>
         </div>
       </div>
     );
@@ -429,15 +451,19 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
             )}
           </div>
           
-          {/* Mobile Home Button */}
-          <button
-            onClick={() => router.push('/')}
-            className="flex items-center gap-1 px-2 py-1 bg-white/10 rounded-lg border border-white/20 hover:bg-white/15 transition-all duration-300"
-            title="بازگشت به صفحه اصلی"
-          >
-            <IoHome className="text-blue-400 text-sm" />
-            <span className="text-white/90 text-xs">خانه</span>
-          </button>
+          {/* Mobile Buttons */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push('/')}
+              className="flex items-center gap-1 px-2 py-1 bg-white/10 rounded-lg border border-white/20 hover:bg-white/15 transition-all duration-300"
+              title="بازگشت به صفحه اصلی"
+            >
+              <IoHome className="text-blue-400 text-sm" />
+              <span className="text-white/90 text-xs">خانه</span>
+            </button>
+            
+            
+          </div>
         </div>
       </div>
     );
@@ -481,6 +507,7 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
         userRole={userInfo?.name || userRole}
         onItemSelect={handleItemSelect}
         activeItem={activeKey}
+        onLogout={handleLogout}
       />
 
       {/* Main Content */}
@@ -494,7 +521,7 @@ const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
         <div className="w-full">
           {/* Breadcrumbs */}
           {!isMobile ? (
-            <div className="sticky top-0 z-30 bg-gradient-to-r from-[#030014]/95 via-[#0A0A2E]/95 to-[#030014]/95 backdrop-blur-xl border-b border-white/10 px-6 py-4">
+            <div className="sticky top-0 z-20 bg-gradient-to-r from-[#030014]/95 via-[#0A0A2E]/95 to-[#030014]/95 backdrop-blur-xl border-b border-white/10 px-6 py-4">
               <Breadcrumbs />
             </div>
           ) : (

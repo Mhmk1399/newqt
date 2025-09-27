@@ -94,3 +94,30 @@ export const getAuthHeader = (): string | null => {
   const token = localStorage.getItem("userToken") || localStorage.getItem("token");
   return token ? `Bearer ${token}` : null;
 };
+
+/**
+ * Logout user by removing tokens and clearing localStorage
+ * @returns void
+ */
+export const logoutUser = (): void => {
+  try {
+    // Remove JWT tokens
+    localStorage.removeItem("userToken");
+    localStorage.removeItem("token");
+    
+    // Clear any other user-related data from localStorage
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.includes('user') || key.includes('auth') || key.includes('session'))) {
+        keysToRemove.push(key);
+      }
+    }
+    
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    console.log('User logged out successfully');
+  } catch (error) {
+    console.error('Error during logout:', error);
+  }
+};
