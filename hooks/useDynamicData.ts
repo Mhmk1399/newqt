@@ -19,6 +19,17 @@ interface ApiResponse {
     total: number;
     limit: number;
   };
+  // Alternative pagination formats
+  meta?: {
+    currentPage: number;
+    totalPages: number;
+    totalCount: number;
+    perPage: number;
+  };
+  totalPages?: number;
+  currentPage?: number;
+  totalItems?: number;
+  itemsPerPage?: number;
 }
 
 const fetcher = async (url: string): Promise<ApiResponse> => {
@@ -76,16 +87,54 @@ export const useDynamicData = ({ endpoint, filters = {}, page = 1, limit = 10 }:
     }
   );
 
+  // Debug logging
+  if (data) {
+    console.log('API Response:', data);
+    console.log('Has pagination:', !!data.pagination);
+    if (data.pagination) {
+      console.log('Pagination details:', data.pagination);
+    }
+  }
+
+  // Extract pagination data from different possible formats
+  const extractPagination = (apiData: ApiResponse) => {
+    if (apiData.pagination) {
+      // Standard format
+      return {
+        currentPage: apiData.pagination.page,
+        totalPages: apiData.pagination.pages,
+        totalItems: apiData.pagination.total,
+        itemsPerPage: apiData.pagination.limit,
+        hasNextPage: apiData.pagination.page < apiData.pagination.pages,
+        hasPrevPage: apiData.pagination.page > 1,
+      };
+    } else if (apiData.meta) {
+      // Meta format
+      return {
+        currentPage: apiData.meta.currentPage,
+        totalPages: apiData.meta.totalPages,
+        totalItems: apiData.meta.totalCount,
+        itemsPerPage: apiData.meta.perPage,
+        hasNextPage: apiData.meta.currentPage < apiData.meta.totalPages,
+        hasPrevPage: apiData.meta.currentPage > 1,
+      };
+    } else if (apiData.totalPages !== undefined) {
+      // Direct properties format
+      return {
+        currentPage: apiData.currentPage || 1,
+        totalPages: apiData.totalPages,
+        totalItems: apiData.totalItems || 0,
+        itemsPerPage: apiData.itemsPerPage || 10,
+        hasNextPage: (apiData.currentPage || 1) < apiData.totalPages,
+        hasPrevPage: (apiData.currentPage || 1) > 1,
+      };
+    }
+    return null;
+  };
+
   return {
     data: data?.data || [],
-    pagination: data?.pagination ? {
-      currentPage: data.pagination.page,
-      totalPages: data.pagination.pages,
-      totalItems: data.pagination.total,
-      itemsPerPage: data.pagination.limit,
-      hasNextPage: data.pagination.page < data.pagination.pages,
-      hasPrevPage: data.pagination.page > 1,
-    } : null,
+    pagination: data ? extractPagination(data) : null,
     loading: isLoading,
     error,
     mutate,

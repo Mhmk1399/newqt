@@ -100,6 +100,13 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
   const loading = endpoint ? swrLoading : propLoading;
   const pagination = endpoint ? swrPagination : propPagination;
 
+  // Debug logging for pagination
+  useEffect(() => {
+    if (endpoint && swrPagination) {
+      console.log('Pagination data:', swrPagination);
+    }
+  }, [endpoint, swrPagination]);
+
   // GSAP Animation functions
   const animateIn = (element: HTMLElement, delay = 0) => {
     gsap.fromTo(element, 
@@ -644,7 +651,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
       {/* Mobile Action Bar - Only show on small screens */}
       <div
         ref={mobileActionBarRef}
-        className="flex lg:hidden items-center justify-between gap-3 mb-6 p-4 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-2xl opacity-0"
+        className="flex lg:hidden items-center justify-between gap-3 mb-6 p-4 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-2xl"
       >
         <div className="flex items-center gap-3 flex-1">
           {onAdd && (
@@ -697,7 +704,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
       {/* Desktop Filter Bar - Only show on large screens */}
       <div
         ref={desktopFilterBarRef}
-        className="hidden lg:block bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 p-8 mb-8 opacity-0"
+        className="hidden lg:block bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 p-8 mb-8"
         style={{
           boxShadow:
             "0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
@@ -896,10 +903,10 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
         </table>
       </div>
 
-      {pagination && (
+      {(pagination || (data && data.length > 0)) && (
         <div
           ref={paginationRef}
-          className="flex items-center justify-between mt-8 px-3 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl gap-2 sm:gap-4 opacity-0"
+          className="flex items-center justify-between mt-8 px-3 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl gap-2 sm:gap-4"
         >
           {/* Mobile-optimized info section */}
           <div className="flex items-center text-xs font-medium text-white/80 min-w-0 flex-shrink">
@@ -907,94 +914,106 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
               <span className="hidden md:inline">
                 نمایش{" "}
                 <span className="font-bold text-blue-400">
-                  {((pagination?.currentPage || 1) - 1) *
-                    (pagination?.itemsPerPage || 10) +
-                    1}
+                  {pagination 
+                    ? ((pagination.currentPage || 1) - 1) * (pagination.itemsPerPage || 10) + 1
+                    : 1
+                  }
                 </span>{" "}
                 تا{" "}
                 <span className="font-bold text-blue-400">
-                  {Math.min(
-                    (pagination?.currentPage || 1) *
-                      (pagination?.itemsPerPage || 10),
-                    pagination?.totalItems || 0
-                  )}
+                  {pagination 
+                    ? Math.min(
+                        (pagination.currentPage || 1) * (pagination.itemsPerPage || 10),
+                        pagination.totalItems || 0
+                      )
+                    : filteredData.length
+                  }
                 </span>{" "}
                 از{" "}
                 <span className="font-bold text-green-400">
-                  {pagination?.totalItems || 0}
+                  {pagination?.totalItems || filteredData.length}
                 </span>{" "}
                 نتیجه
               </span>
               <span className="md:hidden text-xs">
                 <span className="font-bold text-blue-400">
-                  {((pagination?.currentPage || 1) - 1) *
-                    (pagination?.itemsPerPage || 10) +
-                    1}
+                  {pagination 
+                    ? ((pagination.currentPage || 1) - 1) * (pagination.itemsPerPage || 10) + 1
+                    : 1
+                  }
                   -
-                  {Math.min(
-                    (pagination?.currentPage || 1) *
-                      (pagination?.itemsPerPage || 10),
-                    pagination?.totalItems || 0
-                  )}
+                  {pagination 
+                    ? Math.min(
+                        (pagination.currentPage || 1) * (pagination.itemsPerPage || 10),
+                        pagination.totalItems || 0
+                      )
+                    : filteredData.length
+                  }
                 </span>
                 {" / "}
                 <span className="font-bold text-green-400">
-                  {pagination?.totalItems || 0}
+                  {pagination?.totalItems || filteredData.length}
                 </span>
               </span>
             </span>
           </div>
 
           {/* Compact pagination controls */}
-          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-            <button
-              onClick={() => {
-                const newPage = (pagination?.currentPage || 1) - 1;
-                if (endpoint) {
-                  setCurrentPage(newPage);
-                } else {
-                  onPageChange?.(newPage);
-                }
-              }}
-              disabled={!pagination?.hasPrevPage}
-              onMouseEnter={(e) => pagination?.hasPrevPage && animateButtonHover(e.currentTarget)}
-              onMouseLeave={(e) => pagination?.hasPrevPage && animateButtonLeave(e.currentTarget)}
-              className={`px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium rounded-lg transition-all duration-300 ${
-                pagination?.hasPrevPage
-                  ? "bg-gradient-to-r from-purple-500 to-violet-500 text-white hover:from-purple-600 hover:to-violet-600 shadow-md"
-                  : "bg-white/10 text-white/40 cursor-not-allowed border border-white/20"
-              }`}
-            >
-              <span className="hidden sm:inline">قبلی</span>
-              <span className="sm:hidden">‹</span>
-            </button>
+          {pagination ? (
+            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+              <button
+                onClick={() => {
+                  const newPage = (pagination?.currentPage || 1) - 1;
+                  if (endpoint) {
+                    setCurrentPage(newPage);
+                  } else {
+                    onPageChange?.(newPage);
+                  }
+                }}
+                disabled={!pagination?.hasPrevPage}
+                onMouseEnter={(e) => pagination?.hasPrevPage && animateButtonHover(e.currentTarget)}
+                onMouseLeave={(e) => pagination?.hasPrevPage && animateButtonLeave(e.currentTarget)}
+                className={`px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium rounded-lg transition-all duration-300 ${
+                  pagination?.hasPrevPage
+                    ? "bg-gradient-to-r from-purple-500 to-violet-500 text-white hover:from-purple-600 hover:to-violet-600 shadow-md"
+                    : "bg-white/10 text-white/40 cursor-not-allowed border border-white/20"
+                }`}
+              >
+                <span className="hidden sm:inline">قبلی</span>
+                <span className="sm:hidden">‹</span>
+              </button>
 
-            <div className="px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-bold bg-gradient-to-r from-purple-600 to-violet-600 text-white rounded-lg shadow-md border border-purple-400/30 min-w-[50px] sm:min-w-[60px] text-center">
-              {pagination?.currentPage || 1} / {pagination?.totalPages || 1}
+              <div className="px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-bold bg-gradient-to-r from-purple-600 to-violet-600 text-white rounded-lg shadow-md border border-purple-400/30 min-w-[50px] sm:min-w-[60px] text-center">
+                {pagination?.currentPage || 1} / {pagination?.totalPages || 1}
+              </div>
+
+              <button
+                onClick={() => {
+                  const newPage = (pagination?.currentPage || 1) + 1;
+                  if (endpoint) {
+                    setCurrentPage(newPage);
+                  } else {
+                    onPageChange?.(newPage);
+                  }
+                }}
+                disabled={!pagination?.hasNextPage}
+                onMouseEnter={(e) => pagination?.hasNextPage && animateButtonHover(e.currentTarget)}
+                onMouseLeave={(e) => pagination?.hasNextPage && animateButtonLeave(e.currentTarget)}
+                className={`px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium rounded-lg transition-all duration-300 ${
+                  pagination?.hasNextPage
+                    ? "bg-gradient-to-r from-purple-500 to-violet-500 text-white hover:from-purple-600 hover:to-violet-600 shadow-md"
+                    : "bg-white/10 text-white/40 cursor-not-allowed border border-white/20"
+                }`}
+              >
+                <span className="hidden sm:inline">بعدی</span>
+                <span className="sm:hidden">›</span>
+              </button>
             </div>
-
-            <button
-              onClick={() => {
-                const newPage = (pagination?.currentPage || 1) + 1;
-                if (endpoint) {
-                  setCurrentPage(newPage);
-                } else {
-                  onPageChange?.(newPage);
-                }
-              }}
-              disabled={!pagination?.hasNextPage}
-              onMouseEnter={(e) => pagination?.hasNextPage && animateButtonHover(e.currentTarget)}
-              onMouseLeave={(e) => pagination?.hasNextPage && animateButtonLeave(e.currentTarget)}
-              className={`px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium rounded-lg transition-all duration-300 ${
-                pagination?.hasNextPage
-                  ? "bg-gradient-to-r from-purple-500 to-violet-500 text-white hover:from-purple-600 hover:to-violet-600 shadow-md"
-                  : "bg-white/10 text-white/40 cursor-not-allowed border border-white/20"
-              }`}
-            >
-              <span className="hidden sm:inline">بعدی</span>
-              <span className="sm:hidden">›</span>
-            </button>
-          </div>
+          ) : (
+            <div className="flex items-center px-3 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-xs font-medium text-white/80">
+              صفحه 1 از 1
+            </div>
+          )}
         </div>
       )}
 
