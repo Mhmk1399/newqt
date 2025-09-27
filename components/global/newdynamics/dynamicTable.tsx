@@ -1,6 +1,6 @@
 "use client";
-import { useState, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { gsap } from "gsap";
 import {
   IoClose,
   IoEyeOutline,
@@ -48,7 +48,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
   onEditClick,
   showActions = true,
   onDelete,
-  onToggleApproval, // New prop for approval toggle
+  onToggleApproval,
   pagination: propPagination,
   onPageChange,
   filterFields = [],
@@ -69,6 +69,19 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
+  // GSAP refs
+  const mobileActionBarRef = useRef<HTMLDivElement>(null);
+  const desktopFilterBarRef = useRef<HTMLDivElement>(null);
+  const paginationRef = useRef<HTMLDivElement>(null);
+  const modalBackdropRef = useRef<HTMLDivElement>(null);
+  const modalContentRef = useRef<HTMLDivElement>(null);
+  const editModalBackdropRef = useRef<HTMLDivElement>(null);
+  const editModalContentRef = useRef<HTMLDivElement>(null);
+  const deleteModalBackdropRef = useRef<HTMLDivElement>(null);
+  const deleteModalContentRef = useRef<HTMLDivElement>(null);
+  const filterModalBackdropRef = useRef<HTMLDivElement>(null);
+  const filterModalContentRef = useRef<HTMLDivElement>(null);
+
   // Use SWR hook when endpoint is provided
   const {
     data: swrData,
@@ -86,6 +99,81 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
   const data = endpoint ? swrData : propData || [];
   const loading = endpoint ? swrLoading : propLoading;
   const pagination = endpoint ? swrPagination : propPagination;
+
+  // GSAP Animation functions
+  const animateIn = (element: HTMLElement, delay = 0) => {
+    gsap.fromTo(element, 
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.3, delay }
+    );
+  };
+
+  const animateModalIn = (backdrop: HTMLElement, content: HTMLElement) => {
+    gsap.fromTo(backdrop, 
+      { opacity: 0 },
+      { opacity: 1, duration: 0.2 }
+    );
+    gsap.fromTo(content, 
+      { opacity: 0, scale: 0.8 },
+      { opacity: 1, scale: 1, duration: 0.2 }
+    );
+  };
+
+  const animateModalOut = (backdrop: HTMLElement, content: HTMLElement, onComplete: () => void) => {
+    gsap.to(backdrop, { opacity: 0, duration: 0.2 });
+    gsap.to(content, { 
+      opacity: 0, 
+      scale: 0.8, 
+      duration: 0.2,
+      onComplete 
+    });
+  };
+
+  const animateButtonHover = (element: HTMLElement) => {
+    gsap.to(element, { scale: 1.05, duration: 0.2 });
+  };
+
+  const animateButtonLeave = (element: HTMLElement) => {
+    gsap.to(element, { scale: 1, duration: 0.2 });
+  };
+
+  // useEffect for initial animations
+  useEffect(() => {
+    if (mobileActionBarRef.current) {
+      animateIn(mobileActionBarRef.current);
+    }
+    if (desktopFilterBarRef.current) {
+      animateIn(desktopFilterBarRef.current);
+    }
+    if (paginationRef.current) {
+      animateIn(paginationRef.current);
+    }
+  }, []);
+
+  // Modal animations
+  useEffect(() => {
+    if (isModalOpen && modalBackdropRef.current && modalContentRef.current) {
+      animateModalIn(modalBackdropRef.current, modalContentRef.current);
+    }
+  }, [isModalOpen]);
+
+  useEffect(() => {
+    if (isEditModalOpen && editModalBackdropRef.current && editModalContentRef.current) {
+      animateModalIn(editModalBackdropRef.current, editModalContentRef.current);
+    }
+  }, [isEditModalOpen]);
+
+  useEffect(() => {
+    if (isDeleteModalOpen && deleteModalBackdropRef.current && deleteModalContentRef.current) {
+      animateModalIn(deleteModalBackdropRef.current, deleteModalContentRef.current);
+    }
+  }, [isDeleteModalOpen]);
+
+  useEffect(() => {
+    if (isFilterModalOpen && filterModalBackdropRef.current && filterModalContentRef.current) {
+      animateModalIn(filterModalBackdropRef.current, filterModalContentRef.current);
+    }
+  }, [isFilterModalOpen]);
 
   const handleRefresh = () => {
     if (endpoint) {
@@ -210,18 +298,49 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
   };
 
   const closeModal = () => {
-    setIsModalOpen(false);
-    setSelectedRow(null);
+    if (modalBackdropRef.current && modalContentRef.current) {
+      animateModalOut(modalBackdropRef.current, modalContentRef.current, () => {
+        setIsModalOpen(false);
+        setSelectedRow(null);
+      });
+    } else {
+      setIsModalOpen(false);
+      setSelectedRow(null);
+    }
   };
 
   const closeEditModal = () => {
-    setIsEditModalOpen(false);
-    setSelectedRow(null);
+    if (editModalBackdropRef.current && editModalContentRef.current) {
+      animateModalOut(editModalBackdropRef.current, editModalContentRef.current, () => {
+        setIsEditModalOpen(false);
+        setSelectedRow(null);
+      });
+    } else {
+      setIsEditModalOpen(false);
+      setSelectedRow(null);
+    }
   };
 
   const closeDeleteModal = () => {
-    setIsDeleteModalOpen(false);
-    setSelectedRow(null);
+    if (deleteModalBackdropRef.current && deleteModalContentRef.current) {
+      animateModalOut(deleteModalBackdropRef.current, deleteModalContentRef.current, () => {
+        setIsDeleteModalOpen(false);
+        setSelectedRow(null);
+      });
+    } else {
+      setIsDeleteModalOpen(false);
+      setSelectedRow(null);
+    }
+  };
+
+  const closeFilterModal = () => {
+    if (filterModalBackdropRef.current && filterModalContentRef.current) {
+      animateModalOut(filterModalBackdropRef.current, filterModalContentRef.current, () => {
+        setIsFilterModalOpen(false);
+      });
+    } else {
+      setIsFilterModalOpen(false);
+    }
   };
 
   const handleToggleApproval = async (row: TableData) => {
@@ -282,7 +401,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
     }
 
     setFilters(newFilters);
-    setCurrentPage(1); // Reset to first page when filtering
+    setCurrentPage(1);
     if (!endpoint) {
       onFilterChange?.(newFilters);
     }
@@ -291,7 +410,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
   const clearAllFilters = () => {
     const emptyFilters = {};
     setFilters(emptyFilters);
-    setCurrentPage(1); // Reset to first page when clearing filters
+    setCurrentPage(1);
     if (!endpoint && onFilterChange) {
       onFilterChange(emptyFilters);
     }
@@ -523,40 +642,38 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
   return (
     <div className="w-full">
       {/* Mobile Action Bar - Only show on small screens */}
-      <motion.div
-        className="flex lg:hidden items-center justify-between gap-3 mb-6 p-4 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-2xl"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+      <div
+        ref={mobileActionBarRef}
+        className="flex lg:hidden items-center justify-between gap-3 mb-6 p-4 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-2xl opacity-0"
       >
         <div className="flex items-center gap-3 flex-1">
           {onAdd && (
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={onAdd}
+              onMouseEnter={(e) => animateButtonHover(e.currentTarget)}
+              onMouseLeave={(e) => animateButtonLeave(e.currentTarget)}
               className="flex items-center gap-2 px-4 py-3 bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 text-blue-200 rounded-xl hover:bg-blue-500/30 transition-all duration-300 font-medium text-sm"
             >
               <IoAdd className="text-lg" />
               <span className="hidden sm:inline">{addButtonText}</span>
-            </motion.button>
+            </button>
           )}
           
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <button
             onClick={handleRefresh}
+            onMouseEnter={(e) => animateButtonHover(e.currentTarget)}
+            onMouseLeave={(e) => animateButtonLeave(e.currentTarget)}
             className="flex items-center gap-2 px-4 py-3 bg-green-500/20 backdrop-blur-sm border border-green-400/30 text-green-200 rounded-xl hover:bg-green-500/30 transition-all duration-300 font-medium text-sm"
           >
             <IoRefresh className="text-lg" />
             <span className="hidden sm:inline">بروزرسانی</span>
-          </motion.button>
+          </button>
 
           {filterFields && filterFields.length > 0 && (
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={() => setIsFilterModalOpen(true)}
+              onMouseEnter={(e) => animateButtonHover(e.currentTarget)}
+              onMouseLeave={(e) => animateButtonLeave(e.currentTarget)}
               className="flex items-center gap-2 px-4 py-3 bg-purple-500/20 backdrop-blur-sm border border-purple-400/30 text-purple-200 rounded-xl hover:bg-purple-500/30 transition-all duration-300 font-medium text-sm relative"
             >
               <BiFilterAlt className="text-lg" />
@@ -568,26 +685,19 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                   </span>
                 </div>
               )}
-            </motion.button>
+            </button>
           )}
         </div>
 
-        <motion.div
-          className="flex items-center px-3 py-3 bg-purple-500/20 text-purple-200 rounded-xl text-xs font-medium border border-purple-400/30"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-        >
+        <div className="flex items-center px-3 py-3 bg-purple-500/20 text-purple-200 rounded-xl text-xs font-medium border border-purple-400/30">
           {filteredData.length}
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
 
       {/* Desktop Filter Bar - Only show on large screens */}
-      <motion.div
-        className="hidden lg:block bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 p-8 mb-8"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+      <div
+        ref={desktopFilterBarRef}
+        className="hidden lg:block bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 p-8 mb-8 opacity-0"
         style={{
           boxShadow:
             "0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
@@ -600,77 +710,58 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
         <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-end">
           {filterFields &&
             filterFields.map((field) => (
-              <motion.div
+              <div
                 key={field.key}
                 className="relative flex-1 min-w-0"
-                transition={{ duration: 0.2 }}
               >
                 <label className="block text-sm font-medium text-white/90 mb-3">
                   {field.label}
                 </label>
                 {renderFilterField(field)}
-              </motion.div>
+              </div>
             ))}
 
-          <motion.div
-            className="flex gap-2 lg:flex-shrink-0"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-          >
+          <div className="flex gap-2 lg:flex-shrink-0">
             {onAdd && (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ duration: 0.2 }}
+              <button
                 onClick={onAdd}
+                onMouseEnter={(e) => animateButtonHover(e.currentTarget)}
+                onMouseLeave={(e) => animateButtonLeave(e.currentTarget)}
                 className="px-6 py-3 bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 text-blue-200 rounded-xl hover:bg-blue-500/30 transition-all duration-300 font-medium text-sm flex items-center gap-2"
               >
                 <IoAdd className="text-lg" />
                 <span>{addButtonText}</span>
-              </motion.button>
+              </button>
             )}
 
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ duration: 0.2 }}
+            <button
               onClick={handleRefresh}
+              onMouseEnter={(e) => animateButtonHover(e.currentTarget)}
+              onMouseLeave={(e) => animateButtonLeave(e.currentTarget)}
               className="px-6 py-3 bg-green-500/20 backdrop-blur-sm border border-green-400/30 text-green-200 rounded-xl hover:bg-green-500/30 transition-all duration-300 font-medium text-sm flex items-center gap-2"
             >
               <IoRefresh className="text-lg" />
               <span>بروزرسانی</span>
-            </motion.button>
+            </button>
 
-            <AnimatePresence>
-              {Object.keys(filters).some((key) => filters[key]) && (
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                  onClick={clearAllFilters}
-                  className="px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white/90 rounded-xl hover:bg-white/20 transition-all duration-300 font-medium text-sm flex items-center gap-2"
-                >
-                  <IoClose className="text-lg" />
-                  <span>پاک کردن</span>
-                </motion.button>
-              )}
-            </AnimatePresence>
+            {Object.keys(filters).some((key) => filters[key]) && (
+              <button
+                onClick={clearAllFilters}
+                onMouseEnter={(e) => animateButtonHover(e.currentTarget)}
+                onMouseLeave={(e) => animateButtonLeave(e.currentTarget)}
+                className="px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white/90 rounded-xl hover:bg-white/20 transition-all duration-300 font-medium text-sm flex items-center gap-2"
+              >
+                <IoClose className="text-lg" />
+                <span>پاک کردن</span>
+              </button>
+            )}
 
-            <motion.div
-              className="flex items-center px-4 py-5 bg-purple-500/20 text-purple-200 rounded-xl text-sm font-medium border border-purple-400/30"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
-            >
+            <div className="flex items-center px-4 py-5 bg-purple-500/20 text-purple-200 rounded-xl text-sm font-medium border border-purple-400/30">
               {filteredData.length} نتیجه
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         </div>
-      </motion.div>
+      </div>
 
       <div className="overflow-x-auto shadow-2xl rounded-2xl md:overflow-x-scroll bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 scrollbar-luxury">
         <table className="min-w-full">
@@ -806,11 +897,9 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
       </div>
 
       {pagination && (
-        <motion.div
-          className="flex items-center justify-between mt-8 px-3 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl gap-2 sm:gap-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
+        <div
+          ref={paginationRef}
+          className="flex items-center justify-between mt-8 px-3 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl gap-2 sm:gap-4 opacity-0"
         >
           {/* Mobile-optimized info section */}
           <div className="flex items-center text-xs font-medium text-white/80 min-w-0 flex-shrink">
@@ -858,7 +947,7 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
 
           {/* Compact pagination controls */}
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-            <motion.button
+            <button
               onClick={() => {
                 const newPage = (pagination?.currentPage || 1) - 1;
                 if (endpoint) {
@@ -868,8 +957,8 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                 }
               }}
               disabled={!pagination?.hasPrevPage}
-              whileHover={pagination?.hasPrevPage ? { scale: 1.05 } : {}}
-              whileTap={pagination?.hasPrevPage ? { scale: 0.95 } : {}}
+              onMouseEnter={(e) => pagination?.hasPrevPage && animateButtonHover(e.currentTarget)}
+              onMouseLeave={(e) => pagination?.hasPrevPage && animateButtonLeave(e.currentTarget)}
               className={`px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium rounded-lg transition-all duration-300 ${
                 pagination?.hasPrevPage
                   ? "bg-gradient-to-r from-purple-500 to-violet-500 text-white hover:from-purple-600 hover:to-violet-600 shadow-md"
@@ -878,13 +967,13 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
             >
               <span className="hidden sm:inline">قبلی</span>
               <span className="sm:hidden">‹</span>
-            </motion.button>
+            </button>
 
             <div className="px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-bold bg-gradient-to-r from-purple-600 to-violet-600 text-white rounded-lg shadow-md border border-purple-400/30 min-w-[50px] sm:min-w-[60px] text-center">
               {pagination?.currentPage || 1} / {pagination?.totalPages || 1}
             </div>
 
-            <motion.button
+            <button
               onClick={() => {
                 const newPage = (pagination?.currentPage || 1) + 1;
                 if (endpoint) {
@@ -894,8 +983,8 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
                 }
               }}
               disabled={!pagination?.hasNextPage}
-              whileHover={pagination?.hasNextPage ? { scale: 1.05 } : {}}
-              whileTap={pagination?.hasNextPage ? { scale: 0.95 } : {}}
+              onMouseEnter={(e) => pagination?.hasNextPage && animateButtonHover(e.currentTarget)}
+              onMouseLeave={(e) => pagination?.hasNextPage && animateButtonLeave(e.currentTarget)}
               className={`px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium rounded-lg transition-all duration-300 ${
                 pagination?.hasNextPage
                   ? "bg-gradient-to-r from-purple-500 to-violet-500 text-white hover:from-purple-600 hover:to-violet-600 shadow-md"
@@ -904,403 +993,360 @@ const DynamicTable: React.FC<DynamicTablePropsExtended> = ({
             >
               <span className="hidden sm:inline">بعدی</span>
               <span className="sm:hidden">›</span>
-            </motion.button>
+            </button>
           </div>
-        </motion.div>
+        </div>
       )}
 
-      <AnimatePresence>
-        {isModalOpen && selectedRow && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gradient-to-br from-[#030014] via-[#0A0A2E] to-[#030014]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={closeModal}
+      {/* View Modal */}
+      {isModalOpen && selectedRow && (
+        <div
+          ref={modalBackdropRef}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gradient-to-br from-[#030014] via-[#0A0A2E] to-[#030014] opacity-0"
+          onClick={closeModal}
+        >
+          {/* Luxury Background Elements */}
+          <div className="absolute inset-0 z-0">
+            <div className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-r from-purple-500/20 to-violet-500/20 rounded-full filter blur-3xl"></div>
+            <div className="absolute bottom-32 right-32 w-80 h-80 bg-gradient-to-r from-pink-500/20 to-rose-500/20 rounded-full filter blur-3xl"></div>
+          </div>
+
+          <div
+            ref={modalContentRef}
+            className="relative z-10 bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 w-11/12 md:max-w-2xl p-8 opacity-0 scale-75"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              boxShadow:
+                "0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+            }}
           >
-            {/* Luxury Background Elements */}
-            <div className="absolute inset-0 z-0">
-              <div className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-r from-purple-500/20 to-violet-500/20 rounded-full filter blur-3xl"></div>
-              <div className="absolute bottom-32 right-32 w-80 h-80 bg-gradient-to-r from-pink-500/20 to-rose-500/20 rounded-full filter blur-3xl"></div>
-            </div>
+            {/* Decorative corner elements */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-purple-500/20 to-transparent rounded-tr-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-pink-500/20 to-transparent rounded-bl-3xl"></div>
 
-            <motion.div
-              className="relative z-10 bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 w-11/12 md:max-w-2xl p-8"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                boxShadow:
-                  "0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
-              }}
-            >
-              {/* Decorative corner elements */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-purple-500/20 to-transparent rounded-tr-3xl"></div>
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-pink-500/20 to-transparent rounded-bl-3xl"></div>
-
-              <div className="relative z-10">
-                <div className="flex justify-between items-center border-b border-white/20 pb-4 mb-6">
-                  <h3 className="text-2xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text">
-                    جزئیات رکورد
-                  </h3>
-                  <button onClick={closeModal}>
-                    <IoClose
-                      size={24}
-                      className="text-white/70 hover:text-white transition-colors"
-                    />
-                  </button>
-                </div>
-                <div className="space-y-4 max-h-96 overflow-y-auto px-2 scrollbar-luxury">
-                  {Object.entries(selectedRow).map(([key, val]) => {
-                    if (
-                      [
-                        "_id",
-                        "type",
-                        "phone",
-                        "provider",
-                        "date",
-                        "updatedAt",
-                        "glass",
-                      ].includes(key)
-                    )
-                      return null;
-
-                    const column = columns.find((col) => col.key === key);
-
-                    const getDisplayValue = () => {
-                      if (key === "glassCount") {
-                        if (
-                          selectedRow.glass &&
-                          Array.isArray(selectedRow.glass)
-                        ) {
-                          return selectedRow.glass.length.toString();
-                        }
-                        return "0";
-                      }
-
-                      if (key === "approved") {
-                        return val ? "تایید شده" : "تایید نشده";
-                      }
-
-                      if (column?.render) {
-                        return column.render(
-                          val as string | number | boolean,
-                          selectedRow
-                        );
-                      }
-
-                      if (key === "createdAt" || key === "updatedAt") {
-                        return new Date(String(val)).toLocaleDateString(
-                          "fa-IR"
-                        );
-                      }
-
-                      if (val !== undefined && isPriceColumn(key, val)) {
-                        return `${Number(val).toLocaleString()} تومان`;
-                      }
-
-                      if (Array.isArray(val)) {
-                        type ItemWithNameOrId =
-                          | string
-                          | number
-                          | boolean
-                          | {
-                              name?: string;
-                              code?: string;
-                              title?: string;
-                              _id?: string;
-                            };
-
-                        return val
-                          .map((item: ItemWithNameOrId) => {
-                            if (typeof item === "object" && item !== null) {
-                              return (
-                                item.name ??
-                                item.code ??
-                                item.title ??
-                                item._id ??
-                                "نامشخص"
-                              );
-                            }
-                            return String(item);
-                          })
-                          .join(", ");
-                      }
-
-                      if (typeof val === "object" && val !== null) {
-                        const obj = val as {
-                          name?: string;
-                          code?: string;
-                          title?: string;
-                          _id?: string;
-                        };
-                        return (
-                          obj.name ??
-                          obj.code ??
-                          obj.title ??
-                          obj._id ??
-                          "نامشخص"
-                        );
-                      }
-
-                      return String(val || "");
-                    };
-
-                    return (
-                      <div
-                        key={key}
-                        className="flex justify-between border-b border-white/10 pb-3 mb-3"
-                      >
-                        <span className="font-medium text-white/90">
-                          {translateField(key)}
-                        </span>
-                        <span className="text-white/80 break-all">
-                          {getDisplayValue()}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {isEditModalOpen &&
-          selectedRow &&
-          formFields.length > 0 &&
-          endpoint && (
-            <motion.div
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto bg-gradient-to-br from-[#030014] via-[#0A0A2E] to-[#030014]"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={closeEditModal}
-            >
-              {/* Luxury Background Elements */}
-              <div className="absolute inset-0 z-0">
-                <div className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-r from-purple-500/20 to-violet-500/20 rounded-full filter blur-3xl"></div>
-                <div className="absolute bottom-32 right-32 w-80 h-80 bg-gradient-to-r from-pink-500/20 to-rose-500/20 rounded-full filter blur-3xl"></div>
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-500/15 to-cyan-500/15 rounded-full filter blur-3xl"></div>
-              </div>
-
-              <motion.div
-                className="relative z-10 bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl w-full max-w-4xl shadow-2xl border border-white/20"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                  boxShadow:
-                    "0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
-                }}
-              >
-                {/* Decorative corner elements */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-purple-500/20 to-transparent rounded-tr-3xl"></div>
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-pink-500/20 to-transparent rounded-bl-3xl"></div>
-
-                <div className="p-8 overflow-auto max-h-[90vh] relative z-10 scrollbar-luxury">
-                  {isEditModalOpen && selectedRow && (
-                    <DynamicUpdateForm
-                      title={formTitle}
-                      subtitle={formSubtitle}
-                      fields={formFields}
-                      endpoint={endpoint}
-                      itemId={selectedRow._id as string}
-                      initialValues={selectedRow}
-                      onSuccess={() => {
-                        setIsEditModalOpen(false);
-                        if (endpoint) {
-                          mutate();
-                        } else {
-                          onRefresh?.();
-                        }
-                        toast.success("آیتم با موفقیت بروزرسانی شد");
-                      }}
-                      onError={(error) => {
-                        console.log(error);
-                        toast.error("خطا در بروزرسانی آیتم");
-                      }}
-                      onCancel={() => setIsEditModalOpen(false)}
-                    />
-                  )}
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {isDeleteModalOpen && selectedRow && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={closeDeleteModal}
-          >
-            <motion.div
-              className="bg-white rounded-lg shadow-xl w-11/12 md:max-w-md p-6"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex justify-between items-center border-b pb-3 mb-4">
-                <h3 className="text-xl font-semibold text-gray-800">
-                  تایید حذف
+            <div className="relative z-10">
+              <div className="flex justify-between items-center border-b border-white/20 pb-4 mb-6">
+                <h3 className="text-2xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text">
+                  جزئیات رکورد
                 </h3>
-                <button onClick={closeDeleteModal}>
+                <button onClick={closeModal}>
                   <IoClose
                     size={24}
-                    className="text-gray-600 hover:text-gray-800"
+                    className="text-white/70 hover:text-white transition-colors"
                   />
                 </button>
               </div>
-              <div className="py-4">
-                <p className="text-gray-700">
-                  آیا از حذف {selectedRow.name} اطمینان دارید؟
-                </p>
-                <p className="text-sm text-gray-500 mt-2">
-                  این عملیات غیرقابل بازگشت است.
-                </p>
+              <div className="space-y-4 max-h-96 overflow-y-auto px-2 scrollbar-luxury">
+                {Object.entries(selectedRow).map(([key, val]) => {
+                  if (
+                    [
+                      "_id",
+                      "type",
+                      "phone",
+                      "provider",
+                      "date",
+                      "updatedAt",
+                      "glass",
+                    ].includes(key)
+                  )
+                    return null;
+
+                  const column = columns.find((col) => col.key === key);
+
+                  const getDisplayValue = () => {
+                    if (key === "glassCount") {
+                      if (
+                        selectedRow.glass &&
+                        Array.isArray(selectedRow.glass)
+                      ) {
+                        return selectedRow.glass.length.toString();
+                      }
+                      return "0";
+                    }
+
+                    if (key === "approved") {
+                      return val ? "تایید شده" : "تایید نشده";
+                    }
+
+                    if (column?.render) {
+                      return column.render(
+                        val as string | number | boolean,
+                        selectedRow
+                      );
+                    }
+
+                    if (key === "createdAt" || key === "updatedAt") {
+                      return new Date(String(val)).toLocaleDateString(
+                        "fa-IR"
+                      );
+                    }
+
+                    if (val !== undefined && isPriceColumn(key, val)) {
+                      return `${Number(val).toLocaleString()} تومان`;
+                    }
+
+                    if (Array.isArray(val)) {
+                      type ItemWithNameOrId =
+                        | string
+                        | number
+                        | boolean
+                        | {
+                            name?: string;
+                            code?: string;
+                            title?: string;
+                            _id?: string;
+                          };
+
+                      return val
+                        .map((item: ItemWithNameOrId) => {
+                          if (typeof item === "object" && item !== null) {
+                            return (
+                              item.name ??
+                              item.code ??
+                              item.title ??
+                              item._id ??
+                              "نامشخص"
+                            );
+                          }
+                          return String(item);
+                        })
+                        .join(", ");
+                    }
+
+                    if (typeof val === "object" && val !== null) {
+                      const obj = val as {
+                        name?: string;
+                        code?: string;
+                        title?: string;
+                        _id?: string;
+                      };
+                      return (
+                        obj.name ??
+                        obj.code ??
+                        obj.title ??
+                        obj._id ??
+                        "نامشخص"
+                      );
+                    }
+
+                    return String(val || "");
+                  };
+
+                  return (
+                    <div
+                      key={key}
+                      className="flex justify-between border-b border-white/10 pb-3 mb-3"
+                    >
+                      <span className="font-medium text-white/90">
+                        {translateField(key)}
+                      </span>
+                      <span className="text-white/80 break-all">
+                        {getDisplayValue()}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="flex justify-start gap-2">
-                <button
-                  onClick={closeDeleteModal}
-                  className="px-4 py-2 text-gray-600 bg-gray-100 rounded-md transition-all duration-300 hover:bg-gray-200"
-                >
-                  انصراف
-                </button>
-                <button
-                  onClick={handleDelete}
-                  className="px-4 py-2 text-red-600 font-medium rounded-md transition-all duration-300 hover:bg-red-600 hover:text-white"
-                >
-                  حذف
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {isEditModalOpen && selectedRow && formFields.length > 0 && endpoint && (
+        <div
+          ref={editModalBackdropRef}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto bg-gradient-to-br from-[#030014] via-[#0A0A2E] to-[#030014] opacity-0"
+          onClick={closeEditModal}
+        >
+          {/* Luxury Background Elements */}
+          <div className="absolute inset-0 z-0">
+            <div className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-r from-purple-500/20 to-violet-500/20 rounded-full filter blur-3xl"></div>
+            <div className="absolute bottom-32 right-32 w-80 h-80 bg-gradient-to-r from-pink-500/20 to-rose-500/20 rounded-full filter blur-3xl"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-500/15 to-cyan-500/15 rounded-full filter blur-3xl"></div>
+          </div>
+
+          <div
+            ref={editModalContentRef}
+            className="relative z-10 bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl w-full max-w-4xl shadow-2xl border border-white/20 opacity-0 scale-75"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              boxShadow:
+                "0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+            }}
+          >
+            {/* Decorative corner elements */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-purple-500/20 to-transparent rounded-tr-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-pink-500/20 to-transparent rounded-bl-3xl"></div>
+
+            <div className="p-8 overflow-auto max-h-[90vh] relative z-10 scrollbar-luxury">
+              <DynamicUpdateForm
+                title={formTitle}
+                subtitle={formSubtitle}
+                fields={formFields}
+                endpoint={endpoint}
+                itemId={selectedRow._id as string}
+                initialValues={selectedRow}
+                onSuccess={() => {
+                  closeEditModal();
+                  if (endpoint) {
+                    mutate();
+                  } else {
+                    onRefresh?.();
+                  }
+                  toast.success("آیتم با موفقیت بروزرسانی شد");
+                }}
+                onError={(error) => {
+                  console.log(error);
+                  toast.error("خطا در بروزرسانی آیتم");
+                }}
+                onCancel={closeEditModal}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Modal */}
+      {isDeleteModalOpen && selectedRow && (
+        <div
+          ref={deleteModalBackdropRef}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm opacity-0"
+          onClick={closeDeleteModal}
+        >
+          <div
+            ref={deleteModalContentRef}
+            className="bg-white rounded-lg shadow-xl w-11/12 md:max-w-md p-6 opacity-0 scale-75"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center border-b pb-3 mb-4">
+              <h3 className="text-xl font-semibold text-gray-800">
+                تایید حذف
+              </h3>
+              <button onClick={closeDeleteModal}>
+                <IoClose
+                  size={24}
+                  className="text-gray-600 hover:text-gray-800"
+                />
+              </button>
+            </div>
+            <div className="py-4">
+              <p className="text-gray-700">
+                آیا از حذف {selectedRow.name} اطمینان دارید؟
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                این عملیات غیرقابل بازگشت است.
+              </p>
+            </div>
+            <div className="flex justify-start gap-2">
+              <button
+                onClick={closeDeleteModal}
+                className="px-4 py-2 text-gray-600 bg-gray-100 rounded-md transition-all duration-300 hover:bg-gray-200"
+              >
+                انصراف
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 text-red-600 font-medium rounded-md transition-all duration-300 hover:bg-red-600 hover:text-white"
+              >
+                حذف
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Filter Modal */}
-      <AnimatePresence>
-        {isFilterModalOpen && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gradient-to-br from-[#030014] via-[#0A0A2E] to-[#030014]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setIsFilterModalOpen(false)}
+      {isFilterModalOpen && (
+        <div
+          ref={filterModalBackdropRef}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gradient-to-br from-[#030014] via-[#0A0A2E] to-[#030014] opacity-0"
+          onClick={closeFilterModal}
+        >
+          {/* Luxury Background Elements */}
+          <div className="absolute inset-0 z-0">
+            <div className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-r from-purple-500/20 to-violet-500/20 rounded-full filter blur-3xl"></div>
+            <div className="absolute bottom-32 right-32 w-80 h-80 bg-gradient-to-r from-pink-500/20 to-rose-500/20 rounded-full filter blur-3xl"></div>
+          </div>
+
+          <div
+            ref={filterModalContentRef}
+            className="relative z-10 bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 w-11/12 max-w-2xl p-8 max-h-[90vh] overflow-y-auto opacity-0 scale-75"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              boxShadow:
+                "0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+            }}
           >
-            {/* Luxury Background Elements */}
-            <div className="absolute inset-0 z-0">
-              <div className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-r from-purple-500/20 to-violet-500/20 rounded-full filter blur-3xl"></div>
-              <div className="absolute bottom-32 right-32 w-80 h-80 bg-gradient-to-r from-pink-500/20 to-rose-500/20 rounded-full filter blur-3xl"></div>
-            </div>
+            {/* Decorative corner elements */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-purple-500/20 to-transparent rounded-tr-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-pink-500/20 to-transparent rounded-bl-3xl"></div>
 
-            <motion.div
-              className="relative z-10 bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 w-11/12 max-w-2xl p-8 max-h-[90vh] overflow-y-auto"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                boxShadow:
-                  "0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
-              }}
-            >
-              {/* Decorative corner elements */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-purple-500/20 to-transparent rounded-tr-3xl"></div>
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-pink-500/20 to-transparent rounded-bl-3xl"></div>
-
-              <div className="relative z-10">
-                <div className="flex justify-between items-center border-b border-white/20 pb-4 mb-6">
-                  <div className="flex items-center gap-3">
-                    <BiFilterAlt className="text-purple-400 text-2xl" />
-                    <h3 className="text-2xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text">
-                      فیلترها
-                    </h3>
-                  </div>
-                  <button onClick={() => setIsFilterModalOpen(false)}>
-                    <IoClose
-                      size={24}
-                      className="text-white/70 hover:text-white transition-colors"
-                    />
-                  </button>
+            <div className="relative z-10">
+              <div className="flex justify-between items-center border-b border-white/20 pb-4 mb-6">
+                <div className="flex items-center gap-3">
+                  <BiFilterAlt className="text-purple-400 text-2xl" />
+                  <h3 className="text-2xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text">
+                    فیلترها
+                  </h3>
                 </div>
-
-                <div className="space-y-6 scrollbar-luxury">
-                  {filterFields &&
-                    filterFields.map((field) => (
-                      <motion.div
-                        key={field.key}
-                        className="relative"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <label className="block text-sm font-medium text-white/90 mb-3">
-                          {field.label}
-                        </label>
-                        {renderFilterField(field)}
-                      </motion.div>
-                    ))}
-                </div>
-
-                <div className="flex gap-3 mt-8 pt-6 border-t border-white/20">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setIsFilterModalOpen(false)}
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-500 to-violet-500 text-white rounded-xl hover:from-purple-600 hover:to-violet-600 transition-all duration-300 font-medium"
-                  >
-                    اعمال فیلتر
-                  </motion.button>
-                  
-                  <AnimatePresence>
-                    {Object.keys(filters).some((key) => filters[key]) && (
-                      <motion.button
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => {
-                          clearAllFilters();
-                          setIsFilterModalOpen(false);
-                        }}
-                        className="px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white/90 rounded-xl hover:bg-white/20 transition-all duration-300 font-medium flex items-center gap-2"
-                      >
-                        <IoClose className="text-lg" />
-                        پاک کردن
-                      </motion.button>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                <motion.div
-                  className="flex items-center justify-center gap-2 mt-4 px-4 py-3 bg-purple-500/20 text-purple-200 rounded-xl text-sm font-medium border border-purple-400/30"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3, delay: 0.2 }}
-                >
-                  <BiSearch className="text-lg" />
-                  <span>{filteredData.length} نتیجه یافت شد</span>
-                </motion.div>
+                <button onClick={closeFilterModal}>
+                  <IoClose
+                    size={24}
+                    className="text-white/70 hover:text-white transition-colors"
+                  />
+                </button>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
+              <div className="space-y-6 scrollbar-luxury">
+                {filterFields &&
+                  filterFields.map((field) => (
+                    <div
+                      key={field.key}
+                      className="relative"
+                    >
+                      <label className="block text-sm font-medium text-white/90 mb-3">
+                        {field.label}
+                      </label>
+                      {renderFilterField(field)}
+                    </div>
+                  ))}
+              </div>
+
+              <div className="flex gap-3 mt-8 pt-6 border-t border-white/20">
+                <button
+                  onClick={closeFilterModal}
+                  onMouseEnter={(e) => animateButtonHover(e.currentTarget)}
+                  onMouseLeave={(e) => animateButtonLeave(e.currentTarget)}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-500 to-violet-500 text-white rounded-xl hover:from-purple-600 hover:to-violet-600 transition-all duration-300 font-medium"
+                >
+                  اعمال فیلتر
+                </button>
+                
+                {Object.keys(filters).some((key) => filters[key]) && (
+                  <button
+                    onClick={() => {
+                      clearAllFilters();
+                      closeFilterModal();
+                    }}
+                    onMouseEnter={(e) => animateButtonHover(e.currentTarget)}
+                    onMouseLeave={(e) => animateButtonLeave(e.currentTarget)}
+                    className="px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white/90 rounded-xl hover:bg-white/20 transition-all duration-300 font-medium flex items-center gap-2"
+                  >
+                    <IoClose className="text-lg" />
+                    پاک کردن
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center justify-center gap-2 mt-4 px-4 py-3 bg-purple-500/20 text-purple-200 rounded-xl text-sm font-medium border border-purple-400/30">
+                <BiSearch className="text-lg" />
+                <span>{filteredData.length} نتیجه یافت شد</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
