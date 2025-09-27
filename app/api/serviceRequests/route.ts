@@ -273,7 +273,7 @@ export async function PATCH(request: NextRequest) {
       model: Service,
     });
 
-    // Create tasks for newly assigned users
+    // Create tasks for newly assigned users and update request status
     if (updateData.asiginedto && Array.isArray(updateData.asiginedto)) {
       const currentAssigned: string[] =
         currentServiceRequest.asiginedto?.map((id: mongoose.Types.ObjectId) =>
@@ -296,6 +296,36 @@ export async function PATCH(request: NextRequest) {
           notes: "",
           deliverables: "",
         });
+      }
+
+      // Update service request status based on assignment changes
+      let newStatus = currentServiceRequest.status;
+
+      if (updateData.asiginedto.length > 0) {
+        // If users are assigned and current status is 'pending', change to 'approved'
+        if (currentServiceRequest.status === 'pending') {
+          newStatus = 'approved';
+        }
+        // If users are assigned and current status is 'approved', change to 'in-progress'
+        else if (currentServiceRequest.status === 'approved') {
+          newStatus = 'in-progress';
+        }
+      } else if (updateData.asiginedto.length === 0) {
+        // If no users are assigned, revert to 'approved' status
+        if (currentServiceRequest.status === 'in-progress') {
+          newStatus = 'approved';
+        }
+      }
+
+      // Update the status if it changed
+      if (newStatus !== currentServiceRequest.status) {
+        await ServiceRequest.findByIdAndUpdate(
+          id,
+          { status: newStatus, updatedAt: new Date() },
+          { new: true }
+        );
+        // Update the returned object to reflect the status change
+        updatedServiceRequest.status = newStatus;
       }
     }
 
