@@ -23,7 +23,6 @@ const taskSchema = new mongoose.Schema<ITask>({
   serviceRequestId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'ServiceRequest',
-    required: true
   },
   assignedUserId: {
     type: mongoose.Schema.Types.ObjectId,

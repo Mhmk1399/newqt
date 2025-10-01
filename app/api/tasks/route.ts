@@ -140,23 +140,11 @@ export async function POST(request: NextRequest) {
     const task = new Task(body);
     await task.save();
 
-    const populatedTask = await Task.findById(task._id)
-      .populate({
-        path: "serviceRequestId",
-        model: ServiceRequest,
-        select: "title",
-      })
-      .populate({
-        path: "assignedUserId",
-        model: User,
-        select: "name email",
-      });
-
+    
     return NextResponse.json(
       {
         success: true,
         message: "Task created successfully",
-        data: populatedTask,
       },
       { status: 201 }
     );
