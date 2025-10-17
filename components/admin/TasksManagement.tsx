@@ -3,12 +3,17 @@
 import React, { useState, useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { Draggable } from "gsap/Draggable";
+import { motion } from "framer-motion";
 import {
   IoAdd,
   IoClose,
   IoChevronBack,
   IoChevronForward,
   IoRefresh,
+  IoFilter,
+  IoSearch,
+  IoChevronUp,
+  IoChevronDown,
 } from "react-icons/io5";
 import {
   FaExclamationTriangle,
@@ -23,6 +28,7 @@ import {
   FaFileUpload,
   FaVideo,
   FaPlay,
+  FaTrash,
 } from "react-icons/fa";
 import toast from "react-hot-toast";
 import DatePicker, { DateObject } from "react-multi-date-picker";
@@ -81,6 +87,7 @@ const TasksManagement: React.FC = () => {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState<string>("");
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [allTasks, setAllTasks] = useState<Task[]>([]); // Store all tasks for filtering
   const [users, setUsers] = useState<User[]>([]);
   const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,6 +97,26 @@ const TasksManagement: React.FC = () => {
   );
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+
+  // Filter states
+  const [dateRange, setDateRange] = useState<[string, string]>(["", ""]);
+  const [filters, setFilters] = useState({
+    status: "",
+    priority: "",
+    assignedUserId: "",
+    title: "",
+    serviceRequestId: "",
+  });
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Pagination states for each column
+  const [columnPagination, setColumnPagination] = useState({
+    todo: { page: 1, itemsPerPage: 10 },
+    "in-progress": { page: 1, itemsPerPage: 10 },
+    review: { page: 1, itemsPerPage: 10 },
+    accepted: { page: 1, itemsPerPage: 10 },
+    completed: { page: 1, itemsPerPage: 10 },
+  });
 
   // Refs for GSAP animations
   const statisticsRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -378,15 +405,92 @@ const TasksManagement: React.FC = () => {
     },
   ];
 
-  // Fetch all tasks
-  const fetchTasks = async () => {
+  // Fetch all tasks with filters
+  const fetchTasks = async (applyFilters = false) => {
     try {
       setLoading(true);
-      const response = await fetch("/api/tasks");
+
+      // Build query parameters
+      const queryParams = new URLSearchParams();
+      queryParams.set("limit", "1000"); // Get a large number to ensure we get all tasks
+      queryParams.set("sortBy", "createdAt");
+      queryParams.set("sortOrder", "desc");
+
+      // Apply date range filter using createdAt if specified
+      if (applyFilters && dateRange[0]) {
+        queryParams.set("completedDateFrom", dateRange[0]);
+        console.log("Setting date filter from:", dateRange[0]);
+      }
+      if (applyFilters && dateRange[1]) {
+        queryParams.set("completedDateTo", dateRange[1]);
+        console.log("Setting date filter to:", dateRange[1]);
+      }
+
+      // Apply other filters if specified
+      if (applyFilters) {
+        if (filters.status) queryParams.set("status", filters.status);
+        if (filters.priority) queryParams.set("priority", filters.priority);
+        if (filters.assignedUserId)
+          queryParams.set("assignedUserId", filters.assignedUserId);
+        if (filters.title) queryParams.set("title", filters.title);
+      }
+
+      const response = await fetch(`/api/tasks?${queryParams.toString()}`);
       const result = await response.json();
 
       if (result.success) {
-        setTasks(result.data || []);
+        let tasksData = result.data || [];
+
+        // If we have a large dataset and still hit pagination, fetch more pages
+        if (result.pagination && result.pagination.totalPages > 1) {
+          // Fetch all remaining pages
+          const additionalRequests = [];
+          for (let page = 2; page <= result.pagination.totalPages; page++) {
+            const pageParams = new URLSearchParams(queryParams);
+            pageParams.set("page", page.toString());
+            additionalRequests.push(
+              fetch(`/api/tasks?${pageParams.toString()}`).then((res) =>
+                res.json()
+              )
+            );
+          }
+
+          const additionalResults = await Promise.all(additionalRequests);
+          additionalResults.forEach((res) => {
+            if (res.success) {
+              tasksData = [...tasksData, ...(res.data || [])];
+            }
+          });
+        }
+
+        // Apply client-side filters for fields not supported by API
+        if (applyFilters) {
+          // Filter by service request if specified
+          if (filters.serviceRequestId) {
+            tasksData = tasksData.filter(
+              (task: Task) =>
+                task.serviceRequestId?._id === filters.serviceRequestId
+            );
+          }
+        }
+
+        setAllTasks(tasksData);
+        setTasks(tasksData);
+
+        // Reset pagination when new data is loaded
+        setColumnPagination({
+          todo: { page: 1, itemsPerPage: 10 },
+          "in-progress": { page: 1, itemsPerPage: 10 },
+          review: { page: 1, itemsPerPage: 10 },
+          accepted: { page: 1, itemsPerPage: 10 },
+          completed: { page: 1, itemsPerPage: 10 },
+        });
+
+        // Show success message if filters were applied
+        if (applyFilters) {
+          const totalTasks = tasksData.length;
+          toast.success(`${totalTasks} تسک با فیلترهای اعمال شده یافت شد`);
+        }
       } else {
         console.error("Tasks API error:", result);
         toast.error("خطا در دریافت تسک‌ها");
@@ -399,9 +503,9 @@ const TasksManagement: React.FC = () => {
     }
   };
 
-  // Filter tasks by status
+  // Filter tasks by status with pagination
   const getTasksByStatus = (status: string) => {
-    return tasks
+    const filtered = tasks
       .filter((task) => task.status === status)
       .sort((a, b) => {
         // Sort by priority first
@@ -419,6 +523,97 @@ const TasksManagement: React.FC = () => {
 
         return 0;
       });
+
+    // Apply pagination
+    const pagination =
+      columnPagination[status as keyof typeof columnPagination];
+    const startIndex = (pagination.page - 1) * pagination.itemsPerPage;
+    const endIndex = startIndex + pagination.itemsPerPage;
+
+    return {
+      tasks: filtered.slice(startIndex, endIndex),
+      totalCount: filtered.length,
+      totalPages: Math.ceil(filtered.length / pagination.itemsPerPage),
+      currentPage: pagination.page,
+    };
+  };
+
+  // Function to change page for a specific column
+  const changeColumnPage = (status: string, newPage: number) => {
+    setColumnPagination((prev) => ({
+      ...prev,
+      [status]: {
+        ...prev[status as keyof typeof prev],
+        page: newPage,
+      },
+    }));
+
+    // Animate the new task cards after pagination change
+    setTimeout(() => {
+      const columnData = getTasksByStatus(status);
+      console.log(`Animating ${columnData.tasks.length} tasks for status ${status}`);
+      
+      columnData.tasks.forEach((task: Task, index: number) => {
+        const taskElement = taskRefs.current[task._id];
+        if (taskElement) {
+          // Reset the element first
+          gsap.set(taskElement, { opacity: 0, y: 20, scale: 0.9 });
+          // Then animate it in
+          gsap.to(taskElement, {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            duration: 0.4,
+            delay: index * 0.1,
+            ease: "power2.out",
+          });
+        } else {
+          console.log(`Task element not found for task ID: ${task._id}`);
+        }
+      });
+    }, 100);
+  };
+
+  // Helper functions for better pagination display
+  const getTotalTasksByStatus = (status: string) => {
+    return tasks.filter((task) => task.status === status).length;
+  };
+
+  const getTotalPagesByStatus = (status: string) => {
+    const totalTasks = getTotalTasksByStatus(status);
+    const pagination = columnPagination[status as keyof typeof columnPagination];
+    return Math.ceil(totalTasks / (pagination?.itemsPerPage || 10));
+  };
+
+  const handleItemsPerPageChange = (status: string, itemsPerPage: number) => {
+    setColumnPagination(prev => ({
+      ...prev,
+      [status]: {
+        page: 1, // Reset to first page
+        itemsPerPage
+      }
+    }));
+    
+    // Animate the new task cards after items per page change
+    setTimeout(() => {
+      const columnData = getTasksByStatus(status);
+      columnData.tasks.forEach((task: Task, index: number) => {
+        const taskElement = taskRefs.current[task._id];
+        if (taskElement) {
+          // Reset the element first
+          gsap.set(taskElement, { opacity: 0, y: 20, scale: 0.9 });
+          // Then animate it in
+          gsap.to(taskElement, {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            duration: 0.4,
+            delay: index * 0.1,
+            ease: "power2.out",
+          });
+        }
+      });
+    }, 100);
   };
 
   // Update task status - Admin can update to any status
@@ -559,6 +754,39 @@ const TasksManagement: React.FC = () => {
     setVideoUploadTaskId(null);
   };
 
+  // Delete task function
+  const deleteTask = async (taskId: string) => {
+    if (!confirm("آیا مطمئن هستید که می‌خواهید این تسک را حذف کنید؟ این عمل غیرقابل بازگشت است.")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/tasks?id=${taskId}`, {
+        method: "DELETE",
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Remove task from state
+        setTasks((prev) => prev.filter((task) => task._id !== taskId));
+        setAllTasks((prev) => prev.filter((task) => task._id !== taskId));
+        
+        // Close modal if the deleted task was selected
+        if (selectedTask && selectedTask._id === taskId) {
+          closeTaskModal();
+        }
+        
+        toast.success("تسک با موفقیت حذف شد");
+      } else {
+        throw new Error(result.message || "Failed to delete task");
+      }
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      toast.error("خطا در حذف تسک");
+    }
+  };
+
   const fetchUsers = async () => {
     try {
       const response = await fetch("/api/users?dropdown=true");
@@ -641,6 +869,32 @@ const TasksManagement: React.FC = () => {
     }
   }, [isTaskModalOpen]);
 
+  // Animate task cards when pagination changes
+  useEffect(() => {
+    if (!loading && tasks.length > 0) {
+      setTimeout(() => {
+        Object.values(taskRefs.current).forEach((ref, index) => {
+          if (ref) {
+            // Check if element is visible (not opacity 0)
+            const computedStyle = window.getComputedStyle(ref);
+            if (computedStyle.opacity === "0" || parseFloat(computedStyle.opacity) < 0.1) {
+              // Reset and animate the element
+              gsap.set(ref, { opacity: 0, y: 20, scale: 0.9 });
+              gsap.to(ref, {
+                opacity: 1,
+                y: 0,
+                scale: 1,
+                duration: 0.4,
+                delay: index * 0.02,
+                ease: "power2.out",
+              });
+            }
+          }
+        });
+      }, 150);
+    }
+  }, [columnPagination, tasks, loading]);
+
   useEffect(() => {
     fetchUsers();
     fetchServiceRequests();
@@ -707,7 +961,7 @@ const TasksManagement: React.FC = () => {
 
         <div className="mb-6 flex justify-end gap-3">
           <button
-            onClick={fetchTasks}
+            onClick={() => fetchTasks(true)}
             onMouseEnter={(e) => animateButtonHover(e.currentTarget, true)}
             onMouseLeave={(e) => animateButtonHover(e.currentTarget, false)}
             className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 flex items-center gap-3 shadow-lg hover:shadow-blue-500/25"
@@ -726,10 +980,304 @@ const TasksManagement: React.FC = () => {
           </button>
         </div>
 
+        {/* Enhanced Filters Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-8 bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 p-8"
+          style={{
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
+          }}
+        >
+          {/* Decorative corner elements */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-purple-500/20 to-transparent rounded-tr-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-pink-500/20 to-transparent rounded-bl-3xl"></div>
+          
+          <div className="relative z-10">
+            {/* Header */}
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-2">
+                فیلتر و جستجوی تسکها
+              </h2>
+              <p className="text-white/70">
+                برای دسترسی سریعتر به تسکها از فیلترهای زیر استفاده کنید
+              </p>
+            </div>
+
+            {/* Date Range Section */}
+            <div className="mb-6 p-6 bg-white/5 rounded-2xl border border-white/10">
+              <h3 className="text-lg font-semibold text-white/90 mb-4 flex items-center gap-2">
+                <FaCalendarAlt className="text-purple-400" />
+                فیلتر بر اساس تاریخ
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-white/70 text-sm mb-2">از تاریخ</label>
+                  <div className="relative">
+                    <DatePicker
+                      value={dateRange[0] ? new DateObject(new Date(dateRange[0])) : null}
+                      onChange={(val) => {
+                        const fromDate = val ? val.toDate().toISOString().split("T")[0] : "";
+                        setDateRange([fromDate, dateRange[1]]);
+                      }}
+                      calendar={persian}
+                      locale={persian_fa}
+                      format="YYYY/MM/DD"
+                      placeholder="انتخاب تاریخ شروع"
+                      inputClass="w-full p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300 text-center pr-10"
+                      calendarPosition="bottom-center"
+                    />
+                    <FaCalendarAlt className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50 text-sm" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-white/70 text-sm mb-2">تا تاریخ</label>
+                  <div className="relative">
+                    <DatePicker
+                      value={dateRange[1] ? new DateObject(new Date(dateRange[1])) : null}
+                      onChange={(val) => {
+                        const toDate = val ? val.toDate().toISOString().split("T")[0] : "";
+                        setDateRange([dateRange[0], toDate]);
+                      }}
+                      calendar={persian}
+                      locale={persian_fa}
+                      format="YYYY/MM/DD"
+                      placeholder="انتخاب تاریخ پایان"
+                      inputClass="w-full p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300 text-center pr-10"
+                      calendarPosition="bottom-center"
+                    />
+                    <FaCalendarAlt className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50 text-sm" />
+                  </div>
+                </div>
+                <div className="flex items-end">
+                  <button
+                    onClick={() => fetchTasks(true)}
+                    disabled={loading}
+                    className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-violet-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-violet-700 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        در حال بارگذاری...
+                      </>
+                    ) : (
+                      <>
+                        <IoSearch className="text-lg" />
+                        اعمال فیلتر
+                      </>
+                    )}
+                  </button>
+                </div>
+                <div className="flex items-end">
+                  <button
+                    onClick={() => {
+                      setDateRange(["", ""]);
+                      setFilters({
+                        status: "",
+                        priority: "",
+                        assignedUserId: "",
+                        title: "",
+                        serviceRequestId: "",
+                      });
+                      fetchTasks(false);
+                    }}
+                    disabled={loading}
+                    className="w-full px-4 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white font-medium rounded-xl hover:from-gray-700 hover:to-gray-800 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <IoClose className="text-lg" />
+                    پاک کردن
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Advanced Filters Toggle */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="w-full flex items-center justify-center gap-2 p-4 bg-white/5 rounded-xl border border-white/10 text-white/80 hover:text-white hover:bg-white/10 transition-all duration-300 mb-4"
+            >
+              <IoFilter className="text-lg" />
+              <span className="font-medium">فیلترهای پیشرفته</span>
+              {showFilters ? (
+                <IoChevronUp className="text-lg" />
+              ) : (
+                <IoChevronDown className="text-lg" />
+              )}
+            </button>
+
+            {/* Advanced Filters */}
+            {showFilters && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="p-6 bg-white/5 rounded-2xl border border-white/10"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Title Search */}
+                  <div>
+                    <label className="block text-white/70 text-sm mb-2 font-medium">
+                      جستجو در عنوان
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={filters.title}
+                        onChange={(e) =>
+                          setFilters({ ...filters, title: e.target.value })
+                        }
+                        placeholder="عنوان تسک را جستجو کنید..."
+                        className="w-full p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300 pr-10"
+                      />
+                      <IoSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50" />
+                    </div>
+                  </div>
+
+                  {/* Status Filter */}
+                  <div>
+                    <label className="block text-white/70 text-sm mb-2 font-medium">
+                      وضعیت
+                    </label>
+                    <select
+                      value={filters.status}
+                      onChange={(e) =>
+                        setFilters({ ...filters, status: e.target.value })
+                      }
+                      className="w-full p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
+                    >
+                      <option value="" className="bg-gray-800">همه وضعیت‌ها</option>
+                      <option value="todo" className="bg-gray-800">انجام نشده</option>
+                      <option value="in-progress" className="bg-gray-800">در حال انجام</option>
+                      <option value="review" className="bg-gray-800">در حال بررسی</option>
+                      <option value="accepted" className="bg-gray-800">تایید شده</option>
+                      <option value="completed" className="bg-gray-800">تکمیل شده</option>
+                      <option value="cancelled" className="bg-gray-800">لغو شده</option>
+                    </select>
+                  </div>
+
+                  {/* Priority Filter */}
+                  <div>
+                    <label className="block text-white/70 text-sm mb-2 font-medium">
+                      اولویت
+                    </label>
+                    <select
+                      value={filters.priority}
+                      onChange={(e) =>
+                        setFilters({ ...filters, priority: e.target.value })
+                      }
+                      className="w-full p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
+                    >
+                      <option value="" className="bg-gray-800">همه اولویت‌ها</option>
+                      <option value="low" className="bg-gray-800">کم</option>
+                      <option value="medium" className="bg-gray-800">متوسط</option>
+                      <option value="high" className="bg-gray-800">بالا</option>
+                      <option value="urgent" className="bg-gray-800">فوری</option>
+                    </select>
+                  </div>
+
+                  {/* Assigned User Filter */}
+                  <div>
+                    <label className="block text-white/70 text-sm mb-2 font-medium">
+                      کاربر تخصیص یافته
+                    </label>
+                    <select
+                      value={filters.assignedUserId}
+                      onChange={(e) =>
+                        setFilters({ ...filters, assignedUserId: e.target.value })
+                      }
+                      className="w-full p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
+                    >
+                      <option value="" className="bg-gray-800">همه کاربران</option>
+                      {users.map((user) => (
+                        <option key={user._id} value={user._id} className="bg-gray-800">
+                          {user.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Service Request Filter */}
+                  <div>
+                    <label className="block text-white/70 text-sm mb-2 font-medium">
+                      درخواست سرویس
+                    </label>
+                    <select
+                      value={filters.serviceRequestId}
+                      onChange={(e) =>
+                        setFilters({ ...filters, serviceRequestId: e.target.value })
+                      }
+                      className="w-full p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
+                    >
+                      <option value="" className="bg-gray-800">همه درخواست‌ها</option>
+                      {serviceRequests.map((sr) => (
+                        <option key={sr._id} value={sr._id} className="bg-gray-800">
+                          {sr.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Apply Advanced Filters Button */}
+                <div className="flex justify-center mt-6">
+                  <button
+                    onClick={() => fetchTasks(true)}
+                    disabled={loading}
+                    className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-medium rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-emerald-500/25"
+                  >
+                    {loading ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        در حال اعمال فیلتر...
+                      </>
+                    ) : (
+                      <>
+                        <IoFilter className="text-lg" />
+                        اعمال فیلترهای پیشرفته
+                      </>
+                    )}
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Filter Status Indicator */}
+        {(dateRange[0] || dateRange[1] || Object.values(filters).some((f) => f)) && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 bg-gradient-to-r from-purple-500/10 to-violet-500/10 backdrop-blur-sm rounded-2xl border border-purple-400/20"
+          >
+            <div className="flex items-center justify-center gap-3 text-center">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                <span className="text-purple-200 font-medium">
+                  فیلتر فعال
+                </span>
+              </div>
+              <span className="text-white/90">
+                نمایش {tasks.length} تسک
+              </span>
+              {dateRange[0] && dateRange[1] && (
+                <div className="flex items-center gap-2 text-white/70">
+                  <FaCalendarAlt className="text-sm" />
+                  <span>
+                    {new Date(dateRange[0]).toLocaleDateString("fa-IR")} تا{" "}
+                    {new Date(dateRange[1]).toLocaleDateString("fa-IR")}
+                  </span>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
         {/* Task Statistics */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           {statusColumns.map((column, index) => {
-            const columnTasks = getTasksByStatus(column.id);
+            const totalTasks = getTotalTasksByStatus(column.id);
             const Icon = column.icon;
             return (
               <div
@@ -737,12 +1285,12 @@ const TasksManagement: React.FC = () => {
                 ref={(el) => {
                   statisticsRefs.current[index] = el;
                 }}
-                className={`bg-gradient-to-br ${column.color} backdrop-blur-xl rounded-2xl p-4 border ${column.borderColor} opacity-0`}
+                className={`bg-gradient-to-br ${column.color} backdrop-blur-xl rounded-2xl p-4 border ${column.borderColor}`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <Icon className={`${column.iconColor} text-xl`} />
                   <span className="text-2xl font-bold text-white">
-                    {columnTasks.length}
+                    {totalTasks}
                   </span>
                 </div>
                 <h3 className={`${column.iconColor} text-sm font-medium`}>
@@ -756,7 +1304,11 @@ const TasksManagement: React.FC = () => {
         {/* Kanban Board */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-5 gap-6">
           {statusColumns.map((column, columnIndex) => {
-            const columnTasks = getTasksByStatus(column.id);
+            const columnData = getTasksByStatus(column.id);
+            const totalTasks = getTotalTasksByStatus(column.id);
+            const totalPages = getTotalPagesByStatus(column.id);
+            const currentPage = columnPagination[column.id as keyof typeof columnPagination]?.page || 1;
+            const itemsPerPage = columnPagination[column.id as keyof typeof columnPagination]?.itemsPerPage || 10;
             const Icon = column.icon;
 
             return (
@@ -770,28 +1322,79 @@ const TasksManagement: React.FC = () => {
                 onDrop={(e) => handleDrop(e, column.id)}
                 className={`bg-gradient-to-br ${
                   column.color
-                } backdrop-blur-xl rounded-2xl h-70 scrollbar-luxury p-2 overflow-y-auto border ${
+                } backdrop-blur-xl rounded-2xl min-h-[600px] flex flex-col border ${
                   dragOverColumn === column.id
                     ? "border-purple-400 shadow-lg shadow-purple-400/25"
                     : column.borderColor
-                } p-4 opacity-0 transition-all duration-300`}
+                } p-4 transition-all duration-300`}
               >
                 {/* Column Header */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Icon className={`${column.iconColor} text-lg`} />
-                    <h3 className={`${column.iconColor} font-semibold`}>
-                      {column.title}
-                    </h3>
+                <div className="p-4 border-b border-white/10">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Icon className={`${column.iconColor} text-lg`} />
+                      <h3 className={`${column.iconColor} font-semibold`}>
+                        {column.title}
+                      </h3>
+                    </div>
+                    <span className="bg-white/10 text-white/70 px-2 py-1 rounded-full text-xs">
+                      {totalTasks}
+                    </span>
                   </div>
-                  <span className="bg-white/10 text-white/70 px-2 py-1 rounded-full text-xs">
-                    {columnTasks.length}
-                  </span>
+
+                  {/* Pagination Controls */}
+                  {totalTasks > 0 && (
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-white/60">نمایش:</span>
+                        <select
+                          value={itemsPerPage}
+                          onChange={(e) => handleItemsPerPageChange(column.id, parseInt(e.target.value))}
+                          className="bg-white/10 border rounded-md border-white/20  px-2 py-1 text-white text-xs focus:outline-none"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <option value={5} className="bg-gray-800">5</option>
+                          <option value={10} className="bg-gray-800">10</option>
+                          <option value={20} className="bg-gray-800">20</option>
+                          <option value={50} className="bg-gray-800">50</option>
+                        </select>
+                        <span className="text-white/60">تسک</span>
+                      </div>
+
+                      {totalPages > 1 && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => changeColumnPage(column.id, currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className={`p-1 rounded ${
+                              currentPage === 1
+                                ? "text-white/20 cursor-not-allowed"
+                                : "text-white/60 hover:text-white hover:bg-white/10"
+                            }`}
+                          >
+                            <IoChevronForward />
+                          </button>
+                          <span className="text-white/60 px-2">{currentPage}/{totalPages}</span>
+                          <button
+                            onClick={() => changeColumnPage(column.id, currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            className={`p-1 rounded ${
+                              currentPage === totalPages
+                                ? "text-white/20 cursor-not-allowed"
+                                : "text-white/60 hover:text-white hover:bg-white/10"
+                            }`}
+                          >
+                            <IoChevronBack />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Task Cards */}
-                <div className="space-y-3 max-h-[600px] ">
-                  {columnTasks.map((task, taskIndex) => (
+                <div className="space-y-3 flex-1 overflow-y-auto scrollbar-luxury">
+                  {columnData.tasks.map((task: Task, taskIndex: number) => (
                     <div
                       key={task._id}
                       ref={(el) => {
@@ -801,7 +1404,7 @@ const TasksManagement: React.FC = () => {
                       onDragStart={() => handleDragStart(task)}
                       onDragEnd={handleDragEnd}
                       onClick={() => handleTaskClick(task)}
-                      className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:border-white/40 transition-all duration-300 cursor-move hover:bg-white/15 opacity-0"
+                      className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:border-white/40 transition-all duration-300 cursor-move hover:bg-white/15"
                     >
                       {/* Task Header */}
                       <div className="flex items-start justify-between mb-3">
@@ -932,12 +1535,35 @@ const TasksManagement: React.FC = () => {
                     </div>
                   ))}
 
-                  {columnTasks.length === 0 && (
-                    <div className="text-center text-white/40 py-8">
-                      <p className="text-sm">تسکی در این مرحله وجود ندارد</p>
+                  {columnData.tasks.length === 0 && (
+                    <div className="text-center text-white/40 py-8 flex-1 flex items-center justify-center">
+                      <p className="text-sm">
+                        {columnData.totalCount === 0
+                          ? "تسکی در این مرحله وجود ندارد"
+                          : "تسک‌های این صفحه موجود نیست"}
+                      </p>
+                      {totalTasks > 0 && (
+                        <p className="text-xs mt-1">
+                          {totalTasks} تسک در صفحات دیگر موجود است
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
+
+                {/* Column Footer - Page Info */}
+                {totalPages > 1 && (
+                  <div className="p-3 border-t border-white/10">
+                    <div className="text-center text-xs text-white/50">
+                      صفحه {currentPage} از {totalPages} 
+                      {totalTasks > itemsPerPage && (
+                        <span className="block mt-1">
+                          نمایش {((currentPage - 1) * itemsPerPage) + 1} تا {Math.min(currentPage * itemsPerPage, totalTasks)} از {totalTasks}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -1029,12 +1655,22 @@ const TasksManagement: React.FC = () => {
                       ویرایش تسک (مدیر)
                     </h2>
                   </div>
-                  <button
-                    onClick={closeTaskModal}
-                    className="text-white/70 hover:text-white transition-colors"
-                  >
-                    <IoClose size={24} />
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => deleteTask(selectedTask._id)}
+                      className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white font-medium rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-red-500/25"
+                      title="حذف تسک"
+                    >
+                      <FaTrash className="text-sm" />
+                      حذف
+                    </button>
+                    <button
+                      onClick={closeTaskModal}
+                      className="text-white/70 hover:text-white transition-colors"
+                    >
+                      <IoClose size={24} />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

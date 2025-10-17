@@ -28,21 +28,47 @@ export async function GET(request: NextRequest) {
       filter.priority = searchParams.get("priority");
     }
 
-    // Filter by completion date range
+    // Filter by date range (using createdAt for general date filtering)
     if (
       searchParams.get("completedDateFrom") ||
       searchParams.get("completedDateTo")
     ) {
-      const completedDateFilter: { $gte?: Date; $lte?: Date } = {};
+      const dateFilter: { $gte?: Date; $lte?: Date } = {};
 
       if (searchParams.get("completedDateFrom")) {
-        completedDateFilter.$gte = new Date(
-          searchParams.get("completedDateFrom")!
-        );
+        const fromDate = new Date(searchParams.get("completedDateFrom")!);
+        fromDate.setHours(0, 0, 0, 0); // Start of day
+        dateFilter.$gte = fromDate;
+        console.log("API: Filtering from date:", fromDate);
       }
 
       if (searchParams.get("completedDateTo")) {
         const toDate = new Date(searchParams.get("completedDateTo")!);
+        toDate.setHours(23, 59, 59, 999); // End of day
+        dateFilter.$lte = toDate;
+        console.log("API: Filtering to date:", toDate);
+      }
+
+      // Filter by createdAt (when the task was created) rather than completedDate
+      filter.createdAt = dateFilter;
+      console.log("API: Date filter applied:", dateFilter);
+    }
+
+    // Additional filter for actual completion date if needed
+    if (
+      searchParams.get("actualCompletedDateFrom") ||
+      searchParams.get("actualCompletedDateTo")
+    ) {
+      const completedDateFilter: { $gte?: Date; $lte?: Date } = {};
+
+      if (searchParams.get("actualCompletedDateFrom")) {
+        completedDateFilter.$gte = new Date(
+          searchParams.get("actualCompletedDateFrom")!
+        );
+      }
+
+      if (searchParams.get("actualCompletedDateTo")) {
+        const toDate = new Date(searchParams.get("actualCompletedDateTo")!);
         toDate.setHours(23, 59, 59, 999); // End of day
         completedDateFilter.$lte = toDate;
       }
@@ -92,9 +118,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    console.log("API: Final filter object:", JSON.stringify(filter, null, 2));
+    
     const skip = (page - 1) * limit;
     const totalItems = await Task.countDocuments(filter);
     const totalPages = Math.ceil(totalItems / limit);
+    
+    console.log("API: Total items found with filter:", totalItems);
 
     const tasks = await Task.find(filter)
       .populate({
@@ -106,6 +136,14 @@ export async function GET(request: NextRequest) {
       .sort({ [sortBy]: sortOrder })
       .skip(skip)
       .limit(limit);
+
+    // Debug: Show first few tasks' creation dates
+    if (tasks.length > 0) {
+      console.log("API: First few tasks creation dates:");
+      tasks.slice(0, 3).forEach((task, index) => {
+        console.log(`Task ${index + 1}: ${task.title} - Created: ${task.createdAt}`);
+      });
+    }
 
     return NextResponse.json({
       success: true,

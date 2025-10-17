@@ -19,10 +19,13 @@ import {
   FaPlay,
   FaSyncAlt,
 } from "react-icons/fa";
-import { IoClose, IoChevronForward, IoChevronBack } from "react-icons/io5";
+import { IoClose, IoChevronForward, IoChevronBack, IoFilter, IoSearch, IoChevronUp, IoChevronDown, IoRefresh } from "react-icons/io5";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import VideoUploadModal from "@/components/modals/VideoUploadModal";
+import DatePicker, { DateObject } from "react-multi-date-picker";
+import persian from "react-date-object/calendars/persian";
+import persian_fa from "react-date-object/locales/persian_fa";
 
 interface DecodedToken {
   userId: string;
@@ -72,6 +75,7 @@ const TasksOfTheUsers: React.FC = () => {
   const router = useRouter();
   const [userInfo, setUserInfo] = useState<DecodedToken | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [allTasks, setAllTasks] = useState<Task[]>([]); // Store all tasks for filtering
   const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -84,6 +88,25 @@ const TasksOfTheUsers: React.FC = () => {
   );
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+
+  // Filter states
+  const [dateRange, setDateRange] = useState<[string, string]>(["", ""]);
+  const [filters, setFilters] = useState({
+    status: "",
+    priority: "",
+    title: "",
+    serviceRequestId: "",
+  });
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Pagination states for each column
+  const [columnPagination, setColumnPagination] = useState({
+    todo: { page: 1, itemsPerPage: 10 },
+    "in-progress": { page: 1, itemsPerPage: 10 },
+    review: { page: 1, itemsPerPage: 10 },
+    accepted: { page: 1, itemsPerPage: 10 },
+    completed: { page: 1, itemsPerPage: 10 },
+  });
   
   // Refs for GSAP animations
   const upcomingTasksRef = useRef<HTMLDivElement | null>(null);
@@ -429,27 +452,107 @@ const TasksOfTheUsers: React.FC = () => {
     extractUserFromToken();
   }, [router]);
 
-  // Fetch user tasks function
-  const fetchUserTasks = async () => {
+  // Fetch user tasks function with enhanced filtering
+  const fetchUserTasks = async (applyFilters = false) => {
     if (!userInfo?.userId) return;
 
     try {
+      setLoading(true);
+
       const token =
         localStorage.getItem("userToken") || localStorage.getItem("token");
-      const response = await fetch(
-        `/api/tasks?assignedUserId=${userInfo.userId}&limit=1000`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+
+      // Build query parameters
+      const queryParams = new URLSearchParams();
+      queryParams.set("assignedUserId", userInfo.userId); // Always filter by current user
+      queryParams.set("limit", "1000"); // Get a large number to ensure we get all tasks
+      queryParams.set("sortBy", "createdAt");
+      queryParams.set("sortOrder", "desc");
+
+      // Apply date range filter using createdAt if specified
+      if (applyFilters && dateRange[0]) {
+        queryParams.set("createdAtFrom", dateRange[0]);
+        console.log("Frontend - Setting date filter from:", dateRange[0]);
+      }
+      if (applyFilters && dateRange[1]) {
+        queryParams.set("createdAtTo", dateRange[1]);
+        console.log("Frontend - Setting date filter to:", dateRange[1]);
+      }
+
+      // Apply other filters if specified
+      if (applyFilters) {
+        if (filters.status) queryParams.set("status", filters.status);
+        if (filters.priority) queryParams.set("priority", filters.priority);
+        if (filters.title) queryParams.set("title", filters.title);
+      }
+
+      console.log("Frontend - Query params:", queryParams.toString());
+
+      const response = await fetch(`/api/tasks?${queryParams.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       const result = await response.json();
 
       if (result.success) {
-        setTasks(result.data || []);
+        let tasksData = result.data || [];
+
+        // If we have a large dataset and still hit pagination, fetch more pages
+        if (result.pagination && result.pagination.totalPages > 1) {
+          // Fetch all remaining pages
+          const additionalRequests = [];
+          for (let page = 2; page <= result.pagination.totalPages; page++) {
+            const pageParams = new URLSearchParams(queryParams);
+            pageParams.set("page", page.toString());
+            additionalRequests.push(
+              fetch(`/api/tasks?${pageParams.toString()}`, {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+              }).then((res) => res.json())
+            );
+          }
+
+          const additionalResults = await Promise.all(additionalRequests);
+          additionalResults.forEach((res) => {
+            if (res.success) {
+              tasksData = [...tasksData, ...(res.data || [])];
+            }
+          });
+        }
+
+        // Apply client-side filters for fields not supported by API
+        if (applyFilters) {
+          // Filter by service request if specified
+          if (filters.serviceRequestId) {
+            tasksData = tasksData.filter(
+              (task: Task) =>
+                task.serviceRequestId?._id === filters.serviceRequestId
+            );
+          }
+        }
+
+        setAllTasks(tasksData);
+        setTasks(tasksData);
+
+        // Reset pagination when new data is loaded
+        setColumnPagination({
+          todo: { page: 1, itemsPerPage: 10 },
+          "in-progress": { page: 1, itemsPerPage: 10 },
+          review: { page: 1, itemsPerPage: 10 },
+          accepted: { page: 1, itemsPerPage: 10 },
+          completed: { page: 1, itemsPerPage: 10 },
+        });
+
+        // Show success message if filters were applied
+        if (applyFilters) {
+          const totalTasks = tasksData.length;
+          toast.success(`${totalTasks} تسک با فیلترهای اعمال شده یافت شد`);
+        }
       } else {
         console.error("Tasks API error:", result);
         toast.error("خطا در دریافت تسک‌ها");
@@ -457,12 +560,14 @@ const TasksOfTheUsers: React.FC = () => {
     } catch (error) {
       console.error("Error fetching tasks:", error);
       toast.error("خطا در دریافت اطلاعات");
+    } finally {
+      setLoading(false);
     }
   };
 
   // Fetch user tasks on component mount and animate columns
   useEffect(() => {
-    fetchUserTasks();
+    fetchUserTasks(false);
   }, [userInfo]);
 
   // Animate elements when tasks are loaded
@@ -588,9 +693,9 @@ const TasksOfTheUsers: React.FC = () => {
     }
   };
 
-  // Filter tasks by status
+  // Filter tasks by status with pagination
   const getTasksByStatus = (status: string) => {
-    return tasks
+    const allStatusTasks = tasks
       .filter((task) => task.status === status)
       .sort((a, b) => {
         // Sort by priority first (urgent > high > medium > low)
@@ -608,6 +713,48 @@ const TasksOfTheUsers: React.FC = () => {
 
         return 0;
       });
+
+    // Apply pagination
+    const pagination = columnPagination[status as keyof typeof columnPagination];
+    if (!pagination) return allStatusTasks;
+
+    const startIndex = (pagination.page - 1) * pagination.itemsPerPage;
+    const endIndex = startIndex + pagination.itemsPerPage;
+    return allStatusTasks.slice(startIndex, endIndex);
+  };
+
+  // Get total count for pagination
+  const getTotalTasksByStatus = (status: string) => {
+    return tasks.filter((task) => task.status === status).length;
+  };
+
+  // Get total pages for a column
+  const getTotalPages = (status: string) => {
+    const totalTasks = getTotalTasksByStatus(status);
+    const pagination = columnPagination[status as keyof typeof columnPagination];
+    return Math.ceil(totalTasks / (pagination?.itemsPerPage || 10));
+  };
+
+  // Handle pagination change
+  const handlePageChange = (status: string, newPage: number) => {
+    setColumnPagination(prev => ({
+      ...prev,
+      [status]: {
+        ...prev[status as keyof typeof prev],
+        page: newPage
+      }
+    }));
+  };
+
+  // Handle items per page change
+  const handleItemsPerPageChange = (status: string, itemsPerPage: number) => {
+    setColumnPagination(prev => ({
+      ...prev,
+      [status]: {
+        page: 1, // Reset to first page
+        itemsPerPage
+      }
+    }));
   };
 
   // Check if task is overdue
@@ -689,7 +836,7 @@ const TasksOfTheUsers: React.FC = () => {
       updateTaskField(videoUploadTaskId, "attachedVideo", videoUrl);
       // Refresh tasks to ensure we have the latest data
       setTimeout(() => {
-        fetchUserTasks();
+        fetchUserTasks(false);
       }, 1000);
       setIsVideoUploadModalOpen(false);
       setVideoUploadTaskId(null);
@@ -755,6 +902,25 @@ const TasksOfTheUsers: React.FC = () => {
             opacity: 1;
           }
         }
+
+        /* Luxury Scrollbar Styles */
+        .scrollbar-luxury::-webkit-scrollbar {
+          width: 6px;
+        }
+        
+        .scrollbar-luxury::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 3px;
+        }
+        
+        .scrollbar-luxury::-webkit-scrollbar-thumb {
+          background: linear-gradient(45deg, #6366f1, #8b5cf6);
+          border-radius: 3px;
+        }
+        
+        .scrollbar-luxury::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(45deg, #4f46e5, #7c3aed);
+        }
       `}</style>
       <div
         className="min-h-screen bg-gradient-to-br from-[#030014] via-[#0A0A2E] to-[#030014] relative overflow-hidden"
@@ -779,13 +945,226 @@ const TasksOfTheUsers: React.FC = () => {
           {/* Refresh Button */}
           <div className="flex justify-end">
             <button
-              onClick={fetchUserTasks}
+              onClick={() => fetchUserTasks(false)}
               className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 flex items-center gap-3 shadow-lg hover:shadow-blue-500/25"
             >
               <FaSyncAlt className="text-xl" />
               بروزرسانی
             </button>
           </div>
+        </div>
+
+        {/* Enhanced Filter Interface */}
+        <div className="mb-8 bg-gradient-to-br from-white/10 via-white/5 to-white/10 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-2xl">
+          {/* Filter Header */}
+          <div className="p-6 border-b border-white/10">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-3 rounded-xl">
+                  <IoFilter className="text-white text-xl" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">فیلترهای پیشرفته</h3>
+                  <p className="text-white/60 text-sm">
+                    {allTasks.length > 0 && (
+                      <>مجموع {allTasks.length} تسک - {tasks.length} تسک نمایش داده شده</>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all duration-300 border border-white/20 hover:border-white/30"
+              >
+                {showFilters ? <IoChevronUp /> : <IoChevronDown />}
+                <span>{showFilters ? "بستن فیلترها" : "باز کردن فیلترها"}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Filter Content */}
+          {showFilters && (
+            <div className="p-6 space-y-6">
+              {/* Date Range Filter */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-white/80 text-sm font-medium mb-2">
+                    تاریخ شروع
+                  </label>
+                  <DatePicker
+                    value={dateRange[0]}
+                    onChange={(date: DateObject | null) => {
+                      if (date) {
+                        const startOfDay = new Date(date.toDate());
+                        startOfDay.setHours(0, 0, 0, 0);
+                        setDateRange([startOfDay.toISOString(), dateRange[1]]);
+                      } else {
+                        setDateRange(["", dateRange[1]]);
+                      }
+                    }}
+                    calendar={persian}
+                    locale={persian_fa}
+                    placeholder="انتخاب تاریخ شروع"
+                    className="w-full bg-white/10 border border-white/20 rounded-xl text-white"
+                    containerStyle={{
+                      width: "100%",
+                    }}
+                    style={{
+                      backgroundColor: "rgba(255, 255, 255, 0.1)",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      borderRadius: "12px",
+                      padding: "12px 16px",
+                      color: "white",
+                      width: "100%",
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white/80 text-sm font-medium mb-2">
+                    تاریخ پایان
+                  </label>
+                  <DatePicker
+                    value={dateRange[1]}
+                    onChange={(date: DateObject | null) => {
+                      if (date) {
+                        const endOfDay = new Date(date.toDate());
+                        endOfDay.setHours(23, 59, 59, 999);
+                        setDateRange([dateRange[0], endOfDay.toISOString()]);
+                      } else {
+                        setDateRange([dateRange[0], ""]);
+                      }
+                    }}
+                    calendar={persian}
+                    locale={persian_fa}
+                    placeholder="انتخاب تاریخ پایان"
+                    className="w-full bg-white/10 border border-white/20 rounded-xl text-white"
+                    containerStyle={{
+                      width: "100%",
+                    }}
+                    style={{
+                      backgroundColor: "rgba(255, 255, 255, 0.1)",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      borderRadius: "12px",
+                      padding: "12px 16px",
+                      color: "white",
+                      width: "100%",
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Other Filters */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Status Filter */}
+                <div>
+                  <label className="block text-white/80 text-sm font-medium mb-2">
+                    وضعیت
+                  </label>
+                  <select
+                    value={filters.status}
+                    onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all"
+                  >
+                    <option value="" className="bg-gray-800">همه وضعیت‌ها</option>
+                    <option value="todo" className="bg-gray-800">انجام نشده</option>
+                    <option value="in-progress" className="bg-gray-800">در حال انجام</option>
+                    <option value="review" className="bg-gray-800">در حال بررسی</option>
+                    <option value="accepted" className="bg-gray-800">تایید شده</option>
+                    <option value="completed" className="bg-gray-800">تکمیل شده</option>
+                  </select>
+                </div>
+
+                {/* Priority Filter */}
+                <div>
+                  <label className="block text-white/80 text-sm font-medium mb-2">
+                    اولویت
+                  </label>
+                  <select
+                    value={filters.priority}
+                    onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
+                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all"
+                  >
+                    <option value="" className="bg-gray-800">همه اولویت‌ها</option>
+                    <option value="low" className="bg-gray-800">کم</option>
+                    <option value="medium" className="bg-gray-800">متوسط</option>
+                    <option value="high" className="bg-gray-800">بالا</option>
+                    <option value="urgent" className="bg-gray-800">فوری</option>
+                  </select>
+                </div>
+
+                {/* Title Filter */}
+                <div>
+                  <label className="block text-white/80 text-sm font-medium mb-2">
+                    جستجو در عنوان
+                  </label>
+                  <div className="relative">
+                    <IoSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50" />
+                    <input
+                      type="text"
+                      value={filters.title}
+                      onChange={(e) => setFilters(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="جستجو در عنوان تسک..."
+                      className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 pl-10 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Service Request Filter */}
+                <div>
+                  <label className="block text-white/80 text-sm font-medium mb-2">
+                    درخواست سرویس
+                  </label>
+                  <input
+                    type="text"
+                    value={filters.serviceRequestId}
+                    onChange={(e) => setFilters(prev => ({ ...prev, serviceRequestId: e.target.value }))}
+                    placeholder="ID درخواست سرویس..."
+                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Filter Actions */}
+              <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => fetchUserTasks(true)}
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-purple-500/25"
+                  >
+                    <IoFilter />
+                    اعمال فیلترها
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setDateRange(["", ""]);
+                      setFilters({
+                        status: "",
+                        priority: "",
+                        title: "",
+                        serviceRequestId: "",
+                      });
+                      fetchUserTasks(false);
+                    }}
+                    className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all duration-300 border border-white/20 hover:border-white/30"
+                  >
+                    <IoRefresh />
+                    پاک کردن فیلترها
+                  </button>
+                </div>
+
+                {/* Quick Filter Info */}
+                <div className="text-white/60 text-sm">
+                  {(dateRange[0] || dateRange[1] || Object.values(filters).some(f => f)) && (
+                    <span className="bg-white/10 px-3 py-1 rounded-full">
+                      فیلترهای فعال اعمال شده
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Upcoming Tasks Priority Box */}
@@ -943,6 +1322,10 @@ const TasksOfTheUsers: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-5 gap-6">
           {statusColumns.map((column, columnIndex) => {
             const columnTasks = getTasksByStatus(column.id);
+            const totalTasks = getTotalTasksByStatus(column.id);
+            const totalPages = getTotalPages(column.id);
+            const currentPage = columnPagination[column.id as keyof typeof columnPagination]?.page || 1;
+            const itemsPerPage = columnPagination[column.id as keyof typeof columnPagination]?.itemsPerPage || 10;
             const Icon = column.icon;
 
             return (
@@ -952,28 +1335,79 @@ const TasksOfTheUsers: React.FC = () => {
                 onDragOver={(e) => handleDragOver(e, column.id)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, column.id)}
-                className={`bg-gradient-to-br ${column.color} backdrop-blur-xl h-70 overflow-y-auto scrollbar-luxury rounded-2xl border ${
+                className={`bg-gradient-to-br ${column.color} backdrop-blur-xl rounded-2xl border ${
                   dragOverColumn === column.id && draggedTask && canUserDragToStatus(draggedTask.status, column.id)
                     ? 'border-purple-400 shadow-lg shadow-purple-400/25' 
                     : column.borderColor
-                } p-4 transition-all duration-300 animate-[fadeIn_0.8s_ease-out_forwards]`}
+                } transition-all duration-300 animate-[fadeIn_0.8s_ease-out_forwards] flex flex-col`}
                 style={{ animationDelay: `${columnIndex * 0.15}s` }}
               >
                 {/* Column Header */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Icon className={`${column.iconColor} text-lg`} />
-                    <h3 className={`${column.iconColor} font-semibold`}>
-                      {column.title}
-                    </h3>
+                <div className="p-4 border-b border-white/10">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Icon className={`${column.iconColor} text-lg`} />
+                      <h3 className={`${column.iconColor} font-semibold`}>
+                        {column.title}
+                      </h3>
+                    </div>
+                    <span className="bg-white/10 text-white/70 px-2 py-1 rounded-full text-xs">
+                      {totalTasks}
+                    </span>
                   </div>
-                  <span className="bg-white/10 text-white/70 px-2 py-1 rounded-full text-xs">
-                    {columnTasks.length}
-                  </span>
+
+                  {/* Pagination Controls */}
+                  {totalTasks > 0 && (
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-white/60">نمایش:</span>
+                        <select
+                          value={itemsPerPage}
+                          onChange={(e) => handleItemsPerPageChange(column.id, parseInt(e.target.value))}
+                          className="bg-white/10 border border-white/20 rounded px-2 py-1 text-white text-xs focus:outline-none"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <option value={5} className="bg-gray-800">5</option>
+                          <option value={10} className="bg-gray-800">10</option>
+                          <option value={20} className="bg-gray-800">20</option>
+                          <option value={50} className="bg-gray-800">50</option>
+                        </select>
+                        <span className="text-white/60">تسک</span>
+                      </div>
+
+                      {totalPages > 1 && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePageChange(column.id, Math.max(1, currentPage - 1));
+                            }}
+                            disabled={currentPage === 1}
+                            className="p-1 text-white/60 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <IoChevronForward className="text-xs" />
+                          </button>
+                          <span className="text-white/60 px-2">
+                            {currentPage} از {totalPages}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePageChange(column.id, Math.min(totalPages, currentPage + 1));
+                            }}
+                            disabled={currentPage === totalPages}
+                            className="p-1 text-white/60 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <IoChevronBack className="text-xs" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Task Cards */}
-                <div className="space-y-3 max-h-[600px] ">
+                <div className="flex-1 p-4 space-y-3 overflow-y-auto scrollbar-luxury" style={{ maxHeight: '600px' }}>
                   {columnTasks.map((task, taskIndex) => (
                     <div
                       key={task._id}
@@ -1118,9 +1552,28 @@ const TasksOfTheUsers: React.FC = () => {
                   {columnTasks.length === 0 && (
                     <div className="text-center text-white/40 py-8">
                       <p className="text-sm">تسکی در این مرحله وجود ندارد</p>
+                      {totalTasks > 0 && (
+                        <p className="text-xs mt-1">
+                          {totalTasks} تسک در صفحات دیگر موجود است
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
+
+                {/* Column Footer - Page Info */}
+                {totalPages > 1 && (
+                  <div className="p-3 border-t border-white/10">
+                    <div className="text-center text-xs text-white/50">
+                      صفحه {currentPage} از {totalPages} 
+                      {totalTasks > itemsPerPage && (
+                        <span className="block mt-1">
+                          نمایش {((currentPage - 1) * itemsPerPage) + 1} تا {Math.min(currentPage * itemsPerPage, totalTasks)} از {totalTasks}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
