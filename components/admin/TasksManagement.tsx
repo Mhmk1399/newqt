@@ -1197,26 +1197,7 @@ const TasksManagement: React.FC = () => {
                     </select>
                   </div>
 
-                  {/* Service Request Filter */}
-                  <div>
-                    <label className="block text-white/70 text-sm mb-2 font-medium">
-                      درخواست سرویس
-                    </label>
-                    <select
-                      value={filters.serviceRequestId}
-                      onChange={(e) =>
-                        setFilters({ ...filters, serviceRequestId: e.target.value })
-                      }
-                      className="w-full p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
-                    >
-                      <option value="" className="bg-gray-800">همه درخواست‌ها</option>
-                      {serviceRequests.map((sr) => (
-                        <option key={sr._id} value={sr._id} className="bg-gray-800">
-                          {sr.title}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+           
                 </div>
 
                 {/* Apply Advanced Filters Button */}
