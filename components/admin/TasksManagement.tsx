@@ -96,6 +96,7 @@ const TasksManagement: React.FC = () => {
   const [videoUploadTaskId, setVideoUploadTaskId] = useState<string | null>(
     null
   );
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
 
@@ -271,6 +272,20 @@ const TasksManagement: React.FC = () => {
       await updateTaskStatus(draggedTask._id, newStatus);
     }
     handleDragEnd();
+  };
+
+  // Selection helpers for bulk actions
+  const toggleSelectTask = (taskId: string) => {
+    setSelectedTaskIds((prev) =>
+      prev.includes(taskId) ? prev.filter((id) => id !== taskId) : [...prev, taskId]
+    );
+  };
+
+  const clearSelection = () => setSelectedTaskIds([]);
+
+  const selectAllVisible = (visibleTasks: Task[]) => {
+    const ids = visibleTasks.map((t) => t._id);
+    setSelectedTaskIds((prev) => Array.from(new Set([...prev, ...ids])));
   };
 
   // Task status columns configuration
@@ -667,6 +682,34 @@ const TasksManagement: React.FC = () => {
     }
   };
 
+  // Bulk update selected tasks' status
+  const updateSelectedTasksStatus = async (newStatus: string) => {
+    try {
+      toast.loading("در حال اعمال تغییرات...");
+      const requests = selectedTaskIds.map((taskId) =>
+        fetch("/api/tasks", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ _id: taskId, status: newStatus }),
+        }).then((res) => res.json())
+      );
+
+      const results = await Promise.all(requests);
+      const failed = results.filter((r) => !r.success);
+      if (failed.length > 0) {
+        toast.error(`${failed.length} تسک با خطا مواجه شد`);
+      } else {
+        toast.success("وضعیت تسک‌ها با موفقیت به‌روز شد");
+      }
+
+      clearSelection();
+      fetchTasks();
+    } catch (error) {
+      console.error("Bulk update error:", error);
+      toast.error("خطا در اعمال تغییرات گروهی");
+    }
+  };
+
   // Update task field
   const updateTaskField = async (
     taskId: string,
@@ -1008,6 +1051,48 @@ const TasksManagement: React.FC = () => {
           
           <div className="relative z-10">
             {/* Header */}
+            {/* Bulk status change control */}
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => selectAllVisible(tasks)}
+                  className="px-3 py-2 bg-white/10 text-white rounded-md text-sm hover:bg-white/20"
+                >
+                  انتخاب همه
+                </button>
+                <button
+                  onClick={clearSelection}
+                  className="px-3 py-2 bg-white/10 text-white rounded-md text-sm hover:bg-white/20"
+                >
+                  پاک کردن انتخاب
+                </button>
+                <span className="text-white/70 text-sm">انتخاب شده: {selectedTaskIds.length}</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <select id="bulk-status" className="bg-black/40 text-white px-3 py-2 rounded-md text-sm" defaultValue="">
+                  <option value="" disabled>تغییر وضعیت گروهی...</option>
+                  <option value="todo">انجام نشده</option>
+                  <option value="in-progress">در حال انجام</option>
+                  <option value="review">در بررسی</option>
+                  <option value="accepted">تایید شده</option>
+                  <option value="completed">تکمیل شده</option>
+                  <option value="paid">پرداخت شده</option>
+                  <option value="cancelled">لغو شده</option>
+                </select>
+                <button
+                  onClick={() => {
+                    const sel = (document.getElementById("bulk-status") as HTMLSelectElement)?.value;
+                    if (!sel) { toast.error("لطفا یک وضعیت انتخاب کنید"); return; }
+                    if (selectedTaskIds.length === 0) { toast.error("هیچ تسکی انتخاب نشده است"); return; }
+                    updateSelectedTasksStatus(sel);
+                  }}
+                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-violet-600 text-white rounded-md text-sm"
+                >
+                  تغییر وضعیت گروهی
+                </button>
+              </div>
+            </div>
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-2">
                 فیلتر و جستجوی تسکها
@@ -1126,7 +1211,7 @@ const TasksManagement: React.FC = () => {
                 exit={{ opacity: 0, height: 0 }}
                 className="p-6 bg-white/5 rounded-2xl border border-white/10"
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {/* Title Search */}
                   <div>
                     <label className="block text-white/70 text-sm mb-2 font-medium">
@@ -1268,7 +1353,7 @@ const TasksManagement: React.FC = () => {
         )}
 
         {/* Task Statistics */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
           {statusColumns.map((column, index) => {
             const totalTasks = getTotalTasksByStatus(column.id);
             const Icon = column.icon;
@@ -1295,7 +1380,7 @@ const TasksManagement: React.FC = () => {
         </div>
 
         {/* Kanban Board */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-6 gap-1">
           {statusColumns.map((column, columnIndex) => {
             const columnData = getTasksByStatus(column.id);
             const totalTasks = getTotalTasksByStatus(column.id);
@@ -1401,9 +1486,18 @@ const TasksManagement: React.FC = () => {
                     >
                       {/* Task Header */}
                       <div className="flex items-start justify-between mb-3">
-                        <h4 className="text-white font-medium text-sm line-clamp-2 flex-1">
-                          {task.title}
-                        </h4>
+                        <div className="flex items-start gap-2 w-full">
+                          <input
+                            type="checkbox"
+                            checked={selectedTaskIds.includes(task._id)}
+                            onChange={(e) => { e.stopPropagation(); toggleSelectTask(task._id); }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-4 h-4 mt-1 ml-2"
+                          />
+                          <h4 className="text-white font-medium text-sm line-clamp-2 flex-1">
+                            {task.title}
+                          </h4>
+                        </div>
                         <div className="flex items-center gap-1 ml-2">
                           <FaFlag
                             className={`text-xs ${
