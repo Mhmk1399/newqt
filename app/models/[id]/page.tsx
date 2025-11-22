@@ -191,10 +191,10 @@ export default function CoworkerDetails() {
                     {(() => {
                       if (coworker.images?.main) {
                         return (
-                          <Image
+                          <img
                             src={coworker.images.main}
                             alt={coworker.name}
-                            fill
+                            
                             className="object-cover"
                             onError={(e) =>
                               console.error("Main image load error:", e)
@@ -238,12 +238,7 @@ export default function CoworkerDetails() {
 
                 {/* Contact Info */}
                 <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 mb-6">
-                  <div className="flex items-center gap-2 px-3 py-2 bg-white/10 rounded-lg">
-                    <FiPhone className="text-green-400" />
-                    <span className="text-white text-sm">
-                      {coworker.phoneNumber}
-                    </span>
-                  </div>
+                  
                   {coworker.email && (
                     <div className="flex items-center gap-2 px-3 py-2 bg-white/10 rounded-lg">
                       <FiMail className="text-blue-400" />
@@ -358,13 +353,13 @@ export default function CoworkerDetails() {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.1 * index }}
                     whileHover={{ scale: 1.05 }}
-                    className="relative aspect-square overflow-hidden rounded-xl bg-white/5 border border-white/10"
+                    className="relative  overflow-hidden rounded-xl bg-white/5 border border-white/10"
                   >
-                    <Image
+                    <img
                       src={image}
                       alt={`${coworker.name} - تصویر ${index + 1}`}
-                      fill
-                      className="object-cover transition-all duration-300 hover:brightness-110"
+                      
+                      className=" transition-all duration-300 hover:brightness-110"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300" />
                   </motion.div>
@@ -393,12 +388,7 @@ export default function CoworkerDetails() {
             </p>
 
             <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
-                <div className="w-8 h-8 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-lg flex items-center justify-center">
-                  <FiPhone className="text-green-400 text-sm" />
-                </div>
-                <span className="text-white">{coworker.phoneNumber}</span>
-              </div>
+              
 
               {coworker.email && (
                 <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">

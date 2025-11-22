@@ -5,13 +5,16 @@ import DynamicTable from "@/components/global/newdynamics/dynamicTable";
 import DynamicForm from "@/components/global/newdynamics/dynamicForm";
 import { TableColumn, TableData, FormField, FilterField } from "@/types/dynamicTypes/types";
 import { motion, AnimatePresence } from "framer-motion";
-import { IoAdd, IoClose, IoPlay } from "react-icons/io5";
+import { IoAdd, IoClose, IoPlay, IoCloudUpload } from "react-icons/io5";
 import toast from "react-hot-toast";
+import VideoUploadModal from "@/components/modals/VideoUploadModal";
 
 const VideosManagement: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [categories, setCategories] = useState<{_id: string, name: string}[]>([]);
   const [videoModal, setVideoModal] = useState<{isOpen: boolean, videoUrl: string | null}>({isOpen: false, videoUrl: null});
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [newVideoLink, setNewVideoLink] = useState<string>("");
 
   const columns: TableColumn[] = [
     {
@@ -97,6 +100,7 @@ const VideosManagement: React.FC = () => {
       type: "text",
       placeholder: "لینک ویدیو را وارد کنید",
       validation: [{ type: "required", message: "لینک ویدیو الزامی است" }],
+      defaultValue: newVideoLink || undefined,
     },
     {
       name: "categoryId",
@@ -262,7 +266,31 @@ const VideosManagement: React.FC = () => {
                     </button>
                   </div>
                   
+                  <div className="mb-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setUploadModalOpen(true)}
+                        className="px-4 py-2 bg-gradient-to-r from-purple-600 to-violet-600 text-white rounded-lg flex items-center gap-2"
+                      >
+                        <IoCloudUpload />
+                        آپلود ویدیو
+                      </button>
+
+                      {newVideoLink ? (
+                        <div className="text-sm text-white/80 truncate max-w-md">
+                          <span className="ml-2">لینک جاری:</span>
+                          <a href={newVideoLink} target="_blank" rel="noreferrer" className="underline ml-2">
+                            {newVideoLink.length > 60 ? `${newVideoLink.substring(0, 60)}...` : newVideoLink}
+                          </a>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-white/50">هیچ ویدیویی آپلود نشده است</div>
+                      )}
+                    </div>
+                  </div>
+
                   <DynamicForm
+                    key={`add-video-${newVideoLink}`}
                     title=""
                     subtitle=""
                     fields={formFields}
@@ -271,6 +299,7 @@ const VideosManagement: React.FC = () => {
                     submitButtonText="افزودن ویدیو"
                     onSuccess={() => {
                       setIsAddModalOpen(false);
+                      setNewVideoLink("");
                       toast.success("ویدیو با موفقیت افزوده شد");
                     }}
                     onError={() => {
@@ -284,6 +313,21 @@ const VideosManagement: React.FC = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Video Upload Modal (used for adding new videos) */}
+        <VideoUploadModal
+          isOpen={uploadModalOpen}
+          taskId={""}
+          onClose={() => setUploadModalOpen(false)}
+          onSuccess={(videoUrl: string) => {
+            setNewVideoLink(videoUrl);
+            setUploadModalOpen(false);
+            toast.success("لینک ویدیو ثبت شد");
+          }}
+          onError={(err: string) => {
+            toast.error(err || "خطا در آپلود ویدیو");
+          }}
+        />
 
         {/* Video Modal */}
         <AnimatePresence>

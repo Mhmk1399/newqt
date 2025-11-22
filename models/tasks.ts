@@ -7,7 +7,7 @@ export interface ITask {
   assignedUserId?: mongoose.Types.ObjectId;
   title: string;
   description: string;
-  status: 'todo' | 'in-progress' | 'review' | 'completed' | 'cancelled' | 'accepted';
+  status: 'todo' | 'in-progress' | 'review' | 'completed' | 'cancelled' | 'accepted' | 'paid';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   startDate?: Date;
   dueDate?: Date;
@@ -40,7 +40,7 @@ const taskSchema = new mongoose.Schema<ITask>({
   },
   status: {
     type: String,
-    enum: ['todo', 'in-progress', 'review',"accepted", 'completed', 'cancelled'],
+    enum: ['todo', 'in-progress', 'review',"accepted", 'completed', 'cancelled','paid'],
     default: 'todo',
     required: true
   },

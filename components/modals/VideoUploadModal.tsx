@@ -33,7 +33,7 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const MAX_FILE_SIZE = 300 * 1024 * 1024; // 300MB
+  const MAX_FILE_SIZE = 200 * 1024 * 1024; // 200MB (match server default)
   const ALLOWED_FORMATS = ['mp4', 'webm', 'ogg', 'avi', 'mov'];
 
   const resetModal = () => {
@@ -126,7 +126,8 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
 
     try {
       const formData = new FormData();
-      formData.append('video', selectedFile);
+      // Server expects field name `file` (used by `app/api/upload/route.ts`)
+      formData.append('file', selectedFile);
       formData.append('taskId', taskId);
 
       // Simulate progress (since we can't track actual upload progress easily with fetch)
@@ -140,7 +141,7 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
         });
       }, 200);
 
-      const response = await fetch('/api/upload/video', {
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
@@ -151,8 +152,10 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
+          // Server returns URL under `data.url`
+          const uploadedUrl = result?.data?.url ?? result?.url ?? result?.videoUrl;
           toast.success(result.message || "ویدیو با موفقیت آپلود شد");
-          onSuccess(result.videoUrl);
+          onSuccess(uploadedUrl);
           setTimeout(() => {
             resetModal();
             onClose();
@@ -249,7 +252,7 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
                   فایل را اینجا بکشید و رها کنید یا روی دکمه زیر کلیک کنید
                 </p>
                 <p className="text-white/50 text-sm mb-6">
-                  فرمت‌های مجاز: MP4, WebM, OGG, AVI, MOV | حداکثر حجم: 300MB
+                  فرمت‌های مجاز: MP4, WebM, OGG, AVI, MOV | حداکثر حجم: {Math.round(MAX_FILE_SIZE / (1024 * 1024))}MB
                 </p>
                 
                 <motion.button

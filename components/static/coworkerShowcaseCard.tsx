@@ -35,10 +35,9 @@ const CoworkerShowcaseCard = ({ coworker, className = "" }: Props) => {
       {/* Image */}
       <div className="relative h-64 overflow-hidden">
         {coworker.images.main && !imageError ? (
-          <Image
+          <img
             src={coworker.images.main}
             alt={coworker.name}
-            fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
             onError={() => setImageError(true)}
           />

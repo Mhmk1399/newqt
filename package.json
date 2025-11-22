@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.937.0",
+    "@aws-sdk/s3-request-presigner": "^3.937.0",
     "@studio-freight/lenis": "^1.0.42",
     "bcryptjs": "^3.0.2",
     "framer-motion": "^12.23.12",

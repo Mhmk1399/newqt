@@ -623,7 +623,7 @@ const CoWorkerProfileEditor: React.FC = () => {
                       <div className="grid grid-cols-1 gap-4">
                         {profile.images?.main && (
                           <div className="relative">
-                            <Image
+                            <img
                               src={profile.images.main}
                               alt="تصویر اصلی"
                               width={400}
@@ -640,7 +640,7 @@ const CoWorkerProfileEditor: React.FC = () => {
                             <div className="grid grid-cols-3 gap-2">
                               {profile.images.thumbnails.map((thumb, index) => (
                                 <div key={index} className="relative">
-                                  <Image
+                                  <img
                                     src={thumb}
                                     alt={`تصویر ${index + 1}`}
                                     width={120}

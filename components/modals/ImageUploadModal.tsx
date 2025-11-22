@@ -41,7 +41,13 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
       throw new Error(result.error || "Upload failed");
     }
 
-    return result.url;
+    // Server returns URL under `data.url`; fall back to `result.url` if present
+    const uploadedUrl = result?.data?.url ?? result?.url;
+    if (!uploadedUrl) {
+      throw new Error("Upload succeeded but no URL was returned");
+    }
+
+    return uploadedUrl;
   }, []);
 
   const handleMainImageUpload = async (
@@ -120,7 +126,7 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
               {mainImage ? (
                 <div className="relative">
-                  <Image
+                  <img
                     src={mainImage}
                     alt="Main"
                     className="w-full h-64 object-cover rounded-lg"
@@ -179,7 +185,7 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {thumbnails.map((thumb, index) => (
                   <div key={index} className="relative">
-                    <Image
+                    <img
                       src={thumb}
                       alt={`Thumbnail ${index + 1}`}
                       className="w-full h-32 object-cover rounded-lg"
