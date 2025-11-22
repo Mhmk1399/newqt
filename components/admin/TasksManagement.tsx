@@ -42,13 +42,14 @@ interface Task {
   _id: string;
   title: string;
   description: string;
-  status:
+    status:
     | "todo"
     | "in-progress"
     | "review"
     | "accepted"
     | "completed"
-    | "cancelled";
+    | "cancelled"
+    | "paid";
   priority: "low" | "medium" | "high" | "urgent";
   startDate?: string;
   dueDate?: string;
@@ -116,6 +117,7 @@ const TasksManagement: React.FC = () => {
     review: { page: 1, itemsPerPage: 10 },
     accepted: { page: 1, itemsPerPage: 10 },
     completed: { page: 1, itemsPerPage: 10 },
+    paid: { page: 1, itemsPerPage: 10 },
   });
 
   // Refs for GSAP animations
@@ -313,6 +315,14 @@ const TasksManagement: React.FC = () => {
       icon: FaCheckCircle,
       iconColor: "text-green-400",
     },
+    {
+      id: "paid",
+      title: "پرداخت شده",
+      color: "from-indigo-500/20 to-indigo-600/10",
+      borderColor: "border-indigo-500/30",
+      icon: FaFileUpload,
+      iconColor: "text-indigo-400",
+    },
   ];
 
   // Priority colors and labels
@@ -369,7 +379,8 @@ const TasksManagement: React.FC = () => {
         { label: "در حال انجام", value: "in-progress" },
         { label: "در حال بررسی", value: "review" },
         { label: "تایید شده", value: "accepted" },
-        { label: "تکمیل شده", value: "completed" },
+          { label: "تکمیل شده", value: "completed" },
+          { label: "پرداخت شده", value: "paid" },
         { label: "لغو شده", value: "cancelled" },
       ],
       defaultValue: "todo",
@@ -484,6 +495,7 @@ const TasksManagement: React.FC = () => {
           review: { page: 1, itemsPerPage: 10 },
           accepted: { page: 1, itemsPerPage: 10 },
           completed: { page: 1, itemsPerPage: 10 },
+          paid: { page: 1, itemsPerPage: 10 },
         });
 
         // Show success message if filters were applied
@@ -1474,7 +1486,9 @@ const TasksManagement: React.FC = () => {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const prevStatus =
-                                  column.id === "completed"
+                                  column.id === "paid"
+                                    ? "completed"
+                                    : column.id === "completed"
                                     ? "accepted"
                                     : column.id === "accepted"
                                     ? "review"
@@ -1491,7 +1505,7 @@ const TasksManagement: React.FC = () => {
                           )}
 
                           {/* Next status button */}
-                          {column.id !== "completed" && (
+                          {column.id !== "paid" && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1502,7 +1516,9 @@ const TasksManagement: React.FC = () => {
                                     ? "review"
                                     : column.id === "review"
                                     ? "accepted"
-                                    : "completed";
+                                    : column.id === "accepted"
+                                    ? "completed"
+                                    : /* column.id === 'completed' */ "paid";
                                 updateTaskStatus(task._id, nextStatus);
                               }}
                               className="text-green-400 hover:text-green-300 text-xs p-1 rounded hover:bg-white/10 flex items-center"
@@ -1972,6 +1988,11 @@ const TasksManagement: React.FC = () => {
                             status: "completed",
                             label: "تکمیل شده",
                             color: "bg-green-600",
+                          },
+                          {
+                            status: "paid",
+                            label: "پرداخت شده",
+                            color: "bg-indigo-600",
                           },
                           {
                             status: "cancelled",
