@@ -64,6 +64,7 @@ const LuxuryServiceRequest: React.FC = () => {
   const router = useRouter();
   const [userInfo, setUserInfo] = useState<DecodedToken | null>(null);
   const [services, setServices] = useState<Service[]>([]);
+  const [isCustomerVip, setIsCustomerVip] = useState<boolean | null>(null);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -111,16 +112,53 @@ const LuxuryServiceRequest: React.FC = () => {
     extractUserFromToken();
   }, [router]);
 
-  // Fetch services from API
+  // Fetch customer profile to determine VIP status
+  useEffect(() => {
+    const fetchCustomer = async () => {
+      if (!userInfo?.userId) return;
+      try {
+        const token = localStorage.getItem("userToken") || localStorage.getItem("token");
+        const res = await fetch(`/api/customers?id=${userInfo.userId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        const result = await res.json();
+        if (result.success && result.data) {
+          setIsCustomerVip(!!result.data.isVip);
+        } else {
+          // If customer record not found, treat as non-VIP
+          setIsCustomerVip(false);
+        }
+      } catch (err) {
+        console.error("Error fetching customer:", err);
+        setIsCustomerVip(false);
+      }
+    };
+
+    fetchCustomer();
+  }, [userInfo]);
+
+  // Fetch services from API (filtered by customer's VIP status)
   useEffect(() => {
     const fetchServices = async () => {
       if (!userInfo?.userId) return;
+      // wait until we know VIP status
+      if (isCustomerVip === null) return;
 
       setLoading(true);
       try {
         const token =
           localStorage.getItem("userToken") || localStorage.getItem("token");
-        const response = await fetch("/api/services?isActive=true&limit=100", {
+
+        const params = new URLSearchParams();
+        params.set("isActive", "true");
+        params.set("limit", "100");
+        // server expects isVip=true/false to filter services
+        params.set("isVip", isCustomerVip ? "true" : "false");
+
+        const response = await fetch(`/api/services?${params.toString()}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -144,7 +182,7 @@ const LuxuryServiceRequest: React.FC = () => {
     };
 
     fetchServices();
-  }, [userInfo]);
+  }, [userInfo, isCustomerVip]);
 
   // Handle service selection
   const handleServiceSelect = (service: Service) => {
