@@ -83,7 +83,7 @@ const ExpertiseDropdown: React.FC<ExpertiseDropdownProps> = ({
             {options.map((option, index) => {
               const IconComponent = option.icon;
               const isSelected = option.value === selectedValue;
-              
+
               return (
                 <motion.button
                   key={option.value}
@@ -102,8 +102,8 @@ const ExpertiseDropdown: React.FC<ExpertiseDropdownProps> = ({
                   whileHover={{ x: 4 }}
                 >
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                    isSelected 
-                      ? "bg-white/20" 
+                    isSelected
+                      ? "bg-white/20"
                       : "bg-gradient-to-r from-purple-500/20 to-blue-500/20"
                   }`}>
                     <IconComponent className="text-lg" />
@@ -134,10 +134,14 @@ const ExpertiseDropdown: React.FC<ExpertiseDropdownProps> = ({
   );
 };
 
+import { isTokenValid } from "@/utilities/jwtUtils";
+
 const ModelsPage = () => {
   const [selectedExpertise, setSelectedExpertise] = useState<string>("model");
+  const [genderFilter, setGenderFilter] = useState<string>("all");
   const [coworkers, setCoworkers] = useState<CoWorker[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -154,13 +158,27 @@ const ModelsPage = () => {
     const fetchCoworkers = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch("/api/coworkers");
+
+        // Check token access first
+        const tokenOk = isTokenValid();
+        setHasAccess(tokenOk);
+        if (!tokenOk) {
+          setCoworkers([]);
+          return;
+        }
+
+        // Build query params with expertise and gender
+        const params = new URLSearchParams();
+        params.set("experties", selectedExpertise);
+        if (genderFilter && genderFilter !== "all") {
+          params.set("gender", genderFilter);
+        }
+
+        const response = await fetch(`/api/coworkers?${params.toString()}`);
         const result = await response.json();
         if (result.success) {
           // Only show active and approved coworkers
-          setCoworkers(
-            result.data.filter((worker: CoWorker) => worker.isActive)
-          );
+          setCoworkers(result.data.filter((worker: CoWorker) => worker.isActive));
         }
       } catch (error) {
         console.error("Error fetching coworkers:", error);
@@ -170,7 +188,7 @@ const ModelsPage = () => {
     };
 
     fetchCoworkers();
-  }, []);
+  }, [selectedExpertise, genderFilter]);
 
   // Filter coworkers by expertise
   const filteredCoworkers = coworkers.filter(
@@ -239,6 +257,8 @@ const ModelsPage = () => {
             })}
           </div>
 
+          {/* gender filter placeholder - moved below to keep layout tidy */}
+
           {/* Mobile Version - Luxury Dropdown */}
           <div className="sm:hidden w-full max-w-sm">
             <ExpertiseDropdown
@@ -249,9 +269,36 @@ const ModelsPage = () => {
           </div>
         </div>
 
+        {/* Gender Filter - placed under the main filter box with matching styles */}
+        <div className="flex justify-center mb-8">
+          <div className="w-full max-w-3xl flex items-center justify-center gap-3 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-2">
+            <button
+              className={`px-4 py-2 rounded-xl ${genderFilter === "all" ? "bg-white/20 text-white" : "text-gray-300 hover:bg-white/5"}`}
+              onClick={() => setGenderFilter("all")}
+            >همه</button>
+            <button
+              className={`px-4 py-2 rounded-xl ${genderFilter === "male" ? "bg-white/20 text-white" : "text-gray-300 hover:bg-white/5"}`}
+              onClick={() => setGenderFilter("male")}
+            >آقایان</button>
+            <button
+              className={`px-4 py-2 rounded-xl ${genderFilter === "female" ? "bg-white/20 text-white" : "text-gray-300 hover:bg-white/5"}`}
+              onClick={() => setGenderFilter("female")}
+            >خانم‌ها</button>
+          </div>
+        </div>
+
         {/* Coworkers Grid */}
         <div ref={gridRef} className="relative">
-          {isLoading ? (
+          {hasAccess === false ? (
+            <div className="text-center py-16">
+              <div className="w-24 h-24 mx-auto bg-white/5 rounded-2xl flex items-center justify-center mb-6">
+                <FiUser className="text-gray-400 text-3xl" />
+              </div>
+              <h3 className="text-2xl font-medium text-white mb-2">نیاز به ورود</h3>
+              <p className="text-gray-400 mb-4">برای مشاهدهٔ همکاران لطفاً وارد حساب کاربری خود شوید.</p>
+              <a href="/auth" className="inline-block px-6 py-3 bg-purple-600 rounded-xl text-white">ورود / ثبت نام</a>
+            </div>
+          ) : isLoading ? (
             <div className="grid place-items-center min-h-[400px]">
               <div className="w-12 h-12 border-3 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
             </div>

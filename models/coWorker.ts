@@ -18,6 +18,11 @@ const coWorkerSchema = new mongoose.Schema(
       type: String,
       enum: ["model", "makeUpArtist", "stylist", "location", "photoGrapher"],
     },
+    gender: {
+      type: String,
+      enum: ["male", "female"],
+      default: "female",
+    },
     description: {
       type: String,
     },

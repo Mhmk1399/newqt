@@ -41,6 +41,7 @@ interface CoWorkerProfile {
     | "location"
     | "photoGrapher"
     | "";
+  gender?: "male" | "female" | "";
   description: string;
   images: {
     main: string;
@@ -84,6 +85,7 @@ const CoWorkerProfileEditor: React.FC = () => {
     },
     isApprove: false,
     isActive: true,
+    gender: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -559,6 +561,29 @@ const CoWorkerProfileEditor: React.FC = () => {
                       {errors.experties}
                     </p>
                   )}
+                </div>
+                <div>
+                  <label className="block text-white/70 text-sm font-medium mb-2">
+                    جنسیت
+                  </label>
+                  <select
+                    value={profile.gender || ""}
+                    onChange={(e) => handleInputChange("gender", e.target.value)}
+                    disabled={!isEditing}
+                    className={`w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 transition-all ${
+                      !isEditing ? "opacity-60 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    <option value="" className="bg-gray-800">
+                      انتخاب جنسیت
+                    </option>
+                    <option value="female" className="bg-gray-800">
+                      خانم
+                    </option>
+                    <option value="male" className="bg-gray-800">
+                      آقا
+                    </option>
+                  </select>
                 </div>
               </div>
             </div>

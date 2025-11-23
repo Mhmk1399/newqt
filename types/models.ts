@@ -244,3 +244,34 @@ export interface IVideo {
 
 export type CreateVideo = Omit<IVideo, "_id" | "createdAt" | "updatedAt">;
 export type UpdateVideo = Partial<CreateVideo>;
+
+// Coworker / Model Types
+export interface ICoworker {
+  _id: mongoose.Types.ObjectId;
+  name: string;
+  email?: string;
+  phoneNumber: string;
+  experties: "model" | "makeUpArtist" | "stylist" | "location" | "photoGrapher";
+  description?: string;
+  images?: {
+    main?: string;
+    thumbnails?: string[];
+  };
+  resomeLink?: string;
+  socialLinks?: {
+    instagram?: string;
+    x?: string;
+    telegram?: string;
+    whatsapp?: string;
+  };
+  aprovedBy?: mongoose.Types.ObjectId;
+  isApprove?: boolean;
+  isActive?: boolean;
+  password?: string;
+  gender?: "male" | "female";
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export type CreateCoworker = Omit<ICoworker, "_id" | "createdAt" | "updatedAt">;
+export type UpdateCoworker = Partial<CreateCoworker>;

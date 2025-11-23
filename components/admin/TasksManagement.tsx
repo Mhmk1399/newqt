@@ -97,6 +97,7 @@ const TasksManagement: React.FC = () => {
     null
   );
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
+  const [fullscreenColumnId, setFullscreenColumnId] = useState<string | null>(null);
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
 
@@ -1380,7 +1381,7 @@ const TasksManagement: React.FC = () => {
         </div>
 
         {/* Kanban Board */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-6 gap-1">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-1">
           {statusColumns.map((column, columnIndex) => {
             const columnData = getTasksByStatus(column.id);
             const totalTasks = getTotalTasksByStatus(column.id);
@@ -1398,9 +1399,10 @@ const TasksManagement: React.FC = () => {
                 onDragOver={(e) => handleDragOver(e, column.id)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, column.id)}
+                onDoubleClick={() => setFullscreenColumnId(column.id)}
                 className={`bg-gradient-to-br ${
                   column.color
-                } backdrop-blur-xl rounded-2xl min-h-[600px] flex flex-col border ${
+                } backdrop-blur-xl rounded-2xl min-h-[360px] flex flex-col border ${
                   dragOverColumn === column.id
                     ? "border-purple-400 shadow-lg shadow-purple-400/25"
                     : column.borderColor
@@ -1485,19 +1487,19 @@ const TasksManagement: React.FC = () => {
                       className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:border-white/40 transition-all duration-300 cursor-move hover:bg-white/15"
                     >
                       {/* Task Header */}
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-start gap-2 w-full">
-                          <input
-                            type="checkbox"
-                            checked={selectedTaskIds.includes(task._id)}
-                            onChange={(e) => { e.stopPropagation(); toggleSelectTask(task._id); }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-4 h-4 mt-1 ml-2"
-                          />
-                          <h4 className="text-white font-medium text-sm line-clamp-2 flex-1">
-                            {task.title}
-                          </h4>
-                        </div>
+                      <div className="flex items-start justify-between mb-3 h-40">
+                          <div className="flex items-start gap-2 w-full">
+                            <input
+                              type="checkbox"
+                              checked={selectedTaskIds.includes(task._id)}
+                              onChange={(e) => { e.stopPropagation(); toggleSelectTask(task._id); }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-4 h-4 mt-1 ml-2"
+                            />
+                            <h4 className="text-white font-medium text-sm line-clamp-2 flex-1">
+                              {task.title}
+                            </h4>
+                          </div>
                         <div className="flex items-center gap-1 ml-2">
                           <FaFlag
                             className={`text-xs ${
@@ -1642,6 +1644,8 @@ const TasksManagement: React.FC = () => {
                   )}
                 </div>
 
+                {/* If user double-clicks the column, open fullscreen modal — handled globally below */}
+
                 {/* Column Footer - Page Info */}
                 {totalPages > 1 && (
                   <div className="p-3 border-t border-white/10">
@@ -1717,6 +1721,77 @@ const TasksManagement: React.FC = () => {
                   onCancel={closeAddModal}
                   className="bg-transparent border-0 shadow-none p-0"
                 />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Fullscreen Column Modal (shows all tasks for a status in 4-column grid) */}
+        {fullscreenColumnId && (
+          <div
+            className="fixed mt-20  inset-0 z-999 flex items-start justify-center p-6 bg-black/90 rounded-md border-white border"
+            onClick={() => setFullscreenColumnId(null)}
+          >
+            <div
+              className="w-full h-full max-w-[1400px]  rounded-2xl overflow-auto p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-2xl font-bold text-white">
+                  نمایش همه تسک‌های مرحله: {statusColumns.find(c => c.id === fullscreenColumnId)?.title}
+                </h3>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setFullscreenColumnId(null)}
+                    className="px-3 py-2 bg-white/10 text-white rounded-md"
+                  >
+                    بستن
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {allTasks
+                  .filter((t) => t.status === fullscreenColumnId)
+                  .map((task) => (
+                    <div
+                      key={task._id}
+                      className="bg-white/6 rounded-xl p-4 border border-white/10 hover:shadow-lg transition-shadow cursor-pointer"
+                      onClick={() => handleTaskClick(task)}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <h4 className="text-white font-medium text-sm line-clamp-2">
+                          {task.title}
+                        </h4>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${priorityConfig[task.priority].color}`}></div>
+                        </div>
+                      </div>
+
+                      {task.assignedUserId && (
+                        <div className="flex items-center gap-2 mb-2 text-sm text-white/80">
+                          <FaUser className="text-sm text-blue-300" />
+                          <span>{task.assignedUserId.name}</span>
+                        </div>
+                      )}
+
+                      <p className="text-white/60 text-sm mb-3 truncate">
+                        {task.serviceRequestId?.title || "بدون درخواست سرویس"}
+                      </p>
+
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs text-white/70">
+                          {task.dueDate ? new Date(task.dueDate).toLocaleDateString("fa-IR") : "بدون تاریخ"}
+                        </span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); updateTaskStatus(task._id, fullscreenColumnId === "paid" ? "completed" : "paid"); }}
+                          className="text-xs px-2 py-1 bg-purple-600/20 rounded text-white"
+                        >
+                          سریع تغییر
+                        </button>
+                      </div>
+                    </div>
+                  ))}
               </div>
             </div>
           </div>

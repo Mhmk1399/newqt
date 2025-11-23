@@ -11,6 +11,7 @@ interface filterquery {
   status?: string;
   type?: string;
   experties?: string;
+  gender?:string;
   $or?: Array<{
     name?: { $regex: string; $options: string };
     email?: { $regex: string; $options: string };
@@ -28,6 +29,7 @@ export async function GET(request: NextRequest) {
     const isActive = searchParams.get("isActive");
     const isApprove = searchParams.get("isApprove");
     const experties = searchParams.get("experties");
+    const gender = searchParams.get("gender");
     const search = searchParams.get("search");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
@@ -68,6 +70,10 @@ export async function GET(request: NextRequest) {
     }
     if (experties) {
       query.experties = experties;
+    }
+    if (gender) {
+      // expect 'male' or 'female'
+      query.gender = gender as string;
     }
     if (search) {
       query.$or = [
