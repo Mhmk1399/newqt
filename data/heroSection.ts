@@ -6,9 +6,9 @@ export const slides = [
     color: "#06B6D4", // Purple
     posters: "/assets/images/cam3.jpg",
     videos: [
-      "https://toomak.arvanvod.ir/aAKp5rEndz/06pz2MvQg4/origin_oTuoQysNJQi22v9qlLbBVVACcGDwM41u4cty9j8F.mp4",
-      "https://toomak.arvanvod.ir/aAKp5rEndz/JeV4oA5pwg/origin_7mdPksT6KwwA5wasex95ZaEaKypIE0p7QqV6hlaL.mp4",
-      "https://toomak.arvanvod.ir/aAKp5rEndz/2mB5oLXJ6l/origin_eGoCZ1AmBy0YIYGXCSxILrcebTrFzh27eL5pYKg5.mp4",
+      "https://arziplus.storage.c2.liara.space/qt/videos/video1.mp4",
+      "https://arziplus.storage.c2.liara.space/qt/videos/video2.mp4",
+      "https://arziplus.storage.c2.liara.space/qt/videos/video3.mp4",
     ],
     stats: [
       { value: "100+", label: "پروژه موفق" },

@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
-    domains: ["qtt.s3.ir-thr-at1.arvanstorage.ir"],
+    domains: ["https://arziplus.storage.c2.liara.space"],
   },
   // API route configuration for large uploads
   api: {

@@ -110,8 +110,7 @@ export const contentTypes: ContentType[] = [
       "تیزرهای مفهومی برای پلتفرم‌های لوکس",
       "داستان‌سرایی تصویری با زبان خاص برند شما",
     ],
-    video:
-      "https://toomak.arvanvod.ir/aAKp5rEndz/7KnWXPWxDA/origin_d6sckfPsUXwHwLYE8l0ogoCBDoWNabr8Ike0HAbS.mp4",
+    video: "https://arziplus.storage.c2.liara.space/qt/arayeshi.mp4",
   },
   {
     id: "medical",
@@ -126,8 +125,7 @@ export const contentTypes: ContentType[] = [
       "استایل‌های تصویری خاص برای برندهای خاص",
       "محتوای اینستاگرام با ساختار هنری و منحصر‌به‌فرد",
     ],
-    video:
-      "https://toomak.arvanvod.ir/aAKp5rEndz/yKQwapR2l9/origin_SPE2vmfIvCOyeaPQGFU1qwwVIbqw9uZtIr5igECs.mp4",
+    video: "https://arziplus.storage.c2.liara.space/qt/videos/clinic.mp4",
   },
   {
     id: "fashion",
@@ -142,8 +140,7 @@ export const contentTypes: ContentType[] = [
       "طراحی ساختار روایت و کمپین",
       "هویت محتوایی خاص برای برندهای هنردوست",
     ],
-    video:
-      "https://toomak.arvanvod.ir/aAKp5rEndz/1GVKpAaqbJ/origin_kfUggPGPFXQVy0lZDIB5UmVmzwoZFZj2D7TKynnI.mp4",
+    video: "https://arziplus.storage.c2.liara.space/qt/videos/fashion.mp4",
   },
   {
     id: "home-appliances",
@@ -158,8 +155,7 @@ export const contentTypes: ContentType[] = [
       "تیزرهای مفهومی برای پلتفرم‌های لوکس",
       "داستان‌سرایی تصویری با زبان خاص برند شما",
     ],
-    video:
-      "https://toomak.arvanvod.ir/aAKp5rEndz/Lw5mwWm1MW/origin_yOFKB2NaArzBwRgxFsEb3cbhV0QdiKeZkSEGJe5Q.mp4",
+    video: "https://arziplus.storage.c2.liara.space/qt/videos/lavazemkahne.mp4",
   },
   {
     id: "commercial",
@@ -174,8 +170,7 @@ export const contentTypes: ContentType[] = [
       "استایل‌های تصویری خاص برای برندهای خاص",
       "محتوای اینستاگرام با ساختار هنری و منحصر‌به‌فرد",
     ],
-    video:
-      "https://toomak.arvanvod.ir/aAKp5rEndz/Kyp2LkDe0P/origin_Wu8eJ5pYxsIQZPfDhs9AE9eIms7vhAE17K7ol8OO.mp4",
+    video: "https://arziplus.storage.c2.liara.space/qt/videos/tejari.mp4",
   },
   {
     id: "product",
@@ -190,8 +185,7 @@ export const contentTypes: ContentType[] = [
       "طراحی ساختار روایت و کمپین",
       "هویت محتوایی خاص برای برندهای هنردوست",
     ],
-    video:
-      "https://toomak.arvanvod.ir/aAKp5rEndz/2JOGWmZ60z/origin_kLjcnrgAAq88nYkHn5FsX0j6KUj6SqcUPcGHSZwg.mp4",
+    video: "https://arziplus.storage.c2.liara.space/qt/vafadari.mov",
   },
 ];
 

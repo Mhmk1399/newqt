@@ -123,8 +123,7 @@ export const contentFormulas: ContentFormula[] = [
     description: "ترکیبی قدرتمند برای جذب مشتریان جدید و افزایش آگاهی از برند",
     elements: ["Vi", "Em", "En"],
     result: "افزایش ۱۵۰٪ در نرخ تعامل",
-    video:
-      "https://toomak.arvanvod.ir/aAKp5rEndz/8wdDk9j0YG/origin_qGiV3hPucXy1c3ssv6ZiNDvzrfmoSPfNa9zhsVjl.mp4",
+    video: "https://arziplus.storage.c2.liara.space/qt/vafadari.mov",
     color: "#00000",
   },
   {
@@ -133,8 +132,7 @@ export const contentFormulas: ContentFormula[] = [
     description: "ترکیبی عاطفی برای ایجاد ارتباط عمیق و وفاداری بلندمدت",
     elements: ["Em", "En", "Au"],
     result: "افزایش ۹۰٪ در نرخ بازگشت مشتری",
-    video:
-      "https://toomak.arvanvod.ir/aAKp5rEndz/Z2MEdqrn95/origin_aLObQAPW9rMdiDfwkczZnpPj7rqJ5FGuy3I7QMPP.mp4",
+    video: "https://arziplus.storage.c2.liara.space/qt/vafadari.mov",
     color: "#00000",
   },
 ];

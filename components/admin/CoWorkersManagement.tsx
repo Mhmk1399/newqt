@@ -10,10 +10,15 @@ import {
 } from "@/types/dynamicTypes/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { IoAdd, IoClose } from "react-icons/io5";
+import { FaUpload } from "react-icons/fa";
 import toast from "react-hot-toast";
+import ImageUploadModal from "@/components/modals/ImageUploadModal";
 
 const CoWorkersManagement: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [mainImage, setMainImage] = useState<string>("");
+  const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [users, setUsers] = useState<
     { _id: string; name: string; email: string }[]
   >([]);
@@ -152,10 +157,51 @@ const CoWorkersManagement: React.FC = () => {
       ],
     },
     {
+      name: "gender",
+      label: "جنسیت",
+      type: "select",
+      options: [
+        { label: "خانم", value: "female" },
+        { label: "آقا", value: "male" },
+      ],
+    },
+    {
       name: "description",
       label: "توضیحات",
       type: "textarea",
       placeholder: "توضیحات همکار را وارد کنید",
+    },
+    {
+      name: "images.main",
+      label: "تصویر اصلی",
+      type: "custom",
+      placeholder: "آدرس URL تصویر اصلی را وارد کنید",
+      render: () => (
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setShowImageModal(true)}
+            className="w-full py-3 px-4 bg-white/10 border border-white/20 rounded-lg text-white/70 hover:bg-white/20 hover:text-white transition-all flex items-center justify-center gap-2"
+          >
+            <FaUpload className="text-sm" />
+            {mainImage ? "ویرایش تصاویر" : "آپلود تصاویر"}
+          </button>
+          {mainImage && (
+            <div className="mt-2">
+              <img src={mainImage} alt="تصویر اصلی" className="w-full h-32 object-cover rounded-lg" />
+            </div>
+          )}
+          {thumbnails.length > 0 && (
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              {thumbnails.map((thumb, idx) => (
+                <img key={idx} src={thumb} alt={`تصویر ${idx + 1}`} className="w-full h-20 object-cover rounded-lg" />
+              ))}
+            </div>
+          )}
+          <input type="hidden" name="images.main" value={mainImage} />
+          <input type="hidden" name="images.thumbnails" value={thumbnails.join(",")} />
+        </div>
+      ),
     },
     {
       name: "resomeLink",
@@ -264,6 +310,11 @@ const CoWorkersManagement: React.FC = () => {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  const handleImagesSelected = (main: string, thumbs: string[]) => {
+    setMainImage(main);
+    setThumbnails(thumbs);
+  };
 
   return (
     <div
@@ -377,6 +428,15 @@ const CoWorkersManagement: React.FC = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Image Upload Modal */}
+        <ImageUploadModal
+          isOpen={showImageModal}
+          onClose={() => setShowImageModal(false)}
+          onImagesSelected={handleImagesSelected}
+          initialMainImage={mainImage}
+          initialThumbnails={thumbnails}
+        />
       </div>
     </div>
   );
