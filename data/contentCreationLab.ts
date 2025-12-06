@@ -123,7 +123,7 @@ export const contentFormulas: ContentFormula[] = [
     description: "ترکیبی قدرتمند برای جذب مشتریان جدید و افزایش آگاهی از برند",
     elements: ["Vi", "Em", "En"],
     result: "افزایش ۱۵۰٪ در نرخ تعامل",
-    video: "https://arziplus.storage.c2.liara.space/qt/vafadari.mov",
+    video: "https://arziplus.storage.c2.liara.space/qt/videos/product.mp4",
     color: "#00000",
   },
   {

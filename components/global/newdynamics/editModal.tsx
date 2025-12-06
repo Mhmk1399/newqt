@@ -213,6 +213,7 @@ const DynamicUpdateForm: React.FC<DynamicUpdateFormProps> = ({
                         } as React.ChangeEvent<HTMLSelectElement>;
                         handleChange(syntheticEvent, field);
                       }}
+                      onScroll={field.onScroll}
                       className="w-full px-3 sm:px-4 py-3 sm:py-4 text-sm sm:text-base bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg sm:rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
                       disabled={field.disabled}
                     >
@@ -242,6 +243,7 @@ const DynamicUpdateForm: React.FC<DynamicUpdateFormProps> = ({
                           : []
                       }
                       onChange={(e) => handleChange(e, field)}
+                      onScroll={field.onScroll}
                       className="w-full px-3 sm:px-4 py-3 sm:py-4 text-sm sm:text-base bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg sm:rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
                       disabled={field.disabled}
                     >

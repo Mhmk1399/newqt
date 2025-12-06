@@ -6,7 +6,7 @@ export const slides = [
     color: "#06B6D4", // Purple
     posters: "/assets/images/cam3.jpg",
     videos: [
-      "https://arziplus.storage.c2.liara.space/qt/videos/video1.mp4",
+      "https://arziplus.storage.c2.liara.space/qt/videos/view.mp4",
       "https://arziplus.storage.c2.liara.space/qt/videos/video2.mp4",
       "https://arziplus.storage.c2.liara.space/qt/videos/video3.mp4",
     ],

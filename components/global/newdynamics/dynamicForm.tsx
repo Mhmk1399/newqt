@@ -161,6 +161,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                             name={field.name}
                             value={String(formValues[field.name] || "")}
                             onChange={(e) => handleChange(e, field)}
+                            onScroll={field.onScroll}
                             className="w-full px-3 sm:px-4 py-3 sm:py-4 text-sm sm:text-base bg-white/10 backdrop-blur-sm border border-white/20 text-white/90 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
                             disabled={field.disabled}
                           >
@@ -190,6 +191,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                                 : []
                             }
                             onChange={(e) => handleChange(e, field)}
+                            onScroll={field.onScroll}
                             className="w-full px-3 sm:px-4 py-3 sm:py-4 text-sm sm:text-base bg-white/10 backdrop-blur-sm border border-white/20 text-white/90 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
                             disabled={field.disabled}
                           >

@@ -185,7 +185,7 @@ export const contentTypes: ContentType[] = [
       "طراحی ساختار روایت و کمپین",
       "هویت محتوایی خاص برای برندهای هنردوست",
     ],
-    video: "https://arziplus.storage.c2.liara.space/qt/vafadari.mov",
+    video: "https://arziplus.storage.c2.liara.space/qt/videos/product.mp4",
   },
 ];
 

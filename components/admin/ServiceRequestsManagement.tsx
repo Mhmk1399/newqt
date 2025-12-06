@@ -16,6 +16,9 @@ const ServiceRequestsManagement: React.FC = () => {
   const [users, setUsers] = useState<{_id: string, name: string, email: string}[]>([]);
   const [services, setServices] = useState<{_id: string, name: string}[]>([]);
   const [customers, setCustomers] = useState<{_id: string, name: string}[]>([]);
+  const [customersPage, setCustomersPage] = useState(1);
+  const [hasMoreCustomers, setHasMoreCustomers] = useState(true);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [assignmentModal, setAssignmentModal] = useState<{isOpen: boolean, serviceRequestId: string | null}>({isOpen: false, serviceRequestId: null});
 
   const columns: TableColumn[] = [
@@ -181,6 +184,13 @@ const ServiceRequestsManagement: React.FC = () => {
       type: "select",
       placeholder: "مشتری را انتخاب کنید",
       options: customers.map(customer => ({ label: customer.name, value: customer._id })),
+      onScroll: (e: React.UIEvent<HTMLSelectElement>) => {
+        const target = e.target as HTMLSelectElement;
+        const scrolledToBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 50;
+        if (scrolledToBottom && hasMoreCustomers && !loadingCustomers) {
+          loadMoreCustomers();
+        }
+      },
     },
     {
       name: "quantity",
@@ -302,15 +312,30 @@ const ServiceRequestsManagement: React.FC = () => {
     }
   };
 
-  const fetchCustomers = async () => {
+  const fetchCustomers = async (page: number = 1, append: boolean = false) => {
+    if (loadingCustomers) return;
+    
     try {
-      const response = await fetch('/api/customers');
+      setLoadingCustomers(true);
+      const response = await fetch(`/api/customers?page=${page}&limit=20`);
       const result = await response.json();
       if (result.success) {
-        setCustomers(result.data || []);
+        const newCustomers = result.data || [];
+        setCustomers(prev => append ? [...prev, ...newCustomers] : newCustomers);
+        setHasMoreCustomers(newCustomers.length === 20);
       }
     } catch (error) {
       console.error('Error fetching customers:', error);
+    } finally {
+      setLoadingCustomers(false);
+    }
+  };
+
+  const loadMoreCustomers = () => {
+    if (hasMoreCustomers && !loadingCustomers) {
+      const nextPage = customersPage + 1;
+      setCustomersPage(nextPage);
+      fetchCustomers(nextPage, true);
     }
   };
 

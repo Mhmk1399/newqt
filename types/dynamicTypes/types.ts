@@ -81,6 +81,7 @@ export interface FormField {
   isRequired?: boolean;
   render?: () => React.ReactNode;
   arrayFields?: FormField[];
+  onScroll?: (e: React.UIEvent<HTMLSelectElement>) => void; // For infinite scroll on select dropdowns
 }
 export interface FormFieldDependency {
   field: string;
