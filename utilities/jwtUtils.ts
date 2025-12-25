@@ -121,3 +121,32 @@ export const logoutUser = (): void => {
     console.error('Error during logout:', error);
   }
 };
+
+/**
+ * Clean corrupted tokens from localStorage
+ * Useful when tokens become malformed or corrupted
+ */
+export const cleanCorruptedTokens = (): void => {
+  try {
+    const userToken = localStorage.getItem("userToken");
+    const token = localStorage.getItem("token");
+    
+    // Test if tokens are valid JWT format
+    const isValidJWT = (token: string): boolean => {
+      const parts = token.split(".");
+      return parts.length === 3 && parts.every(part => part.length > 0);
+    };
+    
+    if (userToken && !isValidJWT(userToken)) {
+      console.warn("Corrupted userToken detected, removing...");
+      localStorage.removeItem("userToken");
+    }
+    
+    if (token && !isValidJWT(token)) {
+      console.warn("Corrupted token detected, removing...");
+      localStorage.removeItem("token");
+    }
+  } catch (error) {
+    console.error('Error cleaning corrupted tokens:', error);
+  }
+};

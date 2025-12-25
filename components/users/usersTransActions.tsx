@@ -23,6 +23,7 @@ import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import { getUserFromToken } from "@/utilities/jwtUtils";
 
 interface DecodedToken {
   userId: string;
@@ -71,23 +72,10 @@ const UsersTransActions: React.FC = () => {
   useEffect(() => {
     const extractUserFromToken = () => {
       try {
-        const token =
-          localStorage.getItem("userToken") || localStorage.getItem("token");
+        const decoded = getUserFromToken();
 
-        if (!token) {
+        if (!decoded) {
           toast.error("لطفا ابتدا وارد حساب کاربری خود شوید");
-          router.push("/auth");
-          return;
-        }
-
-        // Decode JWT token
-        const decoded = JSON.parse(atob(token.split(".")[1])) as DecodedToken;
-
-        // Check if token is expired
-        if (decoded.exp && decoded.exp < Date.now() / 1000) {
-          toast.error("جلسه شما منقضی شده است. لطفا مجدداً وارد شوید");
-          localStorage.removeItem("userToken");
-          localStorage.removeItem("token");
           router.push("/auth");
           return;
         }
@@ -96,6 +84,8 @@ const UsersTransActions: React.FC = () => {
       } catch (error) {
         console.error("Error decoding token:", error);
         toast.error("خطا در تشخیص هویت. لطفا مجدداً وارد شوید");
+        localStorage.removeItem("userToken");
+        localStorage.removeItem("token");
         router.push("/auth");
       } finally {
         setLoading(false);
