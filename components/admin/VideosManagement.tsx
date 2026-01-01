@@ -98,9 +98,10 @@ const VideosManagement: React.FC = () => {
       name: "link",
       label: "لینک ویدیو",
       type: "text",
-      placeholder: "لینک ویدیو را وارد کنید",
+      placeholder: "از دکمه آپلود ویدیو استفاده کنید",
       validation: [{ type: "required", message: "لینک ویدیو الزامی است" }],
       defaultValue: newVideoLink || undefined,
+      disabled: true,
     },
     {
       name: "categoryId",
@@ -266,27 +267,39 @@ const VideosManagement: React.FC = () => {
                     </button>
                   </div>
                   
-                  <div className="mb-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => setUploadModalOpen(true)}
-                        className="px-4 py-2 bg-gradient-to-r from-purple-600 to-violet-600 text-white rounded-lg flex items-center gap-2"
-                      >
-                        <IoCloudUpload />
-                        آپلود ویدیو
-                      </button>
-
-                      {newVideoLink ? (
-                        <div className="text-sm text-white/80 truncate max-w-md">
-                          <span className="ml-2">لینک جاری:</span>
-                          <a href={newVideoLink} target="_blank" rel="noreferrer" className="underline ml-2">
-                            {newVideoLink.length > 60 ? `${newVideoLink.substring(0, 60)}...` : newVideoLink}
-                          </a>
-                        </div>
-                      ) : (
-                        <div className="text-sm text-white/50">هیچ ویدیویی آپلود نشده است</div>
-                      )}
+                  <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/10">
+                    <div className="flex items-center justify-between gap-4 mb-3">
+                      <div className="flex items-center gap-3">
+                        <motion.button
+                          onClick={() => setUploadModalOpen(true)}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-violet-600 text-white rounded-lg flex items-center gap-2 shadow-lg hover:shadow-purple-500/50 transition-shadow"
+                        >
+                          <IoCloudUpload />
+                          آپلود ویدیو
+                        </motion.button>
+                      </div>
                     </div>
+                    
+                    {newVideoLink ? (
+                      <div className="text-sm text-white/80">
+                        <span className="font-medium ml-2">لینک آپلود شده:</span>
+                        <a 
+                          href={newVideoLink} 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          className="text-purple-400 hover:text-purple-300 underline break-all"
+                        >
+                          {newVideoLink}
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-white/50 flex items-center gap-2">
+                        <IoCloudUpload className="text-lg" />
+                        ابتدا ویدیو را آپلود کنید تا لینک آن در فرم ذخیره شود
+                      </div>
+                    )}
                   </div>
 
                   <DynamicForm

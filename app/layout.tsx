@@ -4,19 +4,11 @@ import { ray } from "@/next-persian-fonts/ray";
 import Navbar from "@/components/global/navabr";
 import { Toaster } from "react-hot-toast";
 import Avatar from "@/components/global/avatar";
+import TokenCleanup from "@/components/global/TokenCleanup";
 
 export const metadata: Metadata = {
   title: "QTT - خدمات تولید محتوا",
   description: "ارائه خدمات حرفه‌ای تولید محتوا، ویدیو و طراحی گرافیک",
-  icons: {
-    icon: '/assets/qtlogo.png',
-    shortcut: '/assets/qtlogo.png',
-    apple: '/assets/qtlogo.png',
-    other: {
-      rel: 'apple-touch-icon-precomposed',
-      url: '/assets/qtlogo.png',
-    },
-  },
 };
 
 export default function RootLayout({
@@ -27,6 +19,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${ray.className} bg-[#f8fafc] antialiased relative`}>
+        {/* Token cleanup component - runs on app initialization */}
+        <TokenCleanup />
         {/* SnakeLine with z-index 0 will appear behind other components */}
         <Avatar />
         <div className="relative">
