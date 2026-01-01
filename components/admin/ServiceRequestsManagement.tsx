@@ -302,7 +302,7 @@ const ServiceRequestsManagement: React.FC = () => {
 
   const fetchServices = async () => {
     try {
-      const response = await fetch('/api/services');
+      const response = await fetch('/api/services?limit=9999');
       const result = await response.json();
       if (result.success) {
         setServices(result.data || []);
