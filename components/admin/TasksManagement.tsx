@@ -1053,25 +1053,31 @@ const TasksManagement: React.FC = () => {
           <div className="relative z-10">
             {/* Header */}
             {/* Bulk status change control */}
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
+            <div className="mb-6 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => selectAllVisible(tasks)}
-                  className="px-3 py-2 bg-white/10 text-white rounded-md text-sm hover:bg-white/20"
+                  className="px-4 py-2.5 bg-white/10 text-white rounded-lg text-sm hover:bg-white/20 transition-all"
                 >
                   انتخاب همه
                 </button>
                 <button
                   onClick={clearSelection}
-                  className="px-3 py-2 bg-white/10 text-white rounded-md text-sm hover:bg-white/20"
+                  className="px-4 py-2.5 bg-white/10 text-white rounded-lg text-sm hover:bg-white/20 transition-all"
                 >
-                  پاک کردن انتخاب
+                  پاک کردن
                 </button>
-                <span className="text-white/70 text-sm">انتخاب شده: {selectedTaskIds.length}</span>
+                <span className="text-white/70 text-sm px-2 py-1 bg-white/5 rounded-lg">
+                  انتخاب شده: <span className="font-bold text-white">{selectedTaskIds.length}</span>
+                </span>
               </div>
 
-              <div className="flex items-center gap-2">
-                <select id="bulk-status" className="bg-black/40 text-white px-3 py-2 rounded-md text-sm" defaultValue="">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <select 
+                  id="bulk-status" 
+                  className="bg-black/40 text-white px-4 py-2.5 rounded-lg text-sm border border-white/20 focus:outline-none focus:ring-2 focus:ring-purple-400/50 min-w-[200px]" 
+                  defaultValue=""
+                >
                   <option value="" disabled>تغییر وضعیت گروهی...</option>
                   <option value="todo">انجام نشده</option>
                   <option value="in-progress">در حال انجام</option>
@@ -1088,30 +1094,30 @@ const TasksManagement: React.FC = () => {
                     if (selectedTaskIds.length === 0) { toast.error("هیچ تسکی انتخاب نشده است"); return; }
                     updateSelectedTasksStatus(sel);
                   }}
-                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-violet-600 text-white rounded-md text-sm"
+                  className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-violet-600 text-white rounded-lg text-sm hover:from-purple-700 hover:to-violet-700 transition-all font-medium whitespace-nowrap"
                 >
-                  تغییر وضعیت گروهی
+                  تغییر وضعیت
                 </button>
               </div>
             </div>
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-2">
+              <h2 className="text-xl sm:text-2xl font-bold text-transparent bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text mb-2">
                 فیلتر و جستجوی تسکها
               </h2>
-              <p className="text-white/70">
+              <p className="text-white/70 text-sm sm:text-base">
                 برای دسترسی سریعتر به تسکها از فیلترهای زیر استفاده کنید
               </p>
             </div>
 
             {/* Date Range Section */}
-            <div className="mb-6 p-6 bg-white/5 rounded-2xl border border-white/10">
-              <h3 className="text-lg font-semibold text-white/90 mb-4 flex items-center gap-2">
+            <div className="mb-6 p-4 sm:p-6 bg-white/5 rounded-2xl border border-white/10">
+              <h3 className="text-base sm:text-lg font-semibold text-white/90 mb-4 flex items-center gap-2">
                 <FaCalendarAlt className="text-purple-400" />
                 فیلتر بر اساس تاریخ
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-white/70 text-sm mb-2">از تاریخ</label>
+                  <label className="block text-white/70 text-sm mb-2 font-medium">از تاریخ</label>
                   <div className="relative">
                     <DatePicker
                       value={dateRange[0] ? new DateObject(new Date(dateRange[0])) : null}
@@ -1122,15 +1128,15 @@ const TasksManagement: React.FC = () => {
                       calendar={persian}
                       locale={persian_fa}
                       format="YYYY/MM/DD"
-                      placeholder="انتخاب تاریخ شروع"
-                      inputClass="w-full p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300 text-center pr-10"
+                      placeholder="تاریخ شروع"
+                      inputClass="w-full p-3 sm:p-3.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300 text-center pr-10 text-sm sm:text-base"
                       calendarPosition="bottom-center"
                     />
                     <FaCalendarAlt className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50 text-sm" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-white/70 text-sm mb-2">تا تاریخ</label>
+                  <label className="block text-white/70 text-sm mb-2 font-medium">تا تاریخ</label>
                   <div className="relative">
                     <DatePicker
                       value={dateRange[1] ? new DateObject(new Date(dateRange[1])) : null}
@@ -1141,8 +1147,8 @@ const TasksManagement: React.FC = () => {
                       calendar={persian}
                       locale={persian_fa}
                       format="YYYY/MM/DD"
-                      placeholder="انتخاب تاریخ پایان"
-                      inputClass="w-full p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300 text-center pr-10"
+                      placeholder="تاریخ پایان"
+                      inputClass="w-full p-3 sm:p-3.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300 text-center pr-10 text-sm sm:text-base"
                       calendarPosition="bottom-center"
                     />
                     <FaCalendarAlt className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50 text-sm" />
@@ -1152,17 +1158,19 @@ const TasksManagement: React.FC = () => {
                   <button
                     onClick={() => fetchTasks(true)}
                     disabled={loading}
-                    className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-violet-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-violet-700 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-3 sm:py-3.5 bg-gradient-to-r from-purple-600 to-violet-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-violet-700 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base min-h-[44px]"
                   >
                     {loading ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        در حال بارگذاری...
+                        <span className="hidden sm:inline">در حال بارگذاری...</span>
+                        <span className="sm:hidden">بارگذاری...</span>
                       </>
                     ) : (
                       <>
                         <IoSearch className="text-lg" />
-                        اعمال فیلتر
+                        <span className="hidden sm:inline">اعمال فیلتر</span>
+                        <span className="sm:hidden">اعمال</span>
                       </>
                     )}
                   </button>
@@ -1181,10 +1189,11 @@ const TasksManagement: React.FC = () => {
                       fetchTasks(false);
                     }}
                     disabled={loading}
-                    className="w-full px-4 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white font-medium rounded-xl hover:from-gray-700 hover:to-gray-800 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-3 sm:py-3.5 bg-gradient-to-r from-gray-600 to-gray-700 text-white font-medium rounded-xl hover:from-gray-700 hover:to-gray-800 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base min-h-[44px]"
                   >
                     <IoClose className="text-lg" />
-                    پاک کردن
+                    <span className="hidden sm:inline">پاک کردن</span>
+                    <span className="sm:hidden">پاک</span>
                   </button>
                 </div>
               </div>
@@ -1193,14 +1202,14 @@ const TasksManagement: React.FC = () => {
             {/* Advanced Filters Toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="w-full flex items-center justify-center gap-2 p-4 bg-white/5 rounded-xl border border-white/10 text-white/80 hover:text-white hover:bg-white/10 transition-all duration-300 mb-4"
+              className="w-full flex items-center justify-center gap-2 p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 text-white/80 hover:text-white hover:bg-white/10 transition-all duration-300 mb-4 text-sm sm:text-base min-h-[44px]"
             >
-              <IoFilter className="text-lg" />
+              <IoFilter className="text-lg flex-shrink-0" />
               <span className="font-medium">فیلترهای پیشرفته</span>
               {showFilters ? (
-                <IoChevronUp className="text-lg" />
+                <IoChevronUp className="text-lg flex-shrink-0" />
               ) : (
-                <IoChevronDown className="text-lg" />
+                <IoChevronDown className="text-lg flex-shrink-0" />
               )}
             </button>
 
@@ -1210,11 +1219,11 @@ const TasksManagement: React.FC = () => {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="p-6 bg-white/5 rounded-2xl border border-white/10"
+                className="p-4 sm:p-6 bg-white/5 rounded-2xl border border-white/10"
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                   {/* Title Search */}
-                  <div>
+                  <div className="sm:col-span-2 lg:col-span-1">
                     <label className="block text-white/70 text-sm mb-2 font-medium">
                       جستجو در عنوان
                     </label>
@@ -1225,8 +1234,8 @@ const TasksManagement: React.FC = () => {
                         onChange={(e) =>
                           setFilters({ ...filters, title: e.target.value })
                         }
-                        placeholder="عنوان تسک را جستجو کنید..."
-                        className="w-full p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300 pr-10"
+                        placeholder="عنوان تسک..."
+                        className="w-full p-3 sm:p-3.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300 pr-10 text-sm sm:text-base"
                       />
                       <IoSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50" />
                     </div>
@@ -1242,7 +1251,7 @@ const TasksManagement: React.FC = () => {
                       onChange={(e) =>
                         setFilters({ ...filters, status: e.target.value })
                       }
-                      className="w-full p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
+                      className="w-full p-3 sm:p-3.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300 text-sm sm:text-base"
                     >
                       <option value="" className="bg-gray-800">همه وضعیت‌ها</option>
                       <option value="todo" className="bg-gray-800">انجام نشده</option>
@@ -1264,7 +1273,7 @@ const TasksManagement: React.FC = () => {
                       onChange={(e) =>
                         setFilters({ ...filters, priority: e.target.value })
                       }
-                      className="w-full p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
+                      className="w-full p-3 sm:p-3.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300 text-sm sm:text-base"
                     >
                       <option value="" className="bg-gray-800">همه اولویت‌ها</option>
                       <option value="low" className="bg-gray-800">کم</option>
@@ -1284,7 +1293,7 @@ const TasksManagement: React.FC = () => {
                       onChange={(e) =>
                         setFilters({ ...filters, assignedUserId: e.target.value })
                       }
-                      className="w-full p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300"
+                      className="w-full p-3 sm:p-3.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-purple-400/50 transition-all duration-300 text-sm sm:text-base"
                     >
                       <option value="" className="bg-gray-800">همه کاربران</option>
                       {users.map((user) => (
@@ -1303,17 +1312,19 @@ const TasksManagement: React.FC = () => {
                   <button
                     onClick={() => fetchTasks(true)}
                     disabled={loading}
-                    className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-medium rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-emerald-500/25"
+                    className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-medium rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-emerald-500/25 text-sm sm:text-base min-h-[44px]"
                   >
                     {loading ? (
                       <>
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        در حال اعمال فیلتر...
+                        <span className="hidden sm:inline">در حال اعمال فیلتر...</span>
+                        <span className="sm:hidden">در حال اعمال...</span>
                       </>
                     ) : (
                       <>
                         <IoFilter className="text-lg" />
-                        اعمال فیلترهای پیشرفته
+                        <span className="hidden sm:inline">اعمال فیلترهای پیشرفته</span>
+                        <span className="sm:hidden">اعمال فیلترها</span>
                       </>
                     )}
                   </button>
